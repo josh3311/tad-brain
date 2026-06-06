@@ -81,6 +81,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - plans\voice-input-mic-faster-whisper-local-stt-plan.md
 - plans\opportunity-pipeline-tracks-ideas-tad-su-plan.md
 - plans\competitor-monitor-daily-scan-of-specifi-plan.md
+- plans\sales-arm-tad-runs-marketing-campaigns-f-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -110,7 +111,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - [x] Competitor monitor — daily scan of specific competitors in chosen niche ✓ 2026-06-06 (built+tested)
 
 ### Priority 3 — Enterprise features
-- [ ] Sales arm — TAD runs marketing campaigns, finds leads, sends outreach texts
+- [x] Sales arm — TAD runs marketing campaigns, finds leads, sends outreach texts ✓ 2026-06-06 (built+tested)
 - [ ] Client text communication — TAD handles client messaging autonomously
 - [ ] Video call coaching — TAD listens to call context and tells Joshua exactly what to say in real time
 - [ ] Build arm — TAD architects, codes, fixes bugs, handles security, ships products to clients
