@@ -85,6 +85,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - plans\client-text-communication-tad-handles-cl-plan.md
 - plans\video-call-coaching-tad-listens-to-call--plan.md
 - plans\build-arm-tad-architects-codes-fixes-bug-plan.md
+- plans\smart-llm-routing-claude-for-reasoning-w-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -118,7 +119,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - [x] Client text communication — TAD handles client messaging autonomously ✓ 2026-06-06 (built+tested)
 - [x] Video call coaching — TAD listens to call context and tells Joshua exactly what to say in real time ✓ 2026-06-06 (built+tested)
 - [x] Build arm — TAD architects, codes, fixes bugs, handles security, ships products to clients ✓ 2026-06-06 (built+tested)
-- [ ] Smart LLM routing — Claude for reasoning/writing, Codex for code, Perplexity for live search
+- [x] Smart LLM routing — Claude for reasoning/writing, Codex for code, Perplexity for live search ✓ 2026-06-06 (built+tested)
 - [ ] Sub-agent spawner — TAD creates fresh agents for heavy parallel tasks
 - [ ] Skill learner — every skill used in a build project gets saved permanently to skills/learned/
 
