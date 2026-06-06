@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "tad-filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\TAD"
+      ]
+    }
+  }
+}
