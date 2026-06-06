@@ -83,6 +83,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - plans\competitor-monitor-daily-scan-of-specifi-plan.md
 - plans\sales-arm-tad-runs-marketing-campaigns-f-plan.md
 - plans\client-text-communication-tad-handles-cl-plan.md
+- plans\video-call-coaching-tad-listens-to-call--plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -114,7 +115,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 ### Priority 3 — Enterprise features
 - [x] Sales arm — TAD runs marketing campaigns, finds leads, sends outreach texts ✓ 2026-06-06 (built+tested)
 - [x] Client text communication — TAD handles client messaging autonomously ✓ 2026-06-06 (built+tested)
-- [ ] Video call coaching — TAD listens to call context and tells Joshua exactly what to say in real time
+- [x] Video call coaching — TAD listens to call context and tells Joshua exactly what to say in real time ✓ 2026-06-06 (built+tested)
 - [ ] Build arm — TAD architects, codes, fixes bugs, handles security, ships products to clients
 - [ ] Smart LLM routing — Claude for reasoning/writing, Codex for code, Perplexity for live search
 - [ ] Sub-agent spawner — TAD creates fresh agents for heavy parallel tasks
