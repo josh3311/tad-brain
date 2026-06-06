@@ -1,7 +1,7 @@
 """
-TAD Daily Scheduler v0.2
-- 3:00 AM — Deep scan: market trends + competitor activity + hidden opportunities
-- 7:00 AM — Morning briefing: launches visual dashboard + voice narration
+TAD Daily Scheduler v0.3
+- 3:00 AM — Deep scan: saves silently to disk, no popup
+- 7:00 AM — Saves briefing to memory/morning_briefing.json (shown when Joshua wakes TAD)
 """
 
 import threading
@@ -41,16 +41,16 @@ He is looking for:
 3. Hidden opportunities — high potential, very low competition, feasible for one developer
 
 For each finding:
-- Give a concrete opportunity name
-- Explain why it is overlooked
-- Give a feasibility score 1-10 for a solo developer
+- Concrete opportunity name
+- Why it is overlooked
+- Feasibility score 1-10 for a solo developer
 - Estimate time to first dollar
 
 Be direct. No fluff."""
 
 BRIEFING_SYSTEM = """You are TAD's morning briefing agent for Joshua Abraham.
 
-Produce a structured morning briefing in this EXACT JSON format:
+Produce a structured morning briefing in this EXACT JSON format and nothing else:
 {
   "summary": "one sentence overview",
   "opportunities": [
@@ -66,22 +66,19 @@ Produce a structured morning briefing in this EXACT JSON format:
     "name": "gem name",
     "why_overlooked": "why nobody is doing this"
   },
-  "competitor_gaps": [
-    "gap 1",
-    "gap 2"
-  ],
+  "competitor_gaps": ["gap 1", "gap 2"],
   "action_today": "one specific action Joshua should take today",
   "raw": "full briefing text here"
 }
 
-Return ONLY valid JSON. No markdown. No extra text."""
+Return ONLY valid JSON. No markdown fences. No extra text."""
 
 
 def run_deep_scan():
-    """3AM — full intelligence scan."""
+    """3AM — scan silently. No popup. Saves to disk."""
     from tools.registry import call as tool_call
 
-    print(f"[scheduler] Starting 3AM deep scan — {datetime.now()}")
+    print(f"[scheduler] 3AM deep scan starting — {datetime.now()}")
     today = datetime.now().strftime("%Y-%m-%d")
     all_findings = []
 
@@ -112,23 +109,25 @@ def run_deep_scan():
             "filename": f"deep-scan-{today}.md",
             "content":  f"# TAD Deep Scan — {today}\n\n{analysis}"
         })
-        _save_scan_memory("deep_scan", analysis[:500])
-        print(f"[scheduler] Deep scan complete — workflows/deep-scan-{today}.md")
+        _save_memory("deep_scan", analysis[:500])
+        print(f"[scheduler] Deep scan saved silently — workflows/deep-scan-{today}.md")
     except Exception as e:
-        print(f"[scheduler] Analysis error: {e}")
+        print(f"[scheduler] Scan analysis error: {e}")
 
 
 def run_morning_briefing():
-    """7AM — parse scan, generate structured briefing, launch visual dashboard."""
+    """
+    7AM — generates briefing and saves to memory/morning_briefing.json.
+    TAD shows this dashboard when Joshua wakes it up — not immediately.
+    """
     from tools.registry import call as tool_call
-    from tad_visual import show_morning_briefing
 
-    print(f"[scheduler] Starting 7AM briefing — {datetime.now()}")
+    print(f"[scheduler] 7AM briefing generating — {datetime.now()}")
     today = datetime.now().strftime("%Y-%m-%d")
 
     scan_path = Path(f"workflows/deep-scan-{today}.md")
     scan_content = scan_path.read_text(encoding="utf-8") if scan_path.exists() \
-        else "No overnight scan available. Analyze current AI market opportunities."
+        else "No overnight scan. Analyze current AI market opportunities for a solo developer."
 
     try:
         response = client.chat.completions.create(
@@ -141,28 +140,40 @@ def run_morning_briefing():
         )
         raw = response.choices[0].message.content
 
-        # Parse JSON briefing
+        # Parse JSON
         try:
             clean = raw.strip()
             if clean.startswith("```"):
                 clean = re.sub(r"```[a-z]*\n?", "", clean).strip("`").strip()
             briefing_data = json.loads(clean)
         except Exception:
-            # Fallback if JSON parse fails
             briefing_data = {
-                "summary": "Morning briefing ready. Check the full text below.",
+                "summary": "Morning briefing ready. TAD worked overnight.",
                 "opportunities": [],
                 "hidden_gem": None,
                 "competitor_gaps": [],
-                "action_today": "Review the full briefing text for today's action.",
+                "action_today": "Review the full briefing text below.",
                 "raw": raw
             }
 
-        # Save to file
+        # Add date
+        briefing_data["date"] = today
+
+        # Save briefing to workflows
+        call_content = briefing_data.get("raw", raw)
         tool_call("file_write", {
             "filename": f"briefing-{today}.md",
-            "content":  briefing_data.get("raw", raw)
+            "content":  call_content
         })
+
+        # ── Save to memory/morning_briefing.json ──
+        # TAD checks this on startup/first message and shows the popup then
+        pending_path = Path("memory/morning_briefing.json")
+        pending_path.parent.mkdir(exist_ok=True)
+        pending_path.write_text(
+            json.dumps(briefing_data, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
 
         # Update THE_MONKEY
         monkey = Path("THE_MONKEY.md")
@@ -177,17 +188,37 @@ def run_morning_briefing():
                 )
             monkey.write_text(content, encoding="utf-8")
 
-        # Launch visual dashboard
-        print(f"[scheduler] Launching morning briefing dashboard")
-        show_morning_briefing(briefing_data)
-        return briefing_data.get("raw", raw)
+        print(f"[scheduler] Briefing saved — waiting for Joshua to wake TAD up")
+        return briefing_data
 
     except Exception as e:
         print(f"[scheduler] Briefing error: {e}")
-        return ""
+        return {}
 
 
-def _save_scan_memory(scan_type: str, summary: str):
+def check_pending_briefing() -> dict:
+    """
+    Called by tad_gui.py on first user interaction.
+    Returns briefing data if one is pending, empty dict if not.
+    Deletes the pending file after reading.
+    """
+    pending_path = Path("memory/morning_briefing.json")
+    if not pending_path.exists():
+        return {}
+    try:
+        data = json.loads(pending_path.read_text(encoding="utf-8"))
+        today = datetime.now().strftime("%Y-%m-%d")
+        if data.get("date") == today:
+            pending_path.unlink()  # clear after reading
+            return data
+        else:
+            pending_path.unlink()  # stale briefing, discard
+            return {}
+    except Exception:
+        return {}
+
+
+def _save_memory(scan_type: str, summary: str):
     mem = Path("memory/history.jsonl")
     mem.parent.mkdir(exist_ok=True)
     entry = {"ts": datetime.now().isoformat(), "type": scan_type, "summary": summary}
@@ -207,16 +238,16 @@ def _should_run(target_hour: int, last_run: dict, key: str) -> bool:
 def start_scheduler(status_callback=None):
     def _loop():
         last_run = {"deep_scan": "", "briefing": ""}
-        print("[scheduler] Started — deep scan 3AM, briefing 7AM")
+        print("[scheduler] Started — 3AM deep scan (silent), 7AM briefing (on wake)")
         while True:
             try:
                 if _should_run(DEEP_SCAN_HOUR, last_run, "deep_scan"):
                     if status_callback:
-                        status_callback("running 3am deep scan...")
+                        status_callback("running overnight scan...")
                     run_deep_scan()
                 if _should_run(BRIEFING_HOUR, last_run, "briefing"):
                     if status_callback:
-                        status_callback("generating morning briefing...")
+                        status_callback("preparing morning briefing...")
                     run_morning_briefing()
             except Exception as e:
                 print(f"[scheduler] Error: {e}")
@@ -228,7 +259,7 @@ def start_scheduler(status_callback=None):
 
 
 if __name__ == "__main__":
-    print("Running manual test...")
+    print("Manual test — running deep scan + briefing...")
     run_deep_scan()
     run_morning_briefing()
-    print("Done. Check workflows/ folder.")
+    print("Done. Check workflows/ and memory/morning_briefing.json")
