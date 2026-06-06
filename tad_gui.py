@@ -404,7 +404,8 @@ class TADApp(ctk.CTk):
                 max_tokens=1024,
             )
             reply = response.choices[0].message.content
-            self.conversation.append({"role": "assistant", "content": reply})
+            if reply:  # never add empty assistant messages
+                self.conversation.append({"role": "assistant", "content": reply})
             self._save_to_memory(user_text, reply)
             self.msg_queue.put(("reply", reply))
         except Exception as e:
@@ -483,9 +484,11 @@ class TADApp(ctk.CTk):
 
     def _on_minimize(self, event):
         """Auto-start night mode when minimized between 10pm and 5am."""
+        if event.widget != self:
+            return
         hour = datetime.now().hour
         if (hour >= 22 or hour < 5) and not night_is_running():
-            print("[gui] Minimized during night hours — auto-starting night mode")
+            print("[gui] Minimized — auto-starting night mode")
             self.after(2000, self._start_night_mode)
 
     def _on_close(self):

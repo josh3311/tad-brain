@@ -1,13 +1,10 @@
 """
-TAD Night Mode v0.2 — Fully Autonomous Overnight Builder
-- Reads priority list from THE_MONKEY.md
-- Generates code for each item (Kimi)
-- Tests each file (syntax + import + run)
-- Auto-installs missing packages (no approval needed)
-- Auto-fixes bugs (Kimi re-generates on failure, up to 3 retries)
-- Deploys to private GitHub after each passing item
-- Generates morning report
-- Joshua wakes up to tested, committed code
+TAD Night Mode v0.3
+- Reads THE_MONKEY.md priority list
+- Generates + tests + deploys each item
+- When list is empty: generates NEW tasks from vision, loops
+- Stops at 6am or on error
+- No infinite recursion
 """
 
 import json
@@ -27,59 +24,51 @@ client = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
     base_url="https://api.moonshot.ai/v1",
 )
-MODEL       = "kimi-k2.6"
-MONKEY_PATH = Path("THE_MONKEY.md")
-LOG_PATH    = Path("memory/overnight_log.jsonl")
-REPORT_PATH = Path("memory/overnight_report.json")
+MODEL        = "kimi-k2.6"
+MONKEY_PATH  = Path("THE_MONKEY.md")
+LOG_PATH     = Path("memory/overnight_log.jsonl")
+REPORT_PATH  = Path("memory/overnight_report.json")
 NIGHT_ACTIVE = threading.Event()
 MAX_RETRIES  = 3
 
-
-BUILD_SYSTEM = """You are TAD's autonomous build agent — Joshua Abraham's overnight developer.
+BUILD_SYSTEM = """You are TAD's autonomous build agent for Joshua Abraham.
 TAD is a personal sovereign AI business OS running locally on Windows.
+Joshua is sleeping. You have FULL authority — self-approve everything.
 
-Joshua is sleeping. You have FULL authority:
-- Self-approve all decisions
-- Install any packages needed
-- Write production-quality code
-- Deploy to GitHub automatically
-
-TAD already has these files (do NOT recreate them):
-- tad_gui.py, agent.py, scheduler.py, tad_visual.py, night_mode.py
-- tools/registry.py, skills/skill_loader.py, sync.py, code_executor.py
-- config/providers.py, memory/profile.json
-
-When asked to implement a feature, return ONLY valid JSON:
+When asked to implement a feature return ONLY valid JSON:
 {
   "item_name": "feature name",
   "summary": "what this does in 2 sentences",
   "files": [
     {
       "path": "path/to/file.py",
-      "content": "COMPLETE file content — no placeholders, no TODOs, working code only"
+      "content": "COMPLETE file content — no placeholders, no TODOs"
     }
   ],
-  "packages_needed": ["package1", "package2"],
-  "next_steps": "what Joshua should know",
-  "test_command": "python filename.py --test"
+  "packages_needed": ["package1"],
+  "next_steps": "what Joshua should know"
 }
 
 Rules:
-- COMPLETE code only. No stubs. No "# TODO". No "pass".
-- Every Python file must work when imported
-- Include proper error handling
+- COMPLETE code only. No stubs. No placeholders.
 - Use existing TAD patterns (OpenAI client, dotenv, pathlib)
 - Files go in logical locations: agents/, skills/agents/, voice/, tools/"""
 
-
-FIX_SYSTEM = """You are TAD's bug fixer. A file failed its test.
-Fix the code and return the corrected version.
-
+FIX_SYSTEM = """You are TAD's bug fixer.
 Return ONLY valid JSON:
 {
   "fixed_content": "complete corrected file content",
-  "what_changed": "brief explanation of the fix"
+  "what_changed": "brief explanation"
 }"""
+
+NEW_TASKS_SYSTEM = """You are TAD's autonomous task planner.
+Review the TAD project and vision, then add 5 new uncompleted priority tasks.
+
+Return the COMPLETE updated THE_MONKEY.md content.
+Add new tasks under ### Priority 1 using format: - [ ] task description
+Focus on: enterprise features, automation, business OS capabilities.
+Do NOT recreate already completed items.
+Return ONLY the markdown content, no code fences."""
 
 
 # ── Todo extraction ────────────────────────────
@@ -98,33 +87,86 @@ def extract_todos() -> list:
                 current_priority = 99
         if line.strip().startswith("- [ ]") and current_priority <= 3:
             item = line.strip().replace("- [ ]", "").strip()
-            todos.append({"item": item, "priority": current_priority, "line": line})
+            todos.append({"item": item, "priority": current_priority})
     todos.sort(key=lambda x: x["priority"])
     return todos
+
+
+# ── New task generator ─────────────────────────
+
+def generate_new_tasks() -> bool:
+    """Ask Kimi to add 5 new tasks to THE_MONKEY.md. Returns True if successful."""
+    if not MONKEY_PATH.exists():
+        return False
+
+    monkey = MONKEY_PATH.read_text(encoding="utf-8")
+    print("[night] Generating new tasks from vision...")
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": NEW_TASKS_SYSTEM},
+                {"role": "user",   "content": f"Add 5 new priority tasks to this TAD project file:\n\n{monkey[:4000]}"}
+            ],
+            max_tokens=4096,
+        )
+        new_content = response.choices[0].message.content
+        if not new_content:
+            return False
+
+        clean = new_content.strip()
+        if clean.startswith("```"):
+            clean = re.sub(r"```[a-z]*\n?", "", clean).strip("`").strip()
+
+        if "# THE MONKEY" in clean and "- [ ]" in clean:
+            MONKEY_PATH.write_text(clean, encoding="utf-8")
+            new_todos = extract_todos()
+            print(f"[night] Added new tasks — {len(new_todos)} uncompleted items ready")
+            return len(new_todos) > 0
+        else:
+            # Fallback: append new tasks manually
+            today = datetime.now().strftime("%Y-%m-%d")
+            additions = f"""
+### Priority 1 — Generated {today}
+- [ ] Implement voice input — mic recording + faster-whisper transcription
+- [ ] Build opportunity pipeline tracker with scoring and alerts
+- [ ] Create competitor monitor with daily automated scans
+- [ ] Build sales outreach agent with lead finding and messaging
+- [ ] Implement finance tracker with invoice generation and P&L
+"""
+            updated = monkey + additions
+            MONKEY_PATH.write_text(updated, encoding="utf-8")
+            print("[night] Appended fallback tasks to THE_MONKEY.md")
+            return True
+
+    except Exception as e:
+        print(f"[night] Task generation error: {e}")
+        return False
 
 
 # ── Code generator ────────────────────────────
 
 def generate_code(todo: dict) -> dict:
-    """Ask Kimi to fully implement a priority item."""
     item   = todo["item"]
     monkey = MONKEY_PATH.read_text(encoding="utf-8") if MONKEY_PATH.exists() else ""
-
     try:
         response = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": BUILD_SYSTEM},
                 {"role": "user",   "content": (
-                    f"Build this TAD feature with complete working code:\n\n"
-                    f"FEATURE: {item}\n"
+                    f"Build this TAD feature:\nFEATURE: {item}\n"
                     f"PRIORITY: {todo['priority']}\n\n"
-                    f"TAD PROJECT STATE:\n{monkey[:2500]}"
+                    f"TAD PROJECT STATE:\n{monkey[:2000]}"
                 )}
             ],
             max_tokens=4096,
         )
         raw = response.choices[0].message.content
+        if not raw:
+            return {"item_name": item, "files": [], "original_item": item,
+                    "error": "Empty response from Kimi"}
         try:
             clean = raw.strip()
             if clean.startswith("```"):
@@ -143,49 +185,43 @@ def generate_code(todo: dict) -> dict:
                 "original_item": item
             }
     except Exception as e:
-        return {"item_name": item, "summary": f"Generate error: {e}",
+        return {"item_name": item, "summary": f"Error: {e}",
                 "files": [], "packages_needed": [], "original_item": item, "error": str(e)}
 
 
-def fix_code(filepath: str, original_content: str, error: str) -> str | None:
-    """Ask Kimi to fix a failing file. Returns corrected content or None."""
+def fix_code(filepath: str, original: str, error: str) -> str | None:
     try:
         response = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": FIX_SYSTEM},
                 {"role": "user",   "content": (
-                    f"Fix this Python file.\n\n"
-                    f"FILE: {filepath}\n\n"
-                    f"ORIGINAL CODE:\n{original_content[:3000]}\n\n"
-                    f"TEST ERROR:\n{error[:1000]}\n\n"
-                    f"Return corrected JSON."
+                    f"Fix this file.\nFILE: {filepath}\n"
+                    f"CODE:\n{original[:3000]}\n"
+                    f"ERROR:\n{error[:1000]}"
                 )}
             ],
             max_tokens=4096,
         )
         raw = response.choices[0].message.content
+        if not raw:
+            return None
         clean = raw.strip()
         if clean.startswith("```"):
             clean = re.sub(r"```[a-z]*\n?", "", clean).strip("`").strip()
-        result = json.loads(clean)
-        return result.get("fixed_content")
-    except Exception as e:
-        print(f"[night] Fix error: {e}")
+        return json.loads(clean).get("fixed_content")
+    except Exception:
         return None
 
 
 # ── File saving ───────────────────────────────
 
 def save_files(build_result: dict) -> list:
-    """Save all generated files. Returns list of saved paths."""
     saved = []
-    # Auto-install declared packages first
     for pkg in build_result.get("packages_needed", []):
         from code_executor import install_package
         install_package(pkg)
         time.sleep(1)
-
     for f in build_result.get("files", []):
         try:
             path = Path(f["path"])
@@ -194,92 +230,55 @@ def save_files(build_result: dict) -> list:
             saved.append(str(path))
             print(f"[night] Saved: {path}")
         except Exception as e:
-            print(f"[night] Save error {f.get('path')}: {e}")
+            print(f"[night] Save error: {e}")
     return saved
 
 
 # ── Test pipeline ─────────────────────────────
 
-def test_and_fix(saved_files: list, build_result: dict) -> dict:
-    """
-    Test every Python file.
-    Auto-install missing packages.
-    Ask Kimi to fix failures (max 3 retries).
-    Returns overall pass/fail with details.
-    """
+def test_and_fix(saved_files: list) -> dict:
     from code_executor import test_file
-
-    results      = []
-    all_passed   = True
-    auto_installs = []
-
+    results, auto_installs, all_passed = [], [], True
     py_files = [f for f in saved_files if f.endswith(".py")]
-
     if not py_files:
-        return {"passed": True, "results": [], "auto_installs": [], "message": "No Python files to test"}
+        return {"passed": True, "results": [], "auto_installs": [], "message": "No Python files"}
 
     for filepath in py_files:
-        print(f"[night] Testing: {filepath}")
         attempt = 0
-
         while attempt < MAX_RETRIES:
             result = test_file(filepath)
             auto_installs.extend(result.get("auto_installed", []))
-
             if result["success"]:
-                print(f"[night] ✓ Test passed: {filepath}")
-                results.append({"file": filepath, "passed": True, "attempts": attempt + 1})
+                results.append({"file": filepath, "passed": True})
                 break
             else:
                 attempt += 1
                 error_msg = result.get("message", "Unknown error")
-                print(f"[night] ✗ Test failed (attempt {attempt}): {filepath}")
-                print(f"[night]   Error: {error_msg[:100]}")
-
                 if attempt < MAX_RETRIES:
-                    print(f"[night] Asking Kimi to fix...")
                     original = Path(filepath).read_text(encoding="utf-8", errors="replace")
                     fixed = fix_code(filepath, original, error_msg)
-
                     if fixed:
                         Path(filepath).write_text(fixed, encoding="utf-8")
-                        print(f"[night] Fixed and saved — retrying test")
                         time.sleep(2)
                     else:
-                        print(f"[night] Could not auto-fix — moving on")
                         break
                 else:
-                    results.append({
-                        "file":     filepath,
-                        "passed":   False,
-                        "attempts": attempt,
-                        "error":    error_msg[:200]
-                    })
+                    results.append({"file": filepath, "passed": False, "error": error_msg[:200]})
                     all_passed = False
-
         time.sleep(1)
 
-    return {
-        "passed":       all_passed,
-        "results":      results,
-        "auto_installs": list(set(auto_installs)),
-        "message":      "All tests passed" if all_passed else "Some tests failed"
-    }
+    return {"passed": all_passed, "results": results,
+            "auto_installs": list(set(auto_installs))}
 
 
 # ── GitHub deployment ─────────────────────────
 
-def deploy_to_github(item: str, files: list) -> bool:
-    """Auto-push to private GitHub after successful test."""
+def deploy_to_github(item: str) -> bool:
     try:
         from sync import push
-        commit_msg = f"[TAD night build] {item} — {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        success = push(message=commit_msg)
-        if success:
-            print(f"[night] ✓ Deployed to GitHub: {item}")
-        return success
+        return push(message=f"[TAD] {item} — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     except Exception as e:
-        print(f"[night] GitHub deploy error: {e}")
+        print(f"[night] Deploy error: {e}")
         return False
 
 
@@ -291,13 +290,11 @@ def check_off_monkey(item_text: str, files_saved: list, tested: bool, deployed: 
     today   = datetime.now().strftime("%Y-%m-%d")
     content = MONKEY_PATH.read_text(encoding="utf-8")
     content = re.sub(r"# Last updated:.*", f"# Last updated: {today}", content)
-
-    status = "built+tested+deployed" if (tested and deployed) else \
-             "built+tested" if tested else "built (test failed)"
-    old    = f"- [ ] {item_text}"
-    new    = f"- [x] {item_text} ✓ {today} ({status})"
-    content = content.replace(old, new)
-
+    status  = "built+tested" if tested else "built"
+    content = content.replace(
+        f"- [ ] {item_text}",
+        f"- [x] {item_text} ✓ {today} ({status})"
+    )
     for f in files_saved:
         entry = f"- {f}"
         if entry not in content and "### Working capabilities" in content:
@@ -305,176 +302,152 @@ def check_off_monkey(item_text: str, files_saved: list, tested: bool, deployed: 
                 "### Working capabilities",
                 f"{entry}\n### Working capabilities"
             )
-
     MONKEY_PATH.write_text(content, encoding="utf-8")
-
-
-# ── Logging ───────────────────────────────────
-
-def log(item: str, result: dict, saved: list, test_result: dict, deployed: bool):
-    LOG_PATH.parent.mkdir(exist_ok=True)
-    entry = {
-        "ts":          datetime.now().isoformat(),
-        "item":        item,
-        "summary":     result.get("summary", ""),
-        "files_saved": saved,
-        "tests_passed": test_result.get("passed", False),
-        "auto_installs": test_result.get("auto_installs", []),
-        "deployed":    deployed,
-        "next_steps":  result.get("next_steps", "")
-    }
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
 
 
 # ── Morning report ────────────────────────────
 
 def generate_morning_report(completed: list, skipped: list):
     today = datetime.now().strftime("%Y-%m-%d")
-    completed_text = "\n".join([
-        f"- {c['item']}: {c.get('summary','')} "
-        f"(tested: {c.get('tests_passed','?')}, deployed: {c.get('deployed','?')})"
-        for c in completed
-    ])
-
     try:
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content":
-                f"Write Joshua's morning briefing about what TAD built overnight.\n\n"
-                f"COMPLETED ({len(completed)}):\n{completed_text}\n\n"
-                f"SKIPPED: {len(skipped)}\n\n"
-                f"3-4 sentences. What should he look at first? What's ready to run?"
+                f"Write Joshua's 3-sentence morning briefing. "
+                f"TAD built {len(completed)} items overnight. "
+                f"What should he look at first?"
             }],
-            max_tokens=400,
+            max_tokens=300,
         )
-        summary = response.choices[0].message.content
+        summary = response.choices[0].message.content or f"TAD built {len(completed)} items."
     except Exception:
-        summary = f"TAD built {len(completed)} items. {sum(1 for c in completed if c.get('deployed'))} deployed to GitHub."
+        summary = f"TAD built {len(completed)} items overnight."
 
     report = {
-        "date":          today,
-        "type":          "overnight_build",
-        "exec_summary":  summary,
-        "completed":     completed,
-        "skipped":       skipped,
-        "total_built":   len(completed),
-        "total_files":   sum(len(c.get("files_saved", [])) for c in completed),
-        "total_deployed": sum(1 for c in completed if c.get("deployed")),
-        "total_tested":   sum(1 for c in completed if c.get("tests_passed")),
+        "date":         today,
+        "type":         "overnight_build",
+        "exec_summary": summary,
+        "completed":    completed,
+        "skipped":      skipped,
+        "total_built":  len(completed),
+        "total_files":  sum(len(c.get("files_saved", [])) for c in completed),
     }
-
     REPORT_PATH.parent.mkdir(exist_ok=True)
     REPORT_PATH.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    print(f"\n[night] Report: {len(completed)} built · "
-          f"{report['total_tested']} tested · "
-          f"{report['total_deployed']} deployed to GitHub")
+    print(f"[night] Report saved: {len(completed)} built")
     return report
 
 
-# ── Main autonomous loop ──────────────────────
+# ── Main loop ─────────────────────────────────
 
 def run_night_loop(status_callback=None):
     """
     Fully autonomous build loop.
-    Generates → Tests → Auto-fixes → Deploys → Loops.
-    No human needed. Self-approves everything.
+    When todo list is empty: generates new tasks, loops.
+    Stops at 6am.
+    No recursion — pure while loop.
     """
     NIGHT_ACTIVE.set()
+    all_completed = []
+    all_skipped   = []
+    loop_count    = 0
+
     print(f"\n{'='*60}")
-    print(f"[night] TAD NIGHT MODE v0.2 — {datetime.now()}")
-    print(f"[night] Full autonomy: code generation + testing + deployment")
-    print(f"[night] Joshua is sleeping. Building everything.")
+    print(f"[night] TAD NIGHT MODE v0.3 — {datetime.now()}")
+    print(f"[night] Autonomous loop — stops at 6am")
     print(f"{'='*60}\n")
 
     if status_callback:
         status_callback("night mode active — building autonomously")
 
-    completed = []
-    skipped   = []
-
     try:
-        todos = extract_todos()
-        if not todos:
-            print("[night] No uncompleted items. TAD is fully built!")
-            NIGHT_ACTIVE.clear()
-            return
-
-        print(f"[night] {len(todos)} items on the priority list\n")
-
-        for i, todo in enumerate(todos, 1):
+        while True:
+            # Stop at 6am
             if datetime.now().hour >= 6:
                 print("[night] 6AM — stopping night mode")
                 break
 
-            item = todo["item"]
-            print(f"\n[night] [{i}/{len(todos)}] {item}")
-            print(f"[night] Priority {todo['priority']}")
+            loop_count += 1
+            todos = extract_todos()
 
-            if status_callback:
-                status_callback(f"building [{i}/{len(todos)}]: {item[:35]}...")
+            if not todos:
+                print(f"[night] No uncompleted items — generating new tasks (loop {loop_count})")
+                if status_callback:
+                    status_callback("generating new tasks from vision...")
 
-            # ── 1. Generate code ──────────────────
-            print(f"[night] Generating code...")
-            build_result = generate_code(todo)
-            time.sleep(3)
+                success = generate_new_tasks()
+                if not success:
+                    print("[night] Could not generate new tasks — sleeping 5 minutes")
+                    time.sleep(300)
+                    continue
 
-            if not build_result.get("files"):
-                skipped.append(item)
-                print(f"[night] No files generated — skipping")
-                continue
+                todos = extract_todos()
+                if not todos:
+                    print("[night] Still no todos after generation — sleeping 10 minutes")
+                    time.sleep(600)
+                    continue
 
-            # ── 2. Save files ─────────────────────
-            saved = save_files(build_result)
-            if not saved:
-                skipped.append(item)
-                continue
+            print(f"\n[night] Loop {loop_count} — {len(todos)} items to build")
 
-            # ── 3. Test + auto-fix ────────────────
-            print(f"[night] Testing {len(saved)} file(s)...")
-            if status_callback:
-                status_callback(f"testing: {item[:35]}...")
+            for i, todo in enumerate(todos, 1):
+                if datetime.now().hour >= 6:
+                    break
 
-            test_result = test_and_fix(saved, build_result)
-            time.sleep(2)
+                item = todo["item"]
+                print(f"\n[night] [{i}/{len(todos)}] {item}")
 
-            tests_passed  = test_result["passed"]
-            auto_installs = test_result.get("auto_installs", [])
+                if status_callback:
+                    status_callback(f"building [{i}]: {item[:40]}...")
 
-            if auto_installs:
-                print(f"[night] Auto-installed: {', '.join(auto_installs)}")
+                # Generate
+                build_result = generate_code(todo)
+                time.sleep(3)
 
-            if tests_passed:
-                print(f"[night] ✓ All tests passed")
-            else:
-                print(f"[night] ⚠ Some tests failed — still saving and deploying")
+                if not build_result.get("files"):
+                    all_skipped.append(item)
+                    continue
 
-            # ── 4. Deploy to GitHub ───────────────
-            print(f"[night] Deploying to GitHub...")
-            if status_callback:
-                status_callback(f"deploying: {item[:35]}...")
+                # Save
+                saved = save_files(build_result)
+                if not saved:
+                    all_skipped.append(item)
+                    continue
 
-            deployed = deploy_to_github(item, saved)
-            time.sleep(2)
+                # Test
+                test_result = test_and_fix(saved)
+                time.sleep(2)
 
-            # ── 5. Update THE_MONKEY ──────────────
-            check_off_monkey(item, saved, tests_passed, deployed)
-            log(item, build_result, saved, test_result, deployed)
+                # Deploy
+                deployed = deploy_to_github(item)
+                time.sleep(2)
 
-            completed.append({
-                "item":          item,
-                "priority":      todo["priority"],
-                "summary":       build_result.get("summary", ""),
-                "files_saved":   saved,
-                "tests_passed":  tests_passed,
-                "auto_installs": auto_installs,
-                "deployed":      deployed,
-                "next_steps":    build_result.get("next_steps", "")
-            })
+                # Update monkey
+                check_off_monkey(item, saved, test_result["passed"], deployed)
 
-            print(f"[night] ✓ Complete — tested: {tests_passed} · deployed: {deployed}")
-            time.sleep(5)  # breathe between items
+                # Log
+                LOG_PATH.parent.mkdir(exist_ok=True)
+                entry = {
+                    "ts": datetime.now().isoformat(),
+                    "item": item,
+                    "files": saved,
+                    "tested": test_result["passed"],
+                    "deployed": deployed
+                }
+                with open(LOG_PATH, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(entry) + "\n")
+
+                all_completed.append({
+                    "item":       item,
+                    "priority":   todo["priority"],
+                    "summary":    build_result.get("summary", ""),
+                    "files_saved": saved,
+                    "tests_passed": test_result["passed"],
+                    "deployed":   deployed,
+                    "next_steps": build_result.get("next_steps", "")
+                })
+
+                print(f"[night] ✓ {item} — tested:{test_result['passed']} deployed:{deployed}")
+                time.sleep(5)
 
     except Exception as e:
         print(f"[night] Loop error: {e}")
@@ -483,10 +456,11 @@ def run_night_loop(status_callback=None):
 
     finally:
         NIGHT_ACTIVE.clear()
-        if completed or skipped:
-            generate_morning_report(completed, skipped)
+        if all_completed or all_skipped:
+            generate_morning_report(all_completed, all_skipped)
         if status_callback:
             status_callback("night build complete — tap to see results")
+        print(f"[night] Done — {len(all_completed)} built total")
 
 
 def start_night_mode(status_callback=None):

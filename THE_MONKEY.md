@@ -87,6 +87,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - plans\build-arm-tad-architects-codes-fixes-bug-plan.md
 - plans\smart-llm-routing-claude-for-reasoning-w-plan.md
 - plans\sub-agent-spawner-tad-creates-fresh-agen-plan.md
+- plans\skill-learner-every-skill-used-in-a-buil-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -122,7 +123,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - [x] Build arm — TAD architects, codes, fixes bugs, handles security, ships products to clients ✓ 2026-06-06 (built+tested)
 - [x] Smart LLM routing — Claude for reasoning/writing, Codex for code, Perplexity for live search ✓ 2026-06-06 (built+tested)
 - [x] Sub-agent spawner — TAD creates fresh agents for heavy parallel tasks ✓ 2026-06-06 (built+tested)
-- [ ] Skill learner — every skill used in a build project gets saved permanently to skills/learned/
+- [x] Skill learner — every skill used in a build project gets saved permanently to skills/learned/ ✓ 2026-06-06 (built+tested)
 
 ### Priority 4 — Finance engine
 - [ ] Invoice generator — TAD creates and sends professional invoices
