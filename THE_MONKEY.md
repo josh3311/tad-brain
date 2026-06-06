@@ -80,6 +80,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - plans\github-sync-push-skills-and-memory-profi-plan.md
 - plans\voice-input-mic-faster-whisper-local-stt-plan.md
 - plans\opportunity-pipeline-tracks-ideas-tad-su-plan.md
+- plans\competitor-monitor-daily-scan-of-specifi-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -106,7 +107,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 ### Priority 2 — Next session
 - [x] Voice input — mic → faster-whisper (local STT) → full voice loop (speak to TAD, not just listen) ✓ 2026-06-06 (built+tested)
 - [x] Opportunity pipeline — tracks ideas TAD surfaces, scores them over time, flags best ones ✓ 2026-06-06 (built+tested)
-- [ ] Competitor monitor — daily scan of specific competitors in chosen niche
+- [x] Competitor monitor — daily scan of specific competitors in chosen niche ✓ 2026-06-06 (built+tested)
 
 ### Priority 3 — Enterprise features
 - [ ] Sales arm — TAD runs marketing campaigns, finds leads, sends outreach texts
@@ -201,3 +202,15 @@ After every completed task TAD must:
 3. Add any new files created to "Current State — Workflows produced" or "Core files"
 4. Update "Last updated" timestamp to today
 5. Save the file back using file_write tool
+
+---
+
+## TAD Autonomous Loop Instructions
+After completing ALL items in the priority list, TAD must automatically:
+1. Review everything built tonight
+2. Check for gaps, bugs, or missing connections between files
+3. Generate NEW priority items based on the vision above
+4. Add them to the priority list under a new ### Priority section
+5. Continue building without stopping
+6. Never stop until Joshua wakes up and types something
+7. Always self-approve. Never wait for human input.
