@@ -76,6 +76,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - workflows/deep-scan-2026-06-06.md
 - workflows/briefing-2026-06-06.md
 
+- plans\fix-3am-popup-scheduler-should-save-sile-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -96,7 +97,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 ## What Is NOT Built Yet — Priority Order
 
 ### Priority 1 — Build this session
-- [ ] Fix 3am popup — scheduler should save silently, briefing shows when Joshua wakes up and says "hey TAD"
+- [x] Fix 3am popup — scheduler should save silently, briefing shows when Joshua wakes up and says "hey TAD" ✓ 2026-06-06 (built+tested)
 - [ ] GitHub sync — push skills/ and memory/profile.json to private repo (TAD travels anywhere)
 
 ### Priority 2 — Next session
