@@ -78,6 +78,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 
 - plans\fix-3am-popup-scheduler-should-save-sile-plan.md
 - plans\github-sync-push-skills-and-memory-profi-plan.md
+- plans\voice-input-mic-faster-whisper-local-stt-plan.md
 ### Working capabilities
 - Chat with memory across sessions (last 5 conversations injected on startup)
 - Personal profile loaded on every startup (Joshua Abraham, goals, vision, role)
@@ -102,7 +103,7 @@ and TAD gets more powerful. Competitive advantage compounds every day.
 - [x] GitHub sync — push skills/ and memory/profile.json to private repo (TAD travels anywhere) ✓ 2026-06-06 (built+tested)
 
 ### Priority 2 — Next session
-- [ ] Voice input — mic → faster-whisper (local STT) → full voice loop (speak to TAD, not just listen)
+- [x] Voice input — mic → faster-whisper (local STT) → full voice loop (speak to TAD, not just listen) ✓ 2026-06-06 (built+tested)
 - [ ] Opportunity pipeline — tracks ideas TAD surfaces, scores them over time, flags best ones
 - [ ] Competitor monitor — daily scan of specific competitors in chosen niche
 
