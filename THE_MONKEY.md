@@ -305,7 +305,7 @@ Goal: Each agent runs its skill file when triggered.
 - [x] P4-1: Continuous voice loop (Ctrl+M toggle) ✓ 2026-06-08
 - [x] P4-2: Live call coaching ✓ 2026-06-08
 - [x] P4-3: Full ApprovalGate for big CEO decisions ✓ 2026-06-08
-- [ ] P4-4: Self-assigned tasks from THE_MONKEY.md
+- [x] P4-4: Self-assigned tasks from THE_MONKEY.md ✓ 2026-06-08
 
 ### PHASE 5 — PRODUCT & DELIVERY
 - [ ] P5-1: Product builder
