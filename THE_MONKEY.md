@@ -257,7 +257,7 @@ This loop runs forever. ♾️
 - [x] scheduler.py — needs to trigger each agent at the right time ✓ 2026-06-08
 
 ### ❌ NOT BUILT YET — SKILL FILES NEEDED
-- [ ] skills/ceo_agent.md
+- [x] skills/ceo_agent.md ✓ 2026-06-08
 - [ ] skills/market_agent.md
 - [ ] skills/decision_agent.md
 - [ ] skills/build_agent.md
