@@ -310,7 +310,7 @@ Goal: Each agent runs its skill file when triggered.
 ### PHASE 5 — PRODUCT & DELIVERY
 - [x] P5-1: Product builder ✓ 2026-06-08
 - [x] P5-2: Client delivery ✓ 2026-06-08
-- [ ] P5-3: Auto invoicing
+- [x] P5-3: Auto invoicing ✓ 2026-06-08
 - [ ] P5-4: Feedback loop back to CSEO
 
 ---
