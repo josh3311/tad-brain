@@ -126,8 +126,8 @@ Return ONLY a JSON array of exactly 5 opportunities, sorted by total score desce
   }}
 ]
 
-Only include opportunities with total_score >= 28.
-If you cannot find 5 above 28, include what you find and note the scores.
+Include ALL opportunities you find regardless of score.
+Score them honestly but always return at least 3 opportunities.
 Return JSON array only. No explanation."""
 
     try:
@@ -149,7 +149,7 @@ Return JSON array only. No explanation."""
             o for o in opportunities
             if o.get("name") not in killed
             and o.get("name") not in previous
-            and o.get("total_score", 0) >= 28
+            and o.get("total_score", 0) >= 20
         ]
 
         top3 = sorted(filtered, key=lambda x: x.get("total_score", 0), reverse=True)[:3]

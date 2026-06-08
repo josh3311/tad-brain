@@ -15,3 +15,5 @@
 {"ts": "2026-06-07T03:00:26.981427", "msg": "Deep scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}
 {"ts": "2026-06-08T03:51:19.675291", "msg": "7AM \u2014 Building morning briefing..."}
 {"ts": "2026-06-08T03:51:31.329379", "msg": "Morning briefing saved \u2192 C:\\TAD\\memory\\morning_briefing.json"}
+{"ts": "2026-06-08T04:41:17.831285", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-08T04:41:18.421499", "msg": "\u26a0\ufe0f Ops detected 1 issue(s): \u26a0\ufe0f 1 issue(s) detected \u2014 check memory/system_health.json"}

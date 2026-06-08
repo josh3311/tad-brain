@@ -1,0 +1,22 @@
+{
+  "preferred_length": "concise",
+  "prefers_analogies": true,
+  "direct_feedback": true,
+  "energy_level": "medium",
+  "topics_care_about": [
+    "business",
+    "AI",
+    "money",
+    "TAD"
+  ],
+  "phrases_he_uses": [
+    "market",
+    "niche",
+    "target",
+    "right",
+    "competition",
+    "demand"
+  ],
+  "response_patterns": {},
+  "last_updated": "2026-06-08T04:42:57.271832"
+}

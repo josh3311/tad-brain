@@ -1,0 +1,8 @@
+{"ts": "2026-06-08T04:17:22.015154", "msg": "=== Product build started: AI receptionist for HVAC companies that answers missed calls 24/7 ==="}
+{"ts": "2026-06-08T04:17:22.017332", "msg": "Generating spec for: AI receptionist for HVAC companies that answers missed calls 24/7"}
+{"ts": "2026-06-08T04:18:04.296989", "msg": "Spec generated: None"}
+{"ts": "2026-06-08T04:18:04.298333", "msg": "Building: None"}
+{"ts": "2026-06-08T04:18:04.299709", "msg": "Building README..."}
+{"ts": "2026-06-08T04:18:34.693899", "msg": "  Packaged: README.md"}
+{"ts": "2026-06-08T04:18:34.697247", "msg": "Package created: C:\\TAD\\products\\tad_product_20260608041834"}
+{"ts": "2026-06-08T04:18:34.700616", "msg": "=== Build complete: None \u2192 C:\\TAD\\products\\tad_product_20260608041834 ==="}

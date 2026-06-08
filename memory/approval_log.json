@@ -1,0 +1,30 @@
+{
+  "approvals": [
+    {
+      "request": {
+        "id": "approval_20260608040939",
+        "action": "Send outreach to 47 HVAC companies in Ontario",
+        "reasoning": "Market scan found 47 businesses matching our ideal customer profile. All have 10+ employees and no AI receptionist.",
+        "risk_level": "medium",
+        "agent": "CRO Agent",
+        "requested_at": "2026-06-08T04:09:39.320867",
+        "status": "approved"
+      },
+      "decision": "approved",
+      "decided_at": "2026-06-08T04:09:50.057025"
+    },
+    {
+      "request": {
+        "id": "approval_20260608040941",
+        "action": "Add new division: TAD Data Intelligence \u2014 scrapes and analyzes industry data autonomously",
+        "reasoning": "CSEO discovered a pattern: 78% of our best opportunities come from public job posting data. Building a dedicated scraper division could triple opportunity discovery speed.",
+        "risk_level": "critical",
+        "agent": "CSEO Agent",
+        "requested_at": "2026-06-08T04:09:41.322807",
+        "status": "approved"
+      },
+      "decision": "approved",
+      "decided_at": "2026-06-08T04:10:09.765534"
+    }
+  ]
+}

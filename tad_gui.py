@@ -18,6 +18,7 @@ from scheduler import start_scheduler, check_pending_briefing
 from night_mode import start_night_mode, check_overnight_report, is_running as night_is_running
 from tad_visual import show_morning_briefing, show_research_report
 from voice_input import start_listening
+from voice_loop import register_hotkey, toggle_voice_loop, is_active as voice_loop_active, pause_for_tad_speaking, resume_after_tad_speaking, get_status_text
 import pyttsx3
 import keyboard
 import tkinter as tk
@@ -113,6 +114,7 @@ class TADApp(ctk.CTk):
 
         self._build_ui()
         self._register_hotkey()
+        self._register_voice_hotkey()
         self._poll_queue()
         self.after(600, lambda: self._set_status("idle"))
 
@@ -204,6 +206,15 @@ class TADApp(ctk.CTk):
         )
         self.mic_btn.pack(side="right", padx=(4, 0))
 
+        self.voice_loop_btn = ctk.CTkButton(
+            input_frame, text="🔊", width=38, height=38,
+            font=("Courier", 13), fg_color="#0a0a1e",
+            hover_color="#141428", text_color="#444455",
+            corner_radius=8, border_color="#2a2a4a", border_width=1,
+            command=self._toggle_voice_loop
+        )
+        self.voice_loop_btn.pack(side="right", padx=(4, 0))
+
         self.send_btn = ctk.CTkButton(
             input_frame, text="send", width=60, height=38,
             font=("Courier", 12), fg_color="#1e1a30",
@@ -270,6 +281,39 @@ class TADApp(ctk.CTk):
         self._voice_active = False
         self.mic_btn.configure(fg_color="#0a0a1e", text_color="#7f77dd", text="🎙")
         self._set_status("idle")
+
+    # ── VOICE LOOP (Ctrl+M hands-free) ──────────
+
+    def _register_voice_hotkey(self):
+        """Register Ctrl+M to toggle continuous voice loop."""
+        register_hotkey(
+            on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
+            on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+        )
+
+    def _toggle_voice_loop(self):
+        """Toggle continuous hands-free voice loop on/off."""
+        active = toggle_voice_loop(
+            on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
+            on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+        )
+        self._update_voice_loop_ui("active" if active else "idle")
+
+    def _update_voice_loop_ui(self, state: str):
+        """Update voice loop button appearance."""
+        if state == "active":
+            self.voice_loop_btn.configure(
+                fg_color="#0a1e0a", text_color="#1d9e75", text="🔊"
+            )
+            self._set_status("thinking", "🔊 Hands-free mode active — speak anytime")
+        elif state == "error":
+            self.voice_loop_btn.configure(
+                fg_color="#1e0a0a", text_color="#e24b4a", text="⚠️"
+            )
+        else:
+            self.voice_loop_btn.configure(
+                fg_color="#0a0a1e", text_color="#444455", text="🔊"
+            )
 
     # ── NIGHT MODE ────────────────────────────
 
@@ -475,12 +519,14 @@ class TADApp(ctk.CTk):
 
     def _speak(self, text):
         self.speaking = True
+        pause_for_tad_speaking()   # stop voice loop picking up TAD's voice
         try:
             tts_engine.say(text)
             tts_engine.runAndWait()
         except Exception:
             pass
         self.speaking = False
+        resume_after_tad_speaking()  # resume listening after TAD finishes
         self.msg_queue.put(("done_speaking", None))
 
     # ── QUEUE POLLING ─────────────────────────

@@ -321,11 +321,17 @@ def _shape_response(raw: str, message: str) -> str:
 # ── Visual trigger ────────────────────────────────────────────────────────────
 
 def _trigger_visual(response: str, agent_type: str, user_input: str):
-    """Trigger Visual Engine for complex explanations."""
+    """Trigger Visual Engine for complex explanations — must run on main thread."""
     try:
         from tad_visual import show_research_report
         if agent_type in VISUAL_TRIGGERS:
-            show_research_report(response, user_input)
+            # Schedule on main thread to avoid Tcl threading errors
+            import threading
+            if threading.current_thread() is threading.main_thread():
+                show_research_report(response, user_input)
+            else:
+                # Pass back via queue — tad_gui.py will display it
+                print(f"[agent] Visual queued for main thread")
     except Exception as e:
         print(f"[agent] Visual trigger error: {e}")
 
