@@ -302,7 +302,7 @@ Goal: Each agent runs its skill file when triggered.
 - [x] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L ✓ 2026-06-08
 
 ### PHASE 4 — VOICE & AUTONOMY
-- [ ] P4-1: Continuous voice loop (Ctrl+M toggle)
+- [x] P4-1: Continuous voice loop (Ctrl+M toggle) ✓ 2026-06-08
 - [ ] P4-2: Live call coaching
 - [ ] P4-3: Full ApprovalGate for big CEO decisions
 - [ ] P4-4: Self-assigned tasks from THE_MONKEY.md
