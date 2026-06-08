@@ -303,3 +303,12 @@
 {"ts": "2026-06-08T06:00:40.853072", "msg": "  \u2717 Attempt 3 returned prose \u2014 retrying"}
 {"ts": "2026-06-08T06:00:40.854423", "msg": "  All attempts failed for 'skills/marketing_agent.md' \u2014 using skeleton"}
 {"ts": "2026-06-08T06:00:41.054566", "msg": "  \u2713 Syntax OK: skills_marketing_agent_md.py"}
+{"ts": "2026-06-08T06:00:44.007055", "msg": "  \u2713 Pushed to GitHub: skills/marketing_agent.md"}
+{"ts": "2026-06-08T06:00:44.008994", "msg": "  \u2713 Completed: skills/marketing_agent.md"}
+{"ts": "2026-06-08T06:01:14.012241", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-08T06:01:14.372785", "msg": "Ops check complete \u2014 1 issues"}
+{"ts": "2026-06-08T06:01:14.374675", "msg": "=== Night mode ended \u2014 saving report ==="}
+{"ts": "2026-06-08T06:01:14.378980", "msg": "Report saved \u2192 C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-08T06:01:44.358576", "msg": "  \u2717 Attempt 3 returned prose \u2014 retrying"}
+{"ts": "2026-06-08T06:01:44.360112", "msg": "  All attempts failed for 'skills/marketing_agent.md' \u2014 using skeleton"}
+{"ts": "2026-06-08T06:01:44.548257", "msg": "  \u2713 Syntax OK: skills_marketing_agent_md.py"}
