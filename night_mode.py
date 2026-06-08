@@ -45,6 +45,7 @@ REPORT_PATH = ROOT / "memory" / "overnight_report.json"
 LOG_PATH    = ROOT / "memory" / "night_log.jsonl"
 
 STOP_HOUR   = 6   # stop loop at 6:00 AM
+_manual_mode = False  # set to True when run manually
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,10 @@ def _log(msg: str):
 
 
 def _past_stop_time() -> bool:
+    """Only stop if explicitly running in scheduled mode (11pm-6am).
+    When run manually (python night_mode.py), never stop early."""
+    if _manual_mode:
+        return False
     return datetime.now().time() >= dtime(STOP_HOUR, 0)
 
 
@@ -512,4 +517,5 @@ def check_overnight_report() -> dict | None:
 
 
 if __name__ == "__main__":
+    _manual_mode = True
     run_night_mode()

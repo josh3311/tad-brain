@@ -14,3 +14,8 @@
 {"ts": "2026-06-08T04:53:53.084284", "msg": "Voice loop stopped"}
 {"ts": "2026-06-08T04:53:54.892865", "msg": "Voice loop stopped"}
 {"ts": "2026-06-08T04:59:57.014425", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-08T13:09:11.240459", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-08T13:12:03.448387", "msg": "Voice loop started \u2014 listening continuously"}
+{"ts": "2026-06-08T13:12:06.128190", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-08T13:12:07.463308", "msg": "Voice loop stopped"}
+{"ts": "2026-06-08T13:16:36.898713", "msg": "Ctrl+M hotkey registered for voice loop toggle"}

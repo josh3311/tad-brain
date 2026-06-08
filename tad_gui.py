@@ -16,7 +16,7 @@ from openai import OpenAI
 from agent import run_task
 from scheduler import start_scheduler, check_pending_briefing
 from night_mode import start_night_mode, check_overnight_report, is_running as night_is_running
-from tad_visual import show_morning_briefing, show_research_report
+from tad_visual import show_morning_briefing, show_research_report, MorningBriefingDashboard
 from voice_input import start_listening
 from voice_loop import register_hotkey, toggle_voice_loop, is_active as voice_loop_active, pause_for_tad_speaking, resume_after_tad_speaking, get_status_text
 import pyttsx3
@@ -444,13 +444,23 @@ class TADApp(ctk.CTk):
             threading.Thread(target=self._call_kimi, args=(text,), daemon=True).start()
 
     def _check_on_wake(self):
-        overnight = check_overnight_report()
-        if overnight:
-            self.after(500, lambda: self._show_overnight_report(overnight))
-            return
-        briefing = check_pending_briefing()
-        if briefing:
-            self.after(500, lambda: show_morning_briefing(briefing))
+        def _do_check():
+            overnight = check_overnight_report()
+            if overnight:
+                self.after(0, lambda: self._show_overnight_report(overnight))
+                return
+            briefing = check_pending_briefing()
+            if briefing:
+                self.after(0, lambda: self._show_briefing_safe(briefing))
+        threading.Thread(target=_do_check, daemon=True).start()
+
+    def _show_briefing_safe(self, briefing: dict):
+        """Show morning briefing on main thread safely."""
+        try:
+            win = MorningBriefingDashboard(briefing)
+            win.lift()
+        except Exception as e:
+            self._append_chat("tad", f"Morning briefing ready — check memory/morning_briefing.json")
 
     def _show_overnight_report(self, report: dict):
         try:
