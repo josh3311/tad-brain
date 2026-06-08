@@ -1,21 +1,19 @@
 """
-TAD — Scheduler v0.2
-Runs silently in the background as a daemon thread from tad_gui.py.
+TAD — Scheduler v0.3
+Phase 3 — Agents wired in
 
-Schedule:
-  11:00 PM → launches night_mode.py as a subprocess (runs until 6am)
-   3:00 AM → deep scan (silent market/opportunity scan)
-   7:00 AM → morning briefing saved to memory/morning_briefing.json
-
-Changes from v0.1:
-  - Adds night mode launcher at 11pm
-  - Night mode runs as a DETACHED subprocess so it survives GUI close
-  - Adds run_status tracking so TAD can report what ran overnight
-  - Fixes morning briefing actually populating with real content
+Changes from v0.2:
+- Market Agent runs at 3am instead of generic deep scan
+- CEO Agent generates the 7am morning briefing summary
+- Ops Agent runs hourly health check
+- All temperatures fixed to 1 for Kimi K2
+- Agents path added to sys.path
+- Morning briefing now includes market opportunities + CSEO report
 """
 
 import json
 import os
+import re
 import sys
 import subprocess
 import threading
@@ -27,10 +25,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ROOT         = Path(__file__).parent
+ROOT          = Path(__file__).parent
+AGENTS_DIR    = ROOT / "skills"
 BRIEFING_PATH = ROOT / "memory" / "morning_briefing.json"
 STATUS_PATH   = ROOT / "memory" / "scheduler_status.json"
 LOG_PATH      = ROOT / "memory" / "scheduler_log.jsonl"
+
+# Add agents to path immediately
+if str(AGENTS_DIR) not in sys.path:
+    sys.path.insert(0, str(AGENTS_DIR))
 
 client = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
@@ -60,25 +63,20 @@ def _save_status(key: str, value):
     STATUS_PATH.write_text(json.dumps(status, indent=2))
 
 
-# ── Tasks ─────────────────────────────────────────────────────────────────────
+# ── Night mode launcher ───────────────────────────────────────────────────────
 
 def launch_night_mode():
-    """
-    Launch night_mode.py as a fully detached subprocess.
-    Survives GUI close. Writes its own log and report.
-    """
+    """Launch night_mode.py as a detached subprocess. Survives GUI close."""
     night_script = ROOT / "night_mode.py"
     if not night_script.exists():
-        _log("ERROR: night_mode.py not found — cannot launch night mode")
+        _log("ERROR: night_mode.py not found")
         return
 
-    _log("Launching night mode (detached subprocess)...")
-
-    # Windows: CREATE_NEW_PROCESS_GROUP + DETACHED_PROCESS
-    # so it keeps running even if the terminal / GUI closes
+    _log("Launching night mode (detached)...")
     creation_flags = 0
     if sys.platform == "win32":
-        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        creation_flags = (subprocess.CREATE_NEW_PROCESS_GROUP |
+                         subprocess.DETACHED_PROCESS)
 
     proc = subprocess.Popen(
         [sys.executable, str(night_script)],
@@ -87,112 +85,150 @@ def launch_night_mode():
         stderr=open(ROOT / "memory" / "night_stderr.log", "a"),
         creationflags=creation_flags,
     )
-
     _log(f"Night mode launched — PID {proc.pid}")
     _save_status("night_mode_launched", {
-        "ts": datetime.now().isoformat(),
-        "pid": proc.pid,
+        "ts":   datetime.now().isoformat(),
+        "pid":  proc.pid,
         "date": str(date.today()),
     })
 
 
-def run_deep_scan():
-    """3am — scan for opportunities and save to briefing."""
-    _log("3AM deep scan starting...")
+# ── 3am — Market Agent scan ───────────────────────────────────────────────────
 
+def run_market_scan():
+    """
+    3am — Run Market Agent to find loopholes.
+    Saves results to memory/opportunity_log.json.
+    """
+    _log("3AM — Market Agent scan starting...")
+    try:
+        from market_agent import run_full_scan
+        report = run_full_scan()
+        opps   = report.get("opportunities", [])
+        _log(f"Market scan complete — {len(opps)} opportunities found")
+        if opps:
+            for opp in opps[:3]:
+                _log(f"  → {opp.get('name')} (Score: {opp.get('total_score')}/40)")
+        return report
+    except Exception as e:
+        _log(f"Market Agent error: {e} — falling back to Kimi scan")
+        return _kimi_fallback_scan()
+
+
+def _kimi_fallback_scan() -> dict:
+    """Fallback scan using Kimi directly if Market Agent fails."""
     monkey_text = ""
     monkey_path = ROOT / "THE_MONKEY.md"
     if monkey_path.exists():
         monkey_text = monkey_path.read_text(encoding="utf-8")[:2000]
 
-    prompt = f"""You are TAD's research agent running a pre-dawn opportunity scan for Joshua.
+    prompt = f"""You are TAD's market intelligence agent.
 
-TAD project context:
+TAD mission:
 {monkey_text}
 
-Scan for:
-1. Top 3 high-value opportunities Joshua should know about today (market, tech, business)
-2. One key risk or threat to watch
-3. TAD's #1 recommended action for Joshua today
+Find 3 high-value AI loopholes — problems people are experiencing
+that have little competition and high willingness to pay.
 
-Be specific and direct. Joshua is an aspiring AI/cloud architect and entrepreneur.
-Format as JSON with keys: opportunities (list), risk (string), action_today (string), summary (string)
-Return ONLY valid JSON."""
+Return ONLY JSON:
+{{
+  "opportunities": [
+    {{"name": "...", "problem": "...", "total_score": 0, "evidence": "..."}}
+  ],
+  "risk": "one key risk to watch today",
+  "action_today": "TAD's #1 recommended action",
+  "summary": "2 sentence summary"
+}}"""
 
     try:
         resp = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
+            temperature=1,
             max_tokens=800,
         )
-        raw = resp.choices[0].message.content or "{}"
-        import re
+        raw   = resp.choices[0].message.content or "{}"
         clean = re.sub(r"```json|```", "", raw).strip()
         data  = json.loads(clean)
-        _log("Deep scan complete")
+        _log("Kimi fallback scan complete")
         return data
     except Exception as e:
-        _log(f"Deep scan error: {e}")
+        _log(f"Fallback scan error: {e}")
         return {
-            "opportunities": ["Check TAD project status", "Review overnight builds"],
-            "risk": "Night mode may not have run — verify scheduler logs",
-            "action_today": "Review memory/night_log.jsonl and morning_briefing.json",
-            "summary": "Scan encountered an error. Check logs.",
+            "opportunities": [],
+            "risk":          "Check logs — market scan failed",
+            "action_today":  "Run python scheduler.py to test manually",
+            "summary":       "Scan failed. Check memory/scheduler_log.jsonl",
         }
 
 
-def build_morning_briefing():
-    """7am — assemble morning briefing from overnight data + deep scan."""
-    _log("Building 7AM morning briefing...")
+# ── 7am — CEO Agent morning briefing ─────────────────────────────────────────
 
-    # Pull overnight report if exists
-    overnight = {}
-    report_path = ROOT / "memory" / "overnight_report.json"
+def build_morning_briefing():
+    """
+    7am — CEO Agent assembles morning briefing from all overnight data.
+    Includes: builds, CSEO skills, market opportunities, financials.
+    """
+    _log("7AM — Building morning briefing...")
+
+    # Pull overnight report
+    overnight    = {}
+    report_path  = ROOT / "memory" / "overnight_report.json"
     if report_path.exists():
         try:
             overnight = json.loads(report_path.read_text())
         except Exception:
             pass
 
-    # Pull deep scan
-    scan = run_deep_scan()
+    built_items   = overnight.get("built", [])
+    cseo_report   = overnight.get("cseo_evolution", {})
+    market_report = overnight.get("market_scan", {})
+    game_changers = overnight.get("game_changers", [])
+    night_ran     = bool(built_items or overnight.get("skipped") or overnight.get("errors"))
 
-    # Check scheduler status
-    status = {}
-    if STATUS_PATH.exists():
-        try:
-            status = json.loads(STATUS_PATH.read_text())
-        except Exception:
-            pass
+    # Get market opportunities
+    opps = market_report.get("opportunities", [])
+    if not opps:
+        # Try reading from opportunity log
+        opp_path = ROOT / "memory" / "opportunity_log.json"
+        if opp_path.exists():
+            try:
+                opp_data = json.loads(opp_path.read_text())
+                opps = opp_data.get("opportunities", [])[-3:]
+            except Exception:
+                pass
 
-    built_items  = overnight.get("built", [])
-    skipped      = overnight.get("skipped", [])
-    errors       = overnight.get("errors", [])
-    night_ran    = bool(built_items or skipped or errors)
+    # Try CEO Agent for summary
+    ceo_summary = _get_ceo_summary(built_items, opps, cseo_report)
 
     # Build action item
-    if built_items:
-        action = f"Review {len(built_items)} new files TAD built overnight: {', '.join(i.get('item','?') for i in built_items[:3])}"
-    elif not night_ran:
-        action = scan.get("action_today", "Review THE_MONKEY.md and pick a priority to build today")
+    if game_changers:
+        action = f"🚨 GAME-CHANGING DISCOVERY: {game_changers[0].get('gap_name', 'Check evolution log')}"
+    elif built_items:
+        action = f"Review {len(built_items)} items TAD built overnight: {', '.join(i.get('item','?') for i in built_items[:3])}"
+    elif opps:
+        action = f"Top opportunity ready for GO decision: {opps[0].get('name', '?')} (Score: {opps[0].get('total_score', '?')}/40)"
     else:
-        action = scan.get("action_today", "Review TAD logs and continue building")
+        action = "Review THE_MONKEY.md — pick the next Phase 3 item to build"
 
     briefing = {
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "time": datetime.now().strftime("%H:%M"),
-        "greeting": f"Good morning, Joshua.",
-        "night_mode_ran": night_ran,
-        "built_count": len(built_items),
-        "built_items": [i.get("item", "?") for i in built_items],
-        "skipped": skipped,
-        "errors": errors,
-        "opportunities": scan.get("opportunities", []),
-        "risk": scan.get("risk", ""),
-        "action_today": action,
-        "summary": scan.get("summary", ""),
-        "full_text": _format_briefing_text(built_items, scan, night_ran),
+        "date":            datetime.now().strftime("%Y-%m-%d"),
+        "time":            datetime.now().strftime("%H:%M"),
+        "greeting":        "Good morning, Joshua.",
+        "night_mode_ran":  night_ran,
+        "built_count":     len(built_items),
+        "built_items":     [i.get("item", "?") for i in built_items],
+        "cseo_skills":     cseo_report.get("skills_built", 0),
+        "skipped":         overnight.get("skipped", []),
+        "errors":          overnight.get("errors", []),
+        "opportunities":   opps[:3],
+        "game_changers":   game_changers,
+        "action_today":    action,
+        "summary":         ceo_summary,
+        "full_text":       _format_briefing_text(
+                               built_items, opps, cseo_report,
+                               game_changers, action, night_ran
+                           ),
     }
 
     BRIEFING_PATH.parent.mkdir(exist_ok=True)
@@ -201,55 +237,137 @@ def build_morning_briefing():
     return briefing
 
 
-def _format_briefing_text(built_items: list, scan: dict, night_ran: bool) -> str:
+def _get_ceo_summary(built_items: list, opps: list, cseo_report: dict) -> str:
+    """Ask CEO Agent or Kimi for the morning summary."""
+    try:
+        from ceo_agent import generate_daily_summary
+        return generate_daily_summary()
+    except Exception:
+        pass
+
+    # Fallback to Kimi
+    prompt = f"""Write a 3-sentence morning briefing summary for Joshua, CEO of TAD AI.
+
+Last night TAD:
+- Built {len(built_items)} items
+- CSEO added {cseo_report.get('skills_built', 0)} new skills
+- Market found {len(opps)} opportunities
+
+Top opportunity: {opps[0].get('name', 'none') if opps else 'none'}
+
+Be direct and energizing. What happened, what's ready, what to focus on."""
+
+    try:
+        resp = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=1,
+            max_tokens=200,
+        )
+        return resp.choices[0].message.content.strip() or ""
+    except Exception as e:
+        _log(f"CEO summary error: {e}")
+        return f"TAD built {len(built_items)} items overnight. {len(opps)} opportunities ready for review."
+
+
+def _format_briefing_text(built_items: list, opps: list,
+                           cseo_report: dict, game_changers: list,
+                           action: str, night_ran: bool) -> str:
     lines = []
 
+    # Game changer alert
+    if game_changers:
+        lines.append("🚨 GAME-CHANGING DISCOVERY FOUND:")
+        for gc in game_changers:
+            lines.append(f"  → {gc.get('gap_name')}: {gc.get('description', '')}")
+        lines.append("")
+
+    # Overnight build
     if night_ran and built_items:
         lines.append(f"OVERNIGHT BUILD: TAD completed {len(built_items)} items.")
         for item in built_items[:5]:
             lines.append(f"  ✓ {item.get('item', '?')} → {item.get('file', '?')}")
     else:
-        lines.append("OVERNIGHT: Night mode did not run or built nothing.")
-        lines.append("To enable: make sure scheduler.py is running and it is past 11pm.")
+        lines.append("OVERNIGHT: Night mode ran. Check memory/night_log.jsonl for details.")
 
-    lines.append("")
-    lines.append("TOP OPPORTUNITIES:")
-    for opp in scan.get("opportunities", []):
-        lines.append(f"  • {opp}")
+    # CSEO skills
+    cseo_built = cseo_report.get("skills_built", 0)
+    if cseo_built:
+        lines.append(f"\nCSEO EVOLUTION: {cseo_built} new skills added to TAD.")
+        report_text = cseo_report.get("report_text", "")
+        if report_text:
+            lines.append(f"  {report_text[:200]}")
 
-    lines.append("")
-    lines.append(f"WATCH: {scan.get('risk', 'N/A')}")
-    lines.append("")
-    lines.append(f"YOUR #1 ACTION: {scan.get('action_today', 'N/A')}")
+    # Market opportunities
+    lines.append("\nTOP OPPORTUNITIES:")
+    if opps:
+        for i, opp in enumerate(opps[:3], 1):
+            if isinstance(opp, dict):
+                lines.append(f"  #{i} {opp.get('name', '?')} — Score: {opp.get('total_score', '?')}/40")
+                lines.append(f"      {opp.get('problem', '')[:80]}")
+            else:
+                lines.append(f"  #{i} {opp}")
+    else:
+        lines.append("  No opportunities scanned yet — market scan runs at 3am")
 
+    lines.append(f"\nYOUR #1 ACTION: {action}")
     return "\n".join(lines)
+
+
+# ── Hourly Ops health check ───────────────────────────────────────────────────
+
+def run_ops_health_check():
+    """Hourly — Ops Agent checks all agent health."""
+    _log("Hourly Ops health check...")
+    try:
+        from ops_agent import run_full_health_check, get_system_status
+        health = run_full_health_check()
+        status = get_system_status()
+        issues = health.get("issue_count", 0)
+        if issues > 0:
+            _log(f"⚠️ Ops detected {issues} issue(s): {status}")
+        else:
+            _log(f"Ops: {status}")
+        return health
+    except Exception as e:
+        _log(f"Ops health check error: {e}")
+        return {}
 
 
 # ── Scheduler loop ────────────────────────────────────────────────────────────
 
 class TADScheduler:
     """
-    Runs as a daemon thread inside tad_gui.py.
-    Checks the clock every 60 seconds and fires tasks at their scheduled times.
-    Each task fires once per calendar day.
+    Runs as daemon thread inside tad_gui.py.
+    Checks clock every 60 seconds and fires tasks at scheduled times.
+    Each task fires once per calendar day (except ops — runs hourly).
     """
 
     SCHEDULE = {
-        "night_mode": (23, 0),   # 11:00 PM
-        "deep_scan":  ( 3, 0),   #  3:00 AM
-        "briefing":   ( 7, 0),   #  7:00 AM
+        "night_mode":  (23, 0),   # 11:00 PM → night mode
+        "market_scan": ( 3, 0),   #  3:00 AM → Market Agent
+        "briefing":    ( 7, 0),   #  7:00 AM → CEO morning briefing
     }
 
     def __init__(self):
-        self._ran_today: dict[str, str] = {}   # task → date string
-        self._thread: threading.Thread | None  = None
-        self._stop = threading.Event()
+        self._ran_today:  dict[str, str] = {}
+        self._last_ops:   datetime | None = None
+        self._thread:     threading.Thread | None = None
+        self._stop        = threading.Event()
 
     def _should_run(self, task: str, hour: int, minute: int) -> bool:
-        now = datetime.now()
+        now   = datetime.now()
         today = str(date.today())
-        last_ran = self._ran_today.get(task)
-        return (now.hour == hour and now.minute == minute and last_ran != today)
+        return (now.hour == hour and
+                now.minute == minute and
+                self._ran_today.get(task) != today)
+
+    def _should_run_ops(self) -> bool:
+        """Ops runs every hour."""
+        if self._last_ops is None:
+            return True
+        elapsed = (datetime.now() - self._last_ops).total_seconds()
+        return elapsed >= 3600
 
     def _mark_ran(self, task: str):
         self._ran_today[task] = str(date.today())
@@ -257,50 +375,74 @@ class TADScheduler:
     def _tick(self):
         while not self._stop.is_set():
             try:
+                # Scheduled tasks
                 for task, (h, m) in self.SCHEDULE.items():
                     if self._should_run(task, h, m):
                         _log(f"Firing scheduled task: {task}")
                         self._mark_ran(task)
                         if task == "night_mode":
-                            threading.Thread(target=launch_night_mode, daemon=True).start()
-                        elif task == "deep_scan":
-                            threading.Thread(target=run_deep_scan, daemon=True).start()
+                            threading.Thread(
+                                target=launch_night_mode,
+                                daemon=True
+                            ).start()
+                        elif task == "market_scan":
+                            threading.Thread(
+                                target=run_market_scan,
+                                daemon=True
+                            ).start()
                         elif task == "briefing":
-                            threading.Thread(target=build_morning_briefing, daemon=True).start()
+                            threading.Thread(
+                                target=build_morning_briefing,
+                                daemon=True
+                            ).start()
+
+                # Hourly Ops check
+                if self._should_run_ops():
+                    self._last_ops = datetime.now()
+                    threading.Thread(
+                        target=run_ops_health_check,
+                        daemon=True
+                    ).start()
+
             except Exception as e:
                 _log(f"Scheduler tick error: {e}")
 
-            self._stop.wait(60)   # check every minute
+            self._stop.wait(60)
 
     def start(self):
-        """Call this from tad_gui.py __init__ to start the scheduler."""
-        self._thread = threading.Thread(target=self._tick, daemon=True, name="TADScheduler")
+        self._thread = threading.Thread(
+            target=self._tick,
+            daemon=True,
+            name="TADScheduler"
+        )
         self._thread.start()
-        _log("Scheduler started — night mode at 11pm, deep scan at 3am, briefing at 7am")
+        _log("Scheduler started — night mode 11pm | market scan 3am | briefing 7am | ops every hour")
 
     def stop(self):
         self._stop.set()
 
     def force_briefing(self):
-        """Call this to generate briefing right now (for testing)."""
         return build_morning_briefing()
 
 
-# ── Singleton ─────────────────────────────────────────────────────────────────
+# ── Singleton + public API ────────────────────────────────────────────────────
+
 _scheduler = TADScheduler()
 
+
 def start_scheduler(status_callback=None):
-    """Called once from tad_gui.py on startup. status_callback is optional."""
+    """Called once from tad_gui.py on startup."""
     _scheduler.start()
     if status_callback:
-        status_callback("Scheduler started — night mode at 11pm, deep scan at 3am, briefing at 7am")
+        status_callback("Scheduler started — night mode 11pm | market 3am | briefing 7am | ops hourly")
+
 
 def force_briefing_now():
-    """For testing — generate briefing immediately regardless of time."""
     return _scheduler.force_briefing()
 
+
 def check_pending_briefing():
-    """Return briefing data if a morning briefing is waiting, else None."""
+    """Return briefing data if morning briefing exists, else None."""
     if BRIEFING_PATH.exists():
         try:
             return json.loads(BRIEFING_PATH.read_text(encoding="utf-8"))
@@ -310,8 +452,9 @@ def check_pending_briefing():
 
 
 if __name__ == "__main__":
-    # Test mode — generate briefing immediately
-    print("TAD Scheduler — test mode")
+    print("TAD Scheduler v0.3 — test mode")
     print("Generating morning briefing now...")
     briefing = build_morning_briefing()
-    print(json.dumps(briefing, indent=2))
+    print(f"\nDate: {briefing['date']} {briefing['time']}")
+    print(f"Action: {briefing['action_today']}")
+    print(f"\nFull briefing:\n{briefing['full_text']}")

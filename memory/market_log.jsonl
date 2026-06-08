@@ -2,3 +2,7 @@
 {"ts": "2026-06-08T03:39:59.389989", "msg": "Starting market scan..."}
 {"ts": "2026-06-08T03:39:59.676394", "msg": "Scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}
 {"ts": "2026-06-08T03:39:59.677596", "msg": "No qualifying opportunities found this cycle"}
+{"ts": "2026-06-08T03:47:36.287613", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-08T03:47:36.290836", "msg": "Starting market scan..."}
+{"ts": "2026-06-08T03:48:44.364232", "msg": "Found 0 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-08T03:48:44.365831", "msg": "No qualifying opportunities found this cycle"}

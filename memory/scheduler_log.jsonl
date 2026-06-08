@@ -13,3 +13,5 @@
 {"ts": "2026-06-07T03:00:26.194783", "msg": "Firing scheduled task: deep_scan"}
 {"ts": "2026-06-07T03:00:26.247673", "msg": "3AM deep scan starting..."}
 {"ts": "2026-06-07T03:00:26.981427", "msg": "Deep scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}
+{"ts": "2026-06-08T03:51:19.675291", "msg": "7AM \u2014 Building morning briefing..."}
+{"ts": "2026-06-08T03:51:31.329379", "msg": "Morning briefing saved \u2192 C:\\TAD\\memory\\morning_briefing.json"}

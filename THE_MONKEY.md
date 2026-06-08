@@ -1,5 +1,5 @@
 # THE_MONKEY.md — TAD Master Build File
-# Last updated: 2026-06-06
+# Last updated: 2026-06-08
 # CEO: Joshua Abraham
 # Agent: TAD (Total Autonomous Director)
 
@@ -295,9 +295,9 @@ Each skill file = one agent's complete job description.
 ### PHASE 3 — WIRE THE AGENTS (after skill files confirmed)
 Goal: Each agent runs its skill file when triggered.
 
-- [x] P3-1: Update agent.py — route tasks to correct sub-agent by role ✓ 2026-06-08
-- [x] P3-2: Update night_mode.py — run CSEO Agent prompt, produce evolution report ✓ 2026-06-08
-- [ ] P3-3: Update scheduler.py — trigger Market Agent at 3am, CEO at 7am
+- [x] P3-1: agent.py updated — full agent routing confirmed ✓ 2026-06-08
+- [x] P3-2: night_mode.py v0.5 — CSEO + Market Agent wired in ✓ 2026-06-08
+- [x] P3-3: scheduler.py v0.3 — Market Agent 3am, CEO 7am, Ops hourly ✓ 2026-06-08
 - [ ] P3-4: Build tad_leads.py — CRO Agent lead finder
 - [ ] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L
 
@@ -446,4 +446,9 @@ No CRUD action happens without being logged.
 - COMPLETED: Phase 2 — all 10 skill files built and approved
 - 20 files total: 10 x .md + 10 x .py
 - Location: C:\TAD\skills\agents\
-- NEXT SESSION: Phase 3 — wire agents into task execution engine
+- COMPLETED: Phase 3 — all agents wired into task execution engine
+- P3-1: agent.py routes to correct agent by keyword matching ✓
+- P3-2: night_mode.py runs CSEO + Market Agent every night ✓
+- P3-3: scheduler.py fires Market Agent 3am, CEO 7am, Ops hourly ✓
+- CONFIRMED: night mode built P3-2 and P3-3 autonomously
+- NEXT: Phase 4 — voice loop, live call coaching, approval gate
