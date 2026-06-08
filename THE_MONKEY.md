@@ -303,7 +303,7 @@ Goal: Each agent runs its skill file when triggered.
 
 ### PHASE 4 — VOICE & AUTONOMY
 - [x] P4-1: Continuous voice loop (Ctrl+M toggle) ✓ 2026-06-08
-- [ ] P4-2: Live call coaching
+- [x] P4-2: Live call coaching ✓ 2026-06-08
 - [ ] P4-3: Full ApprovalGate for big CEO decisions
 - [ ] P4-4: Self-assigned tasks from THE_MONKEY.md
 
