@@ -1,0 +1,15 @@
+{"ts": "2026-06-06T15:48:11.011032", "msg": "Scheduler started \u2014 night mode at 11pm, deep scan at 3am, briefing at 7am"}
+{"ts": "2026-06-06T15:52:26.560785", "msg": "Building 7AM morning briefing..."}
+{"ts": "2026-06-06T15:52:26.565245", "msg": "3AM deep scan starting..."}
+{"ts": "2026-06-06T15:52:29.213390", "msg": "Deep scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}
+{"ts": "2026-06-06T15:52:29.217060", "msg": "Morning briefing saved \u2192 C:\\TAD\\memory\\morning_briefing.json"}
+{"ts": "2026-06-06T18:07:34.473199", "msg": "Scheduler started \u2014 night mode at 11pm, deep scan at 3am, briefing at 7am"}
+{"ts": "2026-06-06T18:16:03.994329", "msg": "Building 7AM morning briefing..."}
+{"ts": "2026-06-06T18:16:03.996406", "msg": "3AM deep scan starting..."}
+{"ts": "2026-06-06T18:16:06.383288", "msg": "Deep scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}
+{"ts": "2026-06-06T18:16:06.389078", "msg": "Morning briefing saved \u2192 C:\\TAD\\memory\\morning_briefing.json"}
+{"ts": "2026-06-06T18:16:22.844825", "msg": "Scheduler started \u2014 night mode at 11pm, deep scan at 3am, briefing at 7am"}
+{"ts": "2026-06-06T18:19:02.613309", "msg": "Scheduler started \u2014 night mode at 11pm, deep scan at 3am, briefing at 7am"}
+{"ts": "2026-06-07T03:00:26.194783", "msg": "Firing scheduled task: deep_scan"}
+{"ts": "2026-06-07T03:00:26.247673", "msg": "3AM deep scan starting..."}
+{"ts": "2026-06-07T03:00:26.981427", "msg": "Deep scan error: Error code: 400 - {'error': {'message': 'invalid temperature: only 1 is allowed for this model', 'type': 'invalid_request_error'}}"}

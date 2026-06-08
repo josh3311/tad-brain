@@ -1,5 +1,6 @@
 """
 TAD GUI v0.3 — with night mode + overnight report + morning briefing on wake
++ voice input via faster-whisper
 """
 
 import customtkinter as ctk
@@ -16,6 +17,7 @@ from agent import run_task
 from scheduler import start_scheduler, check_pending_briefing
 from night_mode import start_night_mode, check_overnight_report, is_running as night_is_running
 from tad_visual import show_morning_briefing, show_research_report
+from voice_input import start_listening
 import pyttsx3
 import keyboard
 import tkinter as tk
@@ -62,11 +64,18 @@ USER PROFILE:
         if snippets:
             history_text = "\nRECENT CONVERSATIONS:\n" + "\n".join(snippets)
 
+    # Load THE_MONKEY.md so TAD always knows the project state
+    monkey_text = ""
+    monkey_path = Path("THE_MONKEY.md")
+    if monkey_path.exists():
+        monkey_text = "\n\nTAD PROJECT STATE (THE_MONKEY.md):\n" + monkey_path.read_text(encoding="utf-8")[:2000]
+
     return f"""You are TAD — Joshua's sovereign personal AI agent running locally on his machine.
 You know Joshua personally. Address him by name occasionally.
 Speak like a smart friend — casual, direct, no corporate talk.
 Keep responses concise unless asked for detail.
-{profile_text}{history_text}"""
+You ALWAYS know your own project state — never ask Joshua to paste THE_MONKEY.md.
+{profile_text}{history_text}{monkey_text}"""
 
 
 SYSTEM_PROMPT = _load_memory()
@@ -100,6 +109,7 @@ class TADApp(ctk.CTk):
         self.msg_queue           = queue.Queue()
         self.speaking            = False
         self._first_interaction  = True
+        self._voice_active       = False  # voice state flag
 
         self._build_ui()
         self._register_hotkey()
@@ -184,13 +194,23 @@ class TADApp(ctk.CTk):
         self.input_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.input_box.bind("<Return>", self._on_enter)
 
+        # ── Mic button (NEW) ──────────────────
+        self.mic_btn = ctk.CTkButton(
+            input_frame, text="🎙", width=38, height=38,
+            font=("Courier", 13), fg_color="#0a0a1e",
+            hover_color="#141428", text_color="#7f77dd",
+            corner_radius=8, border_color="#2a2a4a", border_width=1,
+            command=self._toggle_voice
+        )
+        self.mic_btn.pack(side="right", padx=(4, 0))
+
         self.send_btn = ctk.CTkButton(
             input_frame, text="send", width=60, height=38,
             font=("Courier", 12), fg_color="#1e1a30",
             hover_color="#2a2440", text_color="#afa9ec",
             corner_radius=8, command=self._on_send
         )
-        self.send_btn.pack(side="right")
+        self.send_btn.pack(side="right", padx=(4, 0))
 
         # Night mode button
         night_frame = ctk.CTkFrame(self, fg_color="#0d0d0f", corner_radius=0)
@@ -214,6 +234,42 @@ class TADApp(ctk.CTk):
                      font=("Courier", 10), text_color="#2a2a3a").pack(side="left", padx=12)
         ctk.CTkLabel(bottom, text="Ctrl+Space to wake",
                      font=("Courier", 10), text_color="#2a2a3a").pack(side="right", padx=12)
+
+    # ── VOICE INPUT (NEW) ─────────────────────
+
+    def _toggle_voice(self):
+        """Single-shot voice capture — listens once, transcribes, auto-sends."""
+        if self._voice_active:
+            return  # already listening, ignore double-tap
+        self._voice_active = True
+        self.mic_btn.configure(fg_color="#3a0a0a", text_color="#ff6666", text="⏹")
+        self._set_status("thinking", "listening for your voice...")
+
+        def on_transcript(text: str):
+            # called from background thread — marshal to main thread
+            self.after(0, lambda: self._inject_voice(text))
+
+        def on_error(e: Exception):
+            self.after(0, self._voice_reset)
+            self.msg_queue.put(("error", f"voice input error: {e}"))
+
+        start_listening(on_transcript=on_transcript, on_error=on_error)
+
+    def _inject_voice(self, text: str):
+        """Put transcript into input box and auto-send."""
+        if text.strip():
+            self.input_box.delete(0, "end")
+            self.input_box.insert(0, text.strip())
+            self._voice_reset()
+            self._on_send()
+        else:
+            self._voice_reset()
+
+    def _voice_reset(self):
+        """Reset mic button to idle state."""
+        self._voice_active = False
+        self.mic_btn.configure(fg_color="#0a0a1e", text_color="#7f77dd", text="🎙")
+        self._set_status("idle")
 
     # ── NIGHT MODE ────────────────────────────
 
@@ -329,7 +385,6 @@ class TADApp(ctk.CTk):
         self._handle_input(text)
 
     def _handle_input(self, text):
-        # First interaction — check for overnight report or morning briefing
         if self._first_interaction:
             self._first_interaction = False
             self.after(200, self._check_on_wake)
@@ -345,20 +400,15 @@ class TADApp(ctk.CTk):
             threading.Thread(target=self._call_kimi, args=(text,), daemon=True).start()
 
     def _check_on_wake(self):
-        """Check for overnight build report or morning briefing on first interaction."""
-        # Check overnight build report first
         overnight = check_overnight_report()
         if overnight:
             self.after(500, lambda: self._show_overnight_report(overnight))
             return
-
-        # Check morning briefing
         briefing = check_pending_briefing()
         if briefing:
             self.after(500, lambda: show_morning_briefing(briefing))
 
     def _show_overnight_report(self, report: dict):
-        """Show the overnight build report popup."""
         try:
             from tad_visual import OvernightReportDashboard
             def _launch():
@@ -366,16 +416,14 @@ class TADApp(ctk.CTk):
                 win.mainloop()
             threading.Thread(target=_launch, daemon=True).start()
         except Exception as e:
-            # Fallback: show in chat
-            built = report.get("total_built", 0)
-            files = report.get("total_files", 0)
+            built   = report.get("total_built", 0)
+            files   = report.get("total_files", 0)
             summary = report.get("exec_summary", "Overnight build complete.")
             self._append_chat("tad",
                 f"Overnight build complete. {built} items built, {files} files created.\n\n{summary}"
             )
             self._speak_text(f"Good morning Joshua. {summary}")
 
-        # Update night button
         self.night_btn.configure(
             text="🌙  start night mode — TAD builds while you sleep",
             fg_color="#0a0a14",
@@ -404,7 +452,7 @@ class TADApp(ctk.CTk):
                 max_tokens=1024,
             )
             reply = response.choices[0].message.content
-            if reply:  # never add empty assistant messages
+            if reply:
                 self.conversation.append({"role": "assistant", "content": reply})
             self._save_to_memory(user_text, reply)
             self.msg_queue.put(("reply", reply))
