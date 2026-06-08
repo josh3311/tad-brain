@@ -93,7 +93,7 @@ Return ONLY a JSON object:
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.1,
+            temperature=1,
             max_tokens=600,
         )
         raw    = resp.choices[0].message.content or "{}"

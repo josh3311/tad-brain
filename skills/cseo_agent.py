@@ -150,7 +150,7 @@ Return JSON array only. Top 3 gaps maximum."""
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.4,
+            temperature=1,
             max_tokens=800,
         )
         raw   = resp.choices[0].message.content or "[]"
@@ -223,7 +223,7 @@ Return the complete skill file content only."""
                 {"role": "system", "content": _load_skill()},
                 {"role": "user",   "content": md_prompt},
             ],
-            temperature=0.3,
+            temperature=1,
             max_tokens=1500,
         )
         md_content = resp.choices[0].message.content or ""
@@ -266,7 +266,7 @@ Output Python code only."""
                     {"role": "system", "content": BUILD_SYSTEM},
                     {"role": "user",   "content": py_prompt},
                 ],
-                temperature=0.2,
+                temperature=1,
                 max_tokens=2500,
             )
             raw  = resp.choices[0].message.content or ""
@@ -355,7 +355,7 @@ Only mark is_game_changing true if ALL scores are 8 or above."""
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.1,
+            temperature=1,
             max_tokens=300,
         )
         raw    = resp.choices[0].message.content or "{}"
@@ -405,7 +405,7 @@ Under 200 words."""
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.4,
+            temperature=1,
             max_tokens=400,
         )
         report_text = resp.choices[0].message.content or ""

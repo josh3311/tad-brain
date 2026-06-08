@@ -193,7 +193,7 @@ Return ONLY the shaped response text. Nothing else."""
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.7,
+            temperature=1,
             max_tokens=400,
         )
         shaped = resp.choices[0].message.content.strip() or raw_response

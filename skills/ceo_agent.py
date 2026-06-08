@@ -95,7 +95,7 @@ Return ONLY a JSON object with these exact keys:
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.2,
+            temperature=1,
             max_tokens=500,
         )
         raw = resp.choices[0].message.content or "{}"
@@ -166,7 +166,7 @@ Speak like a smart business partner, not a corporate report."""
                 {"role": "system", "content": skill},
                 {"role": "user",   "content": prompt},
             ],
-            temperature=0.4,
+            temperature=1,
             max_tokens=300,
         )
         return resp.choices[0].message.content or "No summary available."

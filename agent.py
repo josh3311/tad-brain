@@ -39,7 +39,7 @@ MODEL = "kimi-k2.6"
 ROOT        = Path(__file__).parent
 MONKEY_PATH = ROOT / "THE_MONKEY.md"
 MEMORY_PATH = ROOT / "memory" / "history.jsonl"
-AGENTS_DIR  = ROOT / "skills" / "agents"
+AGENTS_DIR  = ROOT / "skills"
 
 # ── Agent routing map ─────────────────────────────────────────────────────────
 # Maps task keywords → agent skill file name

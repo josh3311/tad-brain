@@ -296,7 +296,7 @@ Each skill file = one agent's complete job description.
 Goal: Each agent runs its skill file when triggered.
 
 - [x] P3-1: Update agent.py — route tasks to correct sub-agent by role ✓ 2026-06-08
-- [ ] P3-2: Update night_mode.py — run CSEO Agent prompt, produce evolution report
+- [x] P3-2: Update night_mode.py — run CSEO Agent prompt, produce evolution report ✓ 2026-06-08
 - [ ] P3-3: Update scheduler.py — trigger Market Agent at 3am, CEO at 7am
 - [ ] P3-4: Build tad_leads.py — CRO Agent lead finder
 - [ ] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L

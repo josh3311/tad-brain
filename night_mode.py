@@ -26,6 +26,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ── Agent path setup (must be before any agent imports) ──────────────────────
+ROOT        = Path(__file__).parent
+AGENTS_DIR  = ROOT / "skills"
+if str(AGENTS_DIR) not in sys.path:
+    sys.path.insert(0, str(AGENTS_DIR))
+
 # ── Kimi client ───────────────────────────────────────────────────────────────
 client = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
@@ -34,11 +40,9 @@ client = OpenAI(
 MODEL = "kimi-k2.6"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-ROOT        = Path(__file__).parent
 MONKEY_PATH = ROOT / "THE_MONKEY.md"
 REPORT_PATH = ROOT / "memory" / "overnight_report.json"
 LOG_PATH    = ROOT / "memory" / "night_log.jsonl"
-AGENTS_DIR  = ROOT / "skills" / "agents"
 
 STOP_HOUR   = 6   # stop loop at 6:00 AM
 
@@ -200,7 +204,7 @@ Output Python code only."""
                     {"role": "system", "content": BUILD_SYSTEM},
                     {"role": "user",   "content": prompt},
                 ],
-                temperature=0.2,
+                temperature=1,
                 max_tokens=2500,
             )
             raw  = resp.choices[0].message.content or ""
@@ -249,7 +253,7 @@ Return ONLY corrected Python code."""
                     {"role": "system", "content": BUILD_SYSTEM},
                     {"role": "user",   "content": fix_prompt},
                 ],
-                temperature=0.1,
+                temperature=1,
                 max_tokens=2500,
             )
             fixed = _extract_code_block(resp.choices[0].message.content or "")
@@ -326,7 +330,7 @@ JSON array only."""
         resp = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
+            temperature=1,
             max_tokens=500,
         )
         raw   = resp.choices[0].message.content or "[]"

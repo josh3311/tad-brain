@@ -157,7 +157,7 @@ Output the Python code directly. Start with imports or docstring."""
                     {"role": "system", "content": BUILD_SYSTEM},
                     {"role": "user",   "content": prompt},
                 ],
-                temperature=0.2,
+                temperature=1,
                 max_tokens=3000,
             )
             raw  = resp.choices[0].message.content or ""
@@ -197,7 +197,7 @@ No explanation. Start with imports or docstring."""
                 {"role": "system", "content": BUILD_SYSTEM},
                 {"role": "user",   "content": fix_prompt},
             ],
-            temperature=0.1,
+            temperature=1,
             max_tokens=3000,
         )
         raw  = resp.choices[0].message.content or ""
