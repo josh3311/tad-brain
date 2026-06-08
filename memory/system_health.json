@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-06-08T04:41:18.400729",
+  "checked_at": "2026-06-08T04:59:57.618983",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
       "status": "healthy",
-      "last_active": "2026-06-08T04:40:09.024405",
-      "last_msg": "Starting market scan..."
+      "last_active": "2026-06-08T04:48:46.334177",
+      "last_msg": "No qualifying opportunities found this cycle"
     },
     "build_agent": {
       "agent": "build_agent",
@@ -20,7 +20,7 @@
     "cseo_agent": {
       "agent": "cseo_agent",
       "status": "healthy",
-      "last_active": "2026-06-08T04:40:08.631912",
+      "last_active": "2026-06-08T04:47:39.701942",
       "last_msg": "No gaps identified this cycle"
     },
     "decision_agent": {

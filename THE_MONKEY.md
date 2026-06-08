@@ -299,7 +299,7 @@ Goal: Each agent runs its skill file when triggered.
 - [x] P3-2: night_mode.py v0.5 — CSEO + Market Agent wired in ✓ 2026-06-08
 - [x] P3-3: scheduler.py v0.3 — Market Agent 3am, CEO 7am, Ops hourly ✓ 2026-06-08
 - [x] P3-4: Build tad_leads.py — CRO Agent lead finder ✓ 2026-06-08
-- [ ] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L
+- [x] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L ✓ 2026-06-08
 
 ### PHASE 4 — VOICE & AUTONOMY
 - [ ] P4-1: Continuous voice loop (Ctrl+M toggle)
