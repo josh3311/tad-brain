@@ -252,7 +252,7 @@ This loop runs forever. ♾️
 - [x] skills/skill_loader.py — finds right .md skill before every task
 
 ### ⚠️ BUILT BUT NEEDS UPGRADING TO MATCH NEW ARCHITECTURE
-- [ ] agent.py — needs to route to specific sub-agents by position
+- [x] agent.py — needs to route to specific sub-agents by position ✓ 2026-06-09
 - [ ] night_mode.py — needs CSEO Agent prompt and evolution reporting
 - [ ] scheduler.py — needs to trigger each agent at the right time
 
