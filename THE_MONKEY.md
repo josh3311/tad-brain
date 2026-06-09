@@ -259,7 +259,7 @@ This loop runs forever. ♾️
 ### ❌ NOT BUILT YET — SKILL FILES NEEDED
 - [x] skills/ceo_agent.md ✓ 2026-06-09
 - [x] skills/market_agent.md ✓ 2026-06-09
-- [ ] skills/decision_agent.md
+- [x] skills/decision_agent.md ✓ 2026-06-09
 - [ ] skills/build_agent.md
 - [ ] skills/marketing_agent.md
 - [ ] skills/finance_agent.md
