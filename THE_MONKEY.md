@@ -254,7 +254,7 @@ This loop runs forever. ♾️
 ### ⚠️ BUILT BUT NEEDS UPGRADING TO MATCH NEW ARCHITECTURE
 - [x] agent.py — needs to route to specific sub-agents by position ✓ 2026-06-09
 - [x] night_mode.py — needs CSEO Agent prompt and evolution reporting ✓ 2026-06-09
-- [ ] scheduler.py — needs to trigger each agent at the right time
+- [x] scheduler.py — needs to trigger each agent at the right time ✓ 2026-06-09
 
 ### ❌ NOT BUILT YET — SKILL FILES NEEDED
 - [ ] skills/ceo_agent.md
