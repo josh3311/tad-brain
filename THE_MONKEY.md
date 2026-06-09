@@ -263,7 +263,7 @@ This loop runs forever. ♾️
 - [x] skills/build_agent.md ✓ 2026-06-09
 - [x] skills/marketing_agent.md ✓ 2026-06-09
 - [x] skills/finance_agent.md ✓ 2026-06-09
-- [ ] skills/ops_agent.md
+- [x] skills/ops_agent.md ✓ 2026-06-09
 - [ ] skills/cseo_agent.md
 
 ---
