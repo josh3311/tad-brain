@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
-from openai import OpenAI
+import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,11 +17,8 @@ ROOT         = Path(__file__).parent.parent
 MEMORY       = ROOT / "memory"
 SKILL_PATH   = Path(__file__).parent / "ceo_agent.md"
 
-client = OpenAI(
-    api_key=os.getenv("KIMI_API_KEY", ""),
-    base_url="https://api.moonshot.ai/v1",
-)
-MODEL = "kimi-k2.6"
+claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+MODEL  = "claude-haiku-4-5-20251001"
 
 
 # ── Load skill prompt ─────────────────────────────────────────────────────────
@@ -89,16 +86,13 @@ Return ONLY a JSON object with these exact keys:
 }}"""
 
     try:
-        resp = client.chat.completions.create(
+        msg = claude.messages.create(
             model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
             max_tokens=500,
+            system=skill + "\n\nAlways respond with valid JSON only.",
+            messages=[{"role": "user", "content": prompt}],
         )
-        raw = resp.choices[0].message.content or "{}"
+        raw = msg.content[0].text or "{}"
         import re
         clean = re.sub(r"```json|```", "", raw).strip()
         result = json.loads(clean)
@@ -160,16 +154,13 @@ Write a direct, honest 5-sentence summary covering:
 Speak like a smart business partner, not a corporate report."""
 
     try:
-        resp = client.chat.completions.create(
+        msg = claude.messages.create(
             model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
             max_tokens=300,
+            system=skill,
+            messages=[{"role": "user", "content": prompt}],
         )
-        return resp.choices[0].message.content or "No summary available."
+        return msg.content[0].text or "No summary available."
     except Exception as e:
         return f"CEO summary error: {e}"
 

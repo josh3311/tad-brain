@@ -1,5 +1,5 @@
 # THE_MONKEY.md — TAD Master Build File
-# Last updated: 2026-06-08
+# Last updated: 2026-06-09
 # CEO: Joshua Abraham
 # Agent: TAD (Total Autonomous Director)
 
@@ -252,19 +252,19 @@ This loop runs forever. ♾️
 - [x] skills/skill_loader.py — finds right .md skill before every task
 
 ### ⚠️ BUILT BUT NEEDS UPGRADING TO MATCH NEW ARCHITECTURE
-- [x] agent.py — needs to route to specific sub-agents by position ✓ 2026-06-08
-- [x] night_mode.py — needs CSEO Agent prompt and evolution reporting ✓ 2026-06-08
-- [x] scheduler.py — needs to trigger each agent at the right time ✓ 2026-06-08
+- [ ] agent.py — needs to route to specific sub-agents by position
+- [ ] night_mode.py — needs CSEO Agent prompt and evolution reporting
+- [ ] scheduler.py — needs to trigger each agent at the right time
 
 ### ❌ NOT BUILT YET — SKILL FILES NEEDED
-- [x] skills/ceo_agent.md ✓ 2026-06-08
-- [x] skills/market_agent.md ✓ 2026-06-08
-- [x] skills/decision_agent.md ✓ 2026-06-08
-- [x] skills/build_agent.md ✓ 2026-06-08
-- [x] skills/marketing_agent.md ✓ 2026-06-08
-- [x] skills/finance_agent.md ✓ 2026-06-08
-- [x] skills/ops_agent.md ✓ 2026-06-08
-- [x] skills/cseo_agent.md ✓ 2026-06-08
+- [ ] skills/ceo_agent.md
+- [ ] skills/market_agent.md
+- [ ] skills/decision_agent.md
+- [ ] skills/build_agent.md
+- [ ] skills/marketing_agent.md
+- [ ] skills/finance_agent.md
+- [ ] skills/ops_agent.md
+- [ ] skills/cseo_agent.md
 
 ---
 
@@ -298,20 +298,20 @@ Goal: Each agent runs its skill file when triggered.
 - [x] P3-1: agent.py updated — full agent routing confirmed ✓ 2026-06-08
 - [x] P3-2: night_mode.py v0.5 — CSEO + Market Agent wired in ✓ 2026-06-08
 - [x] P3-3: scheduler.py v0.3 — Market Agent 3am, CEO 7am, Ops hourly ✓ 2026-06-08
-- [x] P3-4: Build tad_leads.py — CRO Agent lead finder ✓ 2026-06-08
-- [x] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L ✓ 2026-06-08
+- [x] P3-4: Build tad_leads.py — CRO Agent lead finder ✓ 2026-06-09
+- [ ] P3-5: Build tad_finance.py — CFO Agent invoicing and P&L
 
 ### PHASE 4 — VOICE & AUTONOMY
-- [x] P4-1: Continuous voice loop (Ctrl+M toggle) ✓ 2026-06-08
-- [x] P4-2: Live call coaching ✓ 2026-06-08
-- [x] P4-3: Full ApprovalGate for big CEO decisions ✓ 2026-06-08
-- [x] P4-4: Self-assigned tasks from THE_MONKEY.md ✓ 2026-06-08
+- [ ] P4-1: Continuous voice loop (Ctrl+M toggle)
+- [ ] P4-2: Live call coaching
+- [ ] P4-3: Full ApprovalGate for big CEO decisions
+- [ ] P4-4: Self-assigned tasks from THE_MONKEY.md
 
 ### PHASE 5 — PRODUCT & DELIVERY
-- [x] P5-1: Product builder ✓ 2026-06-08
-- [x] P5-2: Client delivery ✓ 2026-06-08
-- [x] P5-3: Auto invoicing ✓ 2026-06-08
-- [x] P5-4: Feedback loop back to CSEO ✓ 2026-06-08
+- [ ] P5-1: Product builder
+- [ ] P5-2: Client delivery
+- [ ] P5-3: Auto invoicing
+- [ ] P5-4: Feedback loop back to CSEO
 
 ---
 
@@ -410,6 +410,44 @@ When TAD explains something:
 - skills/voice_engine/           — Coqui TTS (CSEO builds Phase 2)
 
 Total skill files: 10 (8 agents + conversation + visual)
+
+
+### PHASE 6 — SELF-HEALING & MARKET INTELLIGENCE
+Goal: TAD fixes its own bugs and finds real opportunities autonomously.
+
+- [ ] P6-1: Fix market_agent.py — Kimi K2 returning empty response to JSON prompts
+- [ ] P6-2: Update cseo_agent.py — when priority list empty, scan error logs and fix bugs instead of sleeping
+- [ ] P6-3: Fix tad_gui.py — empty TAD responses (agent routing not returning to chat)
+- [ ] P6-4: Fix tad_gui.py — Tcl threading error on popup launch
+- [ ] P6-5: Fix voice_input.py — raise silence threshold to stop picking up background noise
+- [ ] P6-6: Wire SMTP in .env so TAD can send real emails to leads
+- [x] P6-7: Market scan complete — LLM Token Cost Attribution Dashboard chosen ✓
+- [ ] P6-BUILD-1: Build LLM Token Cost Attribution Dashboard — CEO GO decision ✓
+
+
+
+---
+
+## AI MODEL ARCHITECTURE — PERMANENT DECISION
+(Added 2026-06-08)
+
+TAD uses TWO AI models with specific roles:
+
+### Claude Haiku (claude-haiku-4-5-20251001) — REASONING ENGINE
+Used for: Market scans, opportunity scoring, decisions, analysis,
+          JSON output, CEO summaries, conversation, feedback analysis
+Why: Reliable JSON, strong reasoning, affordable, never returns empty
+Config: ANTHROPIC_API_KEY in .env
+
+### Kimi K2 (kimi-k2.6) — CODE ENGINE  
+Used for: Code generation ONLY (Build Agent, night mode builds)
+Why: Strong at Python generation, cheap per token for long code
+Config: KIMI_API_KEY in .env
+
+### Rule
+Never use Kimi for JSON or reasoning tasks.
+Never use Claude for code generation (costs more, not needed).
+All agents use Claude. Build Agent uses Kimi.
 
 ## LLM CRUD AUTHORITY
 (Added 2026-06-06 — Joshua's instruction)

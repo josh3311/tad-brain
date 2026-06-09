@@ -9,6 +9,7 @@ import os
 import re
 from pathlib import Path
 from datetime import datetime, timedelta
+import anthropic
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -18,11 +19,16 @@ ROOT       = Path(__file__).parent.parent
 MEMORY     = ROOT / "memory"
 SKILL_PATH = Path(__file__).parent / "marketing_agent.md"
 
-client = OpenAI(
+# Kimi for code generation
+kimi = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
     base_url="https://api.moonshot.ai/v1",
 )
-MODEL = "kimi-k2.6"
+KIMI_MODEL = "kimi-k2.6"
+
+# Claude for reasoning and JSON
+claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+MODEL  = "claude-haiku-4-5-20251001"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -92,16 +98,8 @@ Only include leads with fit_score >= 7.
 Real leads only — no made up contacts."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=2000,
-        )
-        raw   = resp.choices[0].message.content or "[]"
+        resp = claude.messages.create(model=MODEL, max_tokens=2000, system=skill, messages=[{"role": "user", "content": prompt}])
+        raw   = msg.content[0].text or "[]"
         clean = re.sub(r"```json|```", "", raw).strip()
         leads = json.loads(clean)
 
@@ -163,16 +161,8 @@ Would a quick call this week make sense?"
 Return ONLY the message text. No subject line. No explanation."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=200,
-        )
-        return resp.choices[0].message.content.strip() or ""
+        resp = claude.messages.create(model=MODEL, max_tokens=200, system=skill, messages=[{"role": "user", "content": prompt}])
+        return msg.content[0].text.strip() or ""
     except Exception as e:
         _log(f"Message craft error: {e}")
         return ""

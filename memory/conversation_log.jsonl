@@ -1,2 +1,5 @@
 {"ts": "2026-06-08T04:43:23.091809", "msg": "Response shaped for mood: neutral"}
 {"ts": "2026-06-08T13:10:15.399025", "msg": "Response shaped for mood: neutral"}
+{"ts": "2026-06-09T02:55:11.431792", "msg": "Response shaping error: name 'msg' is not defined"}
+{"ts": "2026-06-09T02:55:17.827336", "msg": "Response shaping error: name 'msg' is not defined"}
+{"ts": "2026-06-09T03:01:35.004640", "msg": "Response shaping error: name 'msg' is not defined"}

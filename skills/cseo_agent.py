@@ -11,6 +11,7 @@ import sys
 import subprocess
 from pathlib import Path
 from datetime import datetime
+import anthropic
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -21,11 +22,16 @@ MEMORY      = ROOT / "memory"
 SKILLS_DIR  = ROOT / "skills" / "learned"
 SKILL_PATH  = Path(__file__).parent / "cseo_agent.md"
 
-client = OpenAI(
+# Kimi for code generation
+kimi = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
     base_url="https://api.moonshot.ai/v1",
 )
-MODEL = "kimi-k2.6"
+KIMI_MODEL = "kimi-k2.6"
+
+# Claude for reasoning and JSON
+claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+MODEL  = "claude-haiku-4-5-20251001"
 
 # Core files CSEO can never touch
 PROTECTED = [
@@ -144,16 +150,8 @@ Return ONLY a JSON array:
 Return JSON array only. Top 3 gaps maximum."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=800,
-        )
-        raw   = resp.choices[0].message.content or "[]"
+        resp = claude.messages.create(model=MODEL, max_tokens=800, system=skill, messages=[{"role": "user", "content": prompt}])
+        raw   = msg.content[0].text or "[]"
         clean = re.sub(r"```json|```", "", raw).strip()
         gaps  = json.loads(clean)
         _log(f"Identified {len(gaps)} capability gaps")
@@ -226,7 +224,7 @@ Return the complete skill file content only."""
             temperature=1,
             max_tokens=1500,
         )
-        md_content = resp.choices[0].message.content or ""
+        md_content = msg.content[0].text or ""
 
         # Save skill.md
         SKILLS_DIR.mkdir(parents=True, exist_ok=True)
@@ -260,16 +258,8 @@ Output Python code only."""
 
     for attempt in range(1, 4):
         try:
-            resp = client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": BUILD_SYSTEM},
-                    {"role": "user",   "content": py_prompt},
-                ],
-                temperature=1,
-                max_tokens=2500,
-            )
-            raw  = resp.choices[0].message.content or ""
+            resp = claude.messages.create(model=MODEL, max_tokens=2500, system=BUILD_SYSTEM, messages=[{"role": "user", "content": py_prompt}])
+            raw  = msg.content[0].text or ""
             code = _extract_code(raw)
 
             if not _is_real_python(code):
@@ -349,16 +339,8 @@ Return ONLY JSON:
 Only mark is_game_changing true if ALL scores are 8 or above."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=300,
-        )
-        raw    = resp.choices[0].message.content or "{}"
+        resp = claude.messages.create(model=MODEL, max_tokens=300, system=skill, messages=[{"role": "user", "content": prompt}])
+        raw    = msg.content[0].text or "{}"
         clean  = re.sub(r"```json|```", "", raw).strip()
         result = json.loads(clean)
         return result.get("is_game_changing", False)
@@ -399,16 +381,8 @@ exactly what TAD can do now that it couldn't do before.
 Under 200 words."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=400,
-        )
-        report_text = resp.choices[0].message.content or ""
+        resp = claude.messages.create(model=MODEL, max_tokens=400, system=skill, messages=[{"role": "user", "content": prompt}])
+        report_text = msg.content[0].text or ""
 
         report = {
             "cycle_date":    datetime.now().isoformat(),
@@ -434,6 +408,49 @@ Under 200 words."""
         return {"status": "error", "reason": str(e)}
 
 
+# ── Bug finder ───────────────────────────────────────────────────────────────
+
+def _find_bugs_to_fix() -> list:
+    """
+    When no gaps found, scan error logs and find real bugs to fix.
+    Returns list of gap-format dicts describing bugs to fix.
+    """
+    bugs = []
+
+    # Check error log
+    error_log = _read("error_log.json")
+    errors = error_log.get("errors", [])
+    unresolved = [e for e in errors if not e.get("resolved")]
+
+    if unresolved:
+        for error in unresolved[:3]:
+            bugs.append({
+                "gap_name":       f"fix_{error.get('agent', 'unknown')}_error",
+                "description":    f"Fix error in {error.get('agent')}: {error.get('error', '')[:100]}",
+                "why_important":  "Unresolved error blocking agent from working",
+                "build_type":     "improvement",
+                "priority":       1,
+            })
+        _log(f"Found {len(bugs)} bugs to fix from error logs")
+        return bugs
+
+    # Check night log for recurring failures
+    night_log = MEMORY / "night_log.jsonl"
+    if night_log.exists():
+        lines = night_log.read_text(encoding="utf-8").strip().splitlines()[-50:]
+        prose_count = sum(1 for l in lines if "returned prose" in l)
+        if prose_count > 5:
+            bugs.append({
+                "gap_name":       "fix_kimi_json_response",
+                "description":    "Kimi K2 returning prose instead of JSON — fix all prompts to force JSON output",
+                "why_important":  "Market Agent returning 0 opportunities because JSON parsing fails",
+                "build_type":     "improvement",
+                "priority":       1,
+            })
+
+    return bugs
+
+
 # ── Main evolution cycle ──────────────────────────────────────────────────────
 
 def run_evolution_cycle() -> dict:
@@ -446,8 +463,11 @@ def run_evolution_cycle() -> dict:
     # Step 1: Identify gaps
     gaps = identify_gaps()
     if not gaps:
-        _log("No gaps identified this cycle")
-        return {"status": "no_gaps", "cycle_date": datetime.now().isoformat()}
+        _log("No gaps from analysis — scanning error logs for bugs to fix...")
+        gaps = _find_bugs_to_fix()
+        if not gaps:
+            _log("No bugs found either — TAD is fully caught up")
+            return {"status": "no_gaps", "cycle_date": datetime.now().isoformat()}
 
     built_skills   = []
     game_changers  = []

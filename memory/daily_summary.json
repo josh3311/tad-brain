@@ -1,9 +1,11 @@
 {
   "date": "2026-06-08",
-  "generated_at": "2026-06-08T13:18:50.907490",
+  "generated_at": "2026-06-08T22:02:52.968102",
   "agent_activity": {
-    "market_agent": 32,
-    "cseo_agent": 18
+    "market_agent": 71,
+    "cseo_agent": 22,
+    "decision_agent": 4,
+    "ceo_agent": 2
   },
   "errors": [],
   "crud_actions": 0,

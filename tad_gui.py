@@ -1,6 +1,12 @@
 """
-TAD GUI v0.3 — with night mode + overnight report + morning briefing on wake
-+ voice input via faster-whisper
+TAD GUI v0.4 — Claude UI + JARVIS Design
+- Clean Claude-style chat layout
+- Iron Man JARVIS aesthetic (holographic, HUD elements)
+- Fixed empty responses (switched to Claude API)
+- Fixed Tcl threading error (all popups via after())
+- Sidebar with agent status
+- Animated avatar ring
+- Better typography
 """
 
 import customtkinter as ctk
@@ -9,74 +15,92 @@ import os
 import sys
 import json
 import queue
+import math
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
-from openai import OpenAI
+import anthropic
+import tkinter as tk
+
 from agent import run_task
 from scheduler import start_scheduler, check_pending_briefing
 from night_mode import start_night_mode, check_overnight_report, is_running as night_is_running
-from tad_visual import show_morning_briefing, show_research_report, MorningBriefingDashboard
 from voice_input import start_listening
-from voice_loop import register_hotkey, toggle_voice_loop, is_active as voice_loop_active, pause_for_tad_speaking, resume_after_tad_speaking, get_status_text
+from voice_loop import register_hotkey, toggle_voice_loop, is_active as voice_loop_active
+from voice_loop import pause_for_tad_speaking, resume_after_tad_speaking
 import pyttsx3
 import keyboard
-import tkinter as tk
 
 load_dotenv()
 
-KIMI_API_KEY = os.getenv("KIMI_API_KEY", "")
-client = OpenAI(
-    api_key=KIMI_API_KEY,
-    base_url="https://api.moonshot.ai/v1",
-)
-MODEL = "kimi-k2.6"
+ROOT = Path(__file__).parent
+
+# ── Claude API (replaces Kimi for conversation) ───────────────────────────────
+claude  = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+C_MODEL = "claude-haiku-4-5-20251001"
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
+
+# ── Color palette (Claude dark + JARVIS blue) ─────────────────────────────────
+BG_DEEP    = "#080810"   # deepest background
+BG_BASE    = "#0d0d18"   # main background
+BG_SURFACE = "#12121f"   # cards / panels
+BG_HOVER   = "#1a1a2e"   # hover states
+ACCENT     = "#4f8ef7"   # JARVIS blue (primary)
+ACCENT_DIM = "#2a4a8a"   # dimmed blue
+GREEN      = "#1db87a"   # online / success
+ORANGE     = "#f59e0b"   # thinking / warning
+RED        = "#ef4444"   # error
+PURPLE     = "#7c6ff7"   # TAD purple
+TEXT_PRI   = "#e8e8f0"   # primary text
+TEXT_SEC   = "#6b7280"   # secondary text
+TEXT_DIM   = "#374151"   # dimmed text
+BORDER     = "#1e2030"   # borders
+RING_IDLE  = "#4f8ef7"
+RING_THINK = "#f59e0b"
+RING_SPEAK = "#1db87a"
+RING_NIGHT = "#7c6ff7"
 
 
 def _load_memory() -> str:
-    profile_path = Path("memory/profile.json")
-    history_path = Path("memory/history.jsonl")
+    profile_path = ROOT / "memory/profile.json"
+    history_path = ROOT / "memory/history.jsonl"
+    monkey_path  = ROOT / "THE_MONKEY.md"
+
     profile_text = ""
     history_text = ""
+    monkey_text  = ""
 
     if profile_path.exists():
-        p = json.loads(profile_path.read_text(encoding="utf-8"))
-        profile_text = f"""
-USER PROFILE:
-- Name: {p.get('name', 'unknown')}
-- Goals: {', '.join(p.get('goals', []))}
-- Style: {p.get('preferences', {}).get('voice', '')}
-- Language: {p.get('preferences', {}).get('language', '')}
-- Context: {', '.join(p.get('context', []))}
-- Vision: {p.get('vision', '')}
-- Role: {p.get('role', '')}
-"""
+        try:
+            p = json.loads(profile_path.read_text(encoding="utf-8"))
+            profile_text = f"\nUSER: {p.get('name','Joshua')} | Goals: {', '.join(p.get('goals',[]))}"
+        except Exception:
+            pass
 
     if history_path.exists():
-        lines = history_path.read_text(encoding="utf-8").strip().splitlines()
-        last5 = lines[-5:] if len(lines) >= 5 else lines
-        snippets = []
-        for line in last5:
-            try:
+        try:
+            lines   = history_path.read_text(encoding="utf-8").strip().splitlines()
+            last5   = lines[-5:] if len(lines) >= 5 else lines
+            snippets = []
+            for line in last5:
                 e = json.loads(line)
-                snippets.append(f"  {e['user']} → {e['tad'][:80]}")
-            except Exception:
-                pass
-        if snippets:
-            history_text = "\nRECENT CONVERSATIONS:\n" + "\n".join(snippets)
+                snippets.append(f"  {e['user']} → {e['tad'][:60]}")
+            if snippets:
+                history_text = "\nRECENT:\n" + "\n".join(snippets)
+        except Exception:
+            pass
 
-    # Load THE_MONKEY.md so TAD always knows the project state
-    monkey_text = ""
-    monkey_path = Path("THE_MONKEY.md")
     if monkey_path.exists():
-        monkey_text = "\n\nTAD PROJECT STATE (THE_MONKEY.md):\n" + monkey_path.read_text(encoding="utf-8")[:2000]
+        monkey_text = "\n\nPROJECT STATE:\n" + monkey_path.read_text(encoding="utf-8")[:1500]
 
-    return f"""You are TAD — Joshua's sovereign personal AI agent running locally on his machine.
-You know Joshua personally. Address him by name occasionally.
-Speak like a smart friend — casual, direct, no corporate talk.
-Keep responses concise unless asked for detail.
-You ALWAYS know your own project state — never ask Joshua to paste THE_MONKEY.md.
-{profile_text}{history_text}{monkey_text}"""
+    return (
+        "You are TAD — Joshua's sovereign AI business agent. "
+        "Casual, direct, smart. Never corporate. Address Joshua by name. "
+        "Keep responses concise unless detail is asked for. "
+        f"{profile_text}{history_text}{monkey_text}"
+    )
 
 
 SYSTEM_PROMPT = _load_memory()
@@ -87,336 +111,498 @@ voices = tts_engine.getProperty("voices")
 if len(voices) > 1:
     tts_engine.setProperty("voice", voices[1].id)
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
-
 TASK_KEYWORDS = [
-    "research", "analyze", "analyse", "search", "find",
-    "what is profitable", "market", "trend", "opportunity",
-    "niche", "report", "look up", "investigate", "what are the", "best ai",
+    "research", "analyze", "analyse", "search", "find", "market",
+    "trend", "opportunity", "niche", "report", "look up", "scan",
+    "what is profitable", "best ai", "investigate", "what are the",
+    "run cseo", "evolve", "fix", "build", "score", "invoice",
+    "health check", "p&l", "decide", "go or no go",
 ]
 
+
+# ── Avatar canvas ──────────────────────────────────────────────────────────────
+
+class AvatarCanvas(ctk.CTkCanvas):
+    """Animated JARVIS-style avatar ring."""
+
+    def __init__(self, parent, size=100, **kwargs):
+        super().__init__(parent, width=size, height=size,
+                        bg=BG_BASE, highlightthickness=0, **kwargs)
+        self.size   = size
+        self.cx     = size // 2
+        self.cy     = size // 2
+        self.state  = "idle"
+        self._angle = 0
+        self._anim  = None
+        self._draw()
+
+    def set_state(self, state: str):
+        self.state = state
+        self._draw()
+        if state in ("thinking", "night"):
+            self._start_spin()
+        else:
+            self._stop_spin()
+
+    def _ring_color(self):
+        return {
+            "idle":     RING_IDLE,
+            "thinking": RING_THINK,
+            "speaking": RING_SPEAK,
+            "night":    RING_NIGHT,
+            "error":    RED,
+        }.get(self.state, RING_IDLE)
+
+    def _draw(self):
+        self.delete("all")
+        cx, cy, r = self.cx, self.cy, self.size//2 - 4
+        color     = self._ring_color()
+
+        # Outer glow ring
+        self.create_oval(cx-r-3, cy-r-3, cx+r+3, cy+r+3,
+                        outline=color, width=1,
+                        fill=BG_BASE, stipple="gray25")
+
+        # Main ring
+        self.create_oval(cx-r, cy-r, cx+r, cy+r,
+                        outline=color, width=2, fill=BG_SURFACE)
+
+        # Spinning arc (for thinking/night)
+        if self.state in ("thinking", "night"):
+            a = self._angle % 360
+            self.create_arc(cx-r, cy-r, cx+r, cy+r,
+                           start=a, extent=120,
+                           outline=color, width=3, style="arc")
+
+        # Eyes
+        ew, eh, ey = 10, 7, cy - 10
+        ex_l, ex_r = cx - 16, cx + 6
+
+        if self.state in ("thinking", "night"):
+            # Squinting
+            self.create_arc(ex_l, ey, ex_l+ew, ey+eh,
+                           start=0, extent=180, fill=color, outline="")
+            self.create_arc(ex_r, ey, ex_r+ew, ey+eh,
+                           start=0, extent=180, fill=color, outline="")
+        else:
+            self.create_oval(ex_l, ey, ex_l+ew, ey+eh,
+                            fill=color, outline="")
+            self.create_oval(ex_r, ey, ex_r+ew, ey+eh,
+                            fill=color, outline="")
+            # Pupils
+            self.create_oval(ex_l+3, ey+2, ex_l+6, ey+5,
+                            fill=BG_DEEP, outline="")
+            self.create_oval(ex_r+3, ey+2, ex_r+6, ey+5,
+                            fill=BG_DEEP, outline="")
+
+        # Mouth
+        my = cy + 8
+        if self.state == "idle":
+            self.create_arc(cx-12, my, cx+12, my+12,
+                           start=200, extent=140,
+                           style="arc", outline=color, width=2)
+        elif self.state == "speaking":
+            self.create_oval(cx-8, my, cx+8, my+10,
+                            fill=color, outline="")
+        elif self.state == "error":
+            self.create_arc(cx-12, my+4, cx+12, my+14,
+                           start=20, extent=140,
+                           style="arc", outline=color, width=2)
+        else:
+            self.create_line(cx-10, my+6, cx+10, my+6,
+                            fill=color, width=2)
+
+    def _start_spin(self):
+        if self._anim:
+            return
+        self._spin()
+
+    def _spin(self):
+        if self.state not in ("thinking", "night"):
+            self._anim = None
+            return
+        self._angle += 8
+        self._draw()
+        self._anim = self.after(40, self._spin)
+
+    def _stop_spin(self):
+        if self._anim:
+            self.after_cancel(self._anim)
+            self._anim = None
+        self._draw()
+
+
+# ── Chat bubble widget ────────────────────────────────────────────────────────
+
+class ChatBubble(ctk.CTkFrame):
+    """Claude-style chat message bubble."""
+
+    def __init__(self, parent, role: str, text: str, ts: str, **kwargs):
+        is_user = role == "user"
+        super().__init__(parent,
+                        fg_color="transparent",
+                        corner_radius=0, **kwargs)
+
+        bubble_frame = ctk.CTkFrame(
+            self,
+            fg_color=BG_SURFACE if is_user else "transparent",
+            corner_radius=12,
+        )
+
+        if is_user:
+            bubble_frame.pack(anchor="e", padx=(60, 8), pady=(2, 2))
+        else:
+            bubble_frame.pack(anchor="w", padx=(8, 60), pady=(2, 2))
+
+        # Role label
+        ctk.CTkLabel(
+            bubble_frame,
+            text="you" if is_user else "TAD",
+            font=("Segoe UI", 10),
+            text_color=ACCENT if is_user else PURPLE,
+        ).pack(anchor="w", padx=12, pady=(8, 0))
+
+        # Message text
+        ctk.CTkLabel(
+            bubble_frame,
+            text=text,
+            font=("Segoe UI", 13),
+            text_color=TEXT_PRI,
+            wraplength=360,
+            justify="left",
+            anchor="w",
+        ).pack(anchor="w", padx=12, pady=(2, 4))
+
+        # Timestamp
+        ctk.CTkLabel(
+            bubble_frame,
+            text=ts,
+            font=("Segoe UI", 9),
+            text_color=TEXT_DIM,
+        ).pack(anchor="e", padx=12, pady=(0, 6))
+
+
+# ── Main App ──────────────────────────────────────────────────────────────────
 
 class TADApp(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-        self.title("TAD v0.3 — sovereign agent")
-        self.geometry("520x720")
-        self.resizable(False, False)
-        self.configure(fg_color="#0d0d0f")
+        self.title("TAD — sovereign agent")
+        self.geometry("780x860")
+        self.minsize(680, 700)
+        self.configure(fg_color=BG_DEEP)
 
-        self.conversation        = [{"role": "system", "content": SYSTEM_PROMPT}]
-        self.msg_queue           = queue.Queue()
-        self.speaking            = False
-        self._first_interaction  = True
-        self._voice_active       = False  # voice state flag
+        self.conversation       = [{"role": "user",
+                                    "content": SYSTEM_PROMPT}]
+        self.msg_queue          = queue.Queue()
+        self.speaking           = False
+        self._first_interaction = True
+        self._voice_active      = False
+        self._chat_widgets      = []
 
         self._build_ui()
-        self._register_hotkey()
-        self._register_voice_hotkey()
+        self._register_hotkeys()
         self._poll_queue()
-        self.after(600, lambda: self._set_status("idle"))
+        self.after(800, lambda: self._set_status("idle"))
 
-        # Start background services
         start_scheduler(
             status_callback=lambda msg: self.msg_queue.put(("status", msg))
         )
 
-        # Bind minimize event for night mode
         self.bind("<Unmap>", self._on_minimize)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    # ── UI BUILD ──────────────────────────────
+    # ── UI BUILD ──────────────────────────────────────────────────────────────
 
     def _build_ui(self):
-        top = ctk.CTkFrame(self, fg_color="#141418", corner_radius=0, height=42)
-        top.pack(fill="x", side="top")
-        top.pack_propagate(False)
+        # ── Top bar (JARVIS HUD style) ────────────────────────────────────
+        topbar = ctk.CTkFrame(self, fg_color=BG_SURFACE,
+                              corner_radius=0, height=48)
+        topbar.pack(fill="x", side="top")
+        topbar.pack_propagate(False)
 
-        ctk.CTkLabel(top, text="● ● ●", text_color="#444455",
-                     font=("Courier", 11)).pack(side="left", padx=14)
-        ctk.CTkLabel(top, text="TAD v0.3 — sovereign agent",
-                     text_color="#555566", font=("Courier", 11)).pack(side="left", padx=6)
+        ctk.CTkLabel(
+            topbar, text="◈  TAD",
+            font=("Segoe UI", 14, "bold"),
+            text_color=ACCENT
+        ).pack(side="left", padx=20, pady=12)
+
+        ctk.CTkLabel(
+            topbar, text="sovereign agent · claude haiku · kimi k2",
+            font=("Segoe UI", 10),
+            text_color=TEXT_DIM
+        ).pack(side="left", padx=4)
 
         self.status_pill = ctk.CTkLabel(
-            top, text="● idle",
-            fg_color="#1e1e2e", text_color="#7f77dd",
-            corner_radius=10, font=("Courier", 11),
-            padx=10, pady=3
+            topbar,
+            text="◉  idle",
+            fg_color=BG_HOVER,
+            text_color=ACCENT,
+            corner_radius=20,
+            font=("Segoe UI", 11),
+            padx=14, pady=4
         )
-        self.status_pill.pack(side="right", padx=14)
+        self.status_pill.pack(side="right", padx=20, pady=10)
 
-        avatar_frame = ctk.CTkFrame(self, fg_color="#0d0d0f", corner_radius=0)
-        avatar_frame.pack(fill="x", pady=(24, 0))
+        # ── Main layout (sidebar + chat) ──────────────────────────────────
+        main = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
+        main.pack(fill="both", expand=True)
 
-        self.avatar_canvas = ctk.CTkCanvas(
-            avatar_frame, width=120, height=120,
-            bg="#0d0d0f", highlightthickness=0
+        # Sidebar
+        sidebar = ctk.CTkFrame(main, fg_color=BG_SURFACE,
+                               corner_radius=0, width=200)
+        sidebar.pack(side="left", fill="y")
+        sidebar.pack_propagate(False)
+        self._build_sidebar(sidebar)
+
+        # Chat area
+        chat_area = ctk.CTkFrame(main, fg_color=BG_BASE, corner_radius=0)
+        chat_area.pack(side="left", fill="both", expand=True)
+        self._build_chat_area(chat_area)
+
+    def _build_sidebar(self, parent):
+        # Avatar
+        avatar_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        avatar_frame.pack(fill="x", pady=(24, 8))
+
+        self.avatar = AvatarCanvas(avatar_frame, size=80)
+        self.avatar.pack(anchor="center")
+
+        ctk.CTkLabel(
+            avatar_frame,
+            text="T  A  D",
+            font=("Segoe UI", 16, "bold"),
+            text_color=TEXT_PRI
+        ).pack(pady=(8, 2))
+
+        ctk.CTkLabel(
+            avatar_frame,
+            text="always running",
+            font=("Segoe UI", 10),
+            text_color=TEXT_DIM
+        ).pack()
+
+        # Divider
+        ctk.CTkFrame(parent, fg_color=BORDER, height=1).pack(
+            fill="x", padx=16, pady=16)
+
+        # Agent status section
+        ctk.CTkLabel(
+            parent,
+            text="AGENTS",
+            font=("Segoe UI", 10, "bold"),
+            text_color=TEXT_DIM
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        self.agent_labels = {}
+        agents = [
+            ("market",   "◈ Market"),
+            ("decision", "◈ Decision"),
+            ("build",    "◈ Build"),
+            ("ceo",      "◈ CEO"),
+            ("cseo",     "◈ CSEO"),
+            ("ops",      "◈ Ops"),
+        ]
+
+        for key, label in agents:
+            row = ctk.CTkFrame(parent, fg_color="transparent")
+            row.pack(fill="x", padx=16, pady=2)
+
+            lbl = ctk.CTkLabel(
+                row, text=label,
+                font=("Segoe UI", 11),
+                text_color=TEXT_SEC,
+                anchor="w"
+            )
+            lbl.pack(side="left")
+
+            dot = ctk.CTkLabel(
+                row, text="●",
+                font=("Segoe UI", 10),
+                text_color=TEXT_DIM
+            )
+            dot.pack(side="right")
+            self.agent_labels[key] = dot
+
+        # Divider
+        ctk.CTkFrame(parent, fg_color=BORDER, height=1).pack(
+            fill="x", padx=16, pady=16)
+
+        # Quick actions
+        ctk.CTkLabel(
+            parent,
+            text="ACTIONS",
+            font=("Segoe UI", 10, "bold"),
+            text_color=TEXT_DIM
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        actions = [
+            ("⟳  Market Scan",   "run a market scan and find the best opportunity right now"),
+            ("◈  CEO Briefing",   "give me today's CEO briefing"),
+            ("⚡  Ops Check",     "run a full system health check"),
+            ("◎  Evolve CSEO",   "run cseo evolution cycle and fix all broken things"),
+        ]
+
+        for label, command in actions:
+            btn = ctk.CTkButton(
+                parent,
+                text=label,
+                font=("Segoe UI", 11),
+                height=30,
+                fg_color="transparent",
+                hover_color=BG_HOVER,
+                text_color=TEXT_SEC,
+                anchor="w",
+                corner_radius=6,
+                command=lambda c=command: self._quick_action(c)
+            )
+            btn.pack(fill="x", padx=8, pady=1)
+
+        # Night mode at bottom of sidebar
+        ctk.CTkFrame(parent, fg_color=BORDER, height=1).pack(
+            fill="x", padx=16, pady=16)
+
+        self.night_btn = ctk.CTkButton(
+            parent,
+            text="🌙  Night Mode",
+            font=("Segoe UI", 11, "bold"),
+            height=36,
+            fg_color=ACCENT_DIM,
+            hover_color=ACCENT,
+            text_color=TEXT_PRI,
+            corner_radius=8,
+            command=self._start_night_mode
         )
-        self.avatar_canvas.pack(anchor="center")
-        self._draw_face("idle")
+        self.night_btn.pack(fill="x", padx=12, pady=4)
 
-        ctk.CTkLabel(avatar_frame, text="T  A  D",
-                     font=("Courier", 22, "bold"),
-                     text_color="#e0e0f0").pack(pady=(12, 2))
+    def _build_chat_area(self, parent):
+        # Chat header
+        header = ctk.CTkFrame(parent, fg_color="transparent", height=44)
+        header.pack(fill="x", padx=20, pady=(12, 0))
+        header.pack_propagate(False)
 
-        self.subtitle_label = ctk.CTkLabel(
-            avatar_frame, text="your personal agentic AI",
-            font=("Courier", 11), text_color="#444455"
+        ctk.CTkLabel(
+            header,
+            text="Chat",
+            font=("Segoe UI", 14, "bold"),
+            text_color=TEXT_PRI
+        ).pack(side="left", pady=8)
+
+        self.context_label = ctk.CTkLabel(
+            header,
+            text="",
+            font=("Segoe UI", 11),
+            text_color=TEXT_DIM
         )
-        self.subtitle_label.pack()
+        self.context_label.pack(side="right", pady=8)
 
-        self.transcript = ctk.CTkLabel(
-            self, text="press Ctrl+Space or type below...",
-            fg_color="#111115", corner_radius=8,
-            font=("Courier", 12), text_color="#555566",
-            wraplength=420, justify="center",
-            padx=16, pady=12
+        # Scrollable chat
+        self.chat_scroll = ctk.CTkScrollableFrame(
+            parent,
+            fg_color="transparent",
+            scrollbar_button_color=BG_SURFACE,
+            scrollbar_button_hover_color=BG_HOVER,
         )
-        self.transcript.pack(fill="x", padx=30, pady=(20, 8))
+        self.chat_scroll.pack(fill="both", expand=True, padx=8, pady=(8, 0))
 
-        self.chat_box = ctk.CTkTextbox(
-            self, height=200, font=("Courier", 12),
-            fg_color="#0a0a0d", text_color="#8a8a9e",
-            border_color="#1e1e28", border_width=1,
-            corner_radius=8, wrap="word", state="disabled"
+        # Welcome message
+        self._add_system_message(
+            "TAD online. Market intelligence active. Type or speak — "
+            "Ctrl+Space to focus, Ctrl+M for hands-free."
         )
-        self.chat_box.pack(fill="x", padx=30, pady=(0, 8))
 
-        input_frame = ctk.CTkFrame(self, fg_color="#0d0d0f", corner_radius=0)
-        input_frame.pack(fill="x", padx=30, pady=(0, 8))
+        # Input area
+        input_area = ctk.CTkFrame(parent, fg_color=BG_SURFACE, corner_radius=12)
+        input_area.pack(fill="x", padx=16, pady=12)
+
+        # Input row
+        input_row = ctk.CTkFrame(input_area, fg_color="transparent")
+        input_row.pack(fill="x", padx=12, pady=(10, 4))
 
         self.input_box = ctk.CTkEntry(
-            input_frame, placeholder_text="type a message...",
-            font=("Courier", 12), fg_color="#111115",
-            border_color="#2a2a3a", text_color="#e0e0f0",
-            corner_radius=8, height=38
+            input_row,
+            placeholder_text="Message TAD...",
+            font=("Segoe UI", 13),
+            fg_color=BG_BASE,
+            border_color=BORDER,
+            text_color=TEXT_PRI,
+            placeholder_text_color=TEXT_DIM,
+            corner_radius=8,
+            height=40,
         )
         self.input_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.input_box.bind("<Return>", self._on_enter)
 
-        # ── Mic button (NEW) ──────────────────
-        self.mic_btn = ctk.CTkButton(
-            input_frame, text="🎙", width=38, height=38,
-            font=("Courier", 13), fg_color="#0a0a1e",
-            hover_color="#141428", text_color="#7f77dd",
-            corner_radius=8, border_color="#2a2a4a", border_width=1,
-            command=self._toggle_voice
-        )
-        self.mic_btn.pack(side="right", padx=(4, 0))
-
-        self.voice_loop_btn = ctk.CTkButton(
-            input_frame, text="🔊", width=38, height=38,
-            font=("Courier", 13), fg_color="#0a0a1e",
-            hover_color="#141428", text_color="#444455",
-            corner_radius=8, border_color="#2a2a4a", border_width=1,
-            command=self._toggle_voice_loop
-        )
-        self.voice_loop_btn.pack(side="right", padx=(4, 0))
+        # Buttons row
+        btn_row = ctk.CTkFrame(input_area, fg_color="transparent")
+        btn_row.pack(fill="x", padx=12, pady=(0, 10))
 
         self.send_btn = ctk.CTkButton(
-            input_frame, text="send", width=60, height=38,
-            font=("Courier", 12), fg_color="#1e1a30",
-            hover_color="#2a2440", text_color="#afa9ec",
-            corner_radius=8, command=self._on_send
+            btn_row,
+            text="Send  ↵",
+            font=("Segoe UI", 12, "bold"),
+            height=36,
+            width=100,
+            fg_color=ACCENT,
+            hover_color="#3a7ef0",
+            text_color="#ffffff",
+            corner_radius=8,
+            command=self._on_send
         )
-        self.send_btn.pack(side="right", padx=(4, 0))
+        self.send_btn.pack(side="right")
 
-        # Night mode button
-        night_frame = ctk.CTkFrame(self, fg_color="#0d0d0f", corner_radius=0)
-        night_frame.pack(fill="x", padx=30, pady=(0, 4))
-
-        self.night_btn = ctk.CTkButton(
-            night_frame, text="🌙  start night mode — TAD builds while you sleep",
-            font=("Courier", 11), height=34,
-            fg_color="#0a0a14", hover_color="#141428",
-            text_color="#534AB7", corner_radius=8,
-            border_color="#2a2a4a", border_width=1,
-            command=self._start_night_mode
+        self.voice_loop_btn = ctk.CTkButton(
+            btn_row,
+            text="🔊  Hands-free",
+            font=("Segoe UI", 11),
+            height=36,
+            fg_color=BG_HOVER,
+            hover_color=BG_SURFACE,
+            text_color=TEXT_SEC,
+            corner_radius=8,
+            command=self._toggle_voice_loop
         )
-        self.night_btn.pack(fill="x")
+        self.voice_loop_btn.pack(side="right", padx=(0, 8))
 
-        bottom = ctk.CTkFrame(self, fg_color="#0a0a0d", corner_radius=0, height=32)
-        bottom.pack(fill="x", side="bottom")
-        bottom.pack_propagate(False)
-
-        ctk.CTkLabel(bottom, text="kimi-k2.6 · moonshot ai",
-                     font=("Courier", 10), text_color="#2a2a3a").pack(side="left", padx=12)
-        ctk.CTkLabel(bottom, text="Ctrl+Space to wake",
-                     font=("Courier", 10), text_color="#2a2a3a").pack(side="right", padx=12)
-
-    # ── VOICE INPUT (NEW) ─────────────────────
-
-    def _toggle_voice(self):
-        """Single-shot voice capture — listens once, transcribes, auto-sends."""
-        if self._voice_active:
-            return  # already listening, ignore double-tap
-        self._voice_active = True
-        self.mic_btn.configure(fg_color="#3a0a0a", text_color="#ff6666", text="⏹")
-        self._set_status("thinking", "listening for your voice...")
-
-        def on_transcript(text: str):
-            # called from background thread — marshal to main thread
-            self.after(0, lambda: self._inject_voice(text))
-
-        def on_error(e: Exception):
-            self.after(0, self._voice_reset)
-            self.msg_queue.put(("error", f"voice input error: {e}"))
-
-        start_listening(on_transcript=on_transcript, on_error=on_error)
-
-    def _inject_voice(self, text: str):
-        """Put transcript into input box and auto-send."""
-        if text.strip():
-            self.input_box.delete(0, "end")
-            self.input_box.insert(0, text.strip())
-            self._voice_reset()
-            self._on_send()
-        else:
-            self._voice_reset()
-
-    def _voice_reset(self):
-        """Reset mic button to idle state."""
-        self._voice_active = False
-        self.mic_btn.configure(fg_color="#0a0a1e", text_color="#7f77dd", text="🎙")
-        self._set_status("idle")
-
-    # ── VOICE LOOP (Ctrl+M hands-free) ──────────
-
-    def _register_voice_hotkey(self):
-        """Register Ctrl+M to toggle continuous voice loop."""
-        register_hotkey(
-            on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
-            on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+        self.mic_btn = ctk.CTkButton(
+            btn_row,
+            text="🎙  Speak",
+            font=("Segoe UI", 11),
+            height=36,
+            fg_color=BG_HOVER,
+            hover_color=BG_SURFACE,
+            text_color=TEXT_SEC,
+            corner_radius=8,
+            command=self._toggle_voice
         )
+        self.mic_btn.pack(side="right", padx=(0, 8))
 
-    def _toggle_voice_loop(self):
-        """Toggle continuous hands-free voice loop on/off."""
-        active = toggle_voice_loop(
-            on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
-            on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+    # ── Chat methods ──────────────────────────────────────────────────────────
+
+    def _add_system_message(self, text: str):
+        msg = ctk.CTkLabel(
+            self.chat_scroll,
+            text=text,
+            font=("Segoe UI", 11),
+            text_color=TEXT_DIM,
+            wraplength=480,
+            justify="center",
         )
-        self._update_voice_loop_ui("active" if active else "idle")
+        msg.pack(pady=(16, 8))
+        self._chat_widgets.append(msg)
 
-    def _update_voice_loop_ui(self, state: str):
-        """Update voice loop button appearance."""
-        if state == "active":
-            self.voice_loop_btn.configure(
-                fg_color="#0a1e0a", text_color="#1d9e75", text="🔊"
-            )
-            self._set_status("thinking", "🔊 Hands-free mode active — speak anytime")
-        elif state == "error":
-            self.voice_loop_btn.configure(
-                fg_color="#1e0a0a", text_color="#e24b4a", text="⚠️"
-            )
-        else:
-            self.voice_loop_btn.configure(
-                fg_color="#0a0a1e", text_color="#444455", text="🔊"
-            )
-
-    # ── NIGHT MODE ────────────────────────────
-
-    def _start_night_mode(self):
-        """Launch TAD autonomous overnight builder."""
-        if night_is_running():
-            self._append_chat("tad", "Night mode is already running — TAD is building.")
+    def _append_chat(self, role: str, text: str):
+        if not text or not text.strip():
             return
+        ts     = datetime.now().strftime("%H:%M")
+        bubble = ChatBubble(self.chat_scroll, role, text, ts)
+        bubble.pack(fill="x", pady=2)
+        self._chat_widgets.append(bubble)
+        # Scroll to bottom
+        self.after(50, lambda: self.chat_scroll._parent_canvas.yview_moveto(1.0))
 
-        self.night_btn.configure(
-            text="🌙  night mode active — TAD is building...",
-            fg_color="#0a1428",
-            text_color="#1d9e75"
-        )
-        self._set_status("thinking", "night mode — building autonomously...")
-        self._append_chat("tad",
-            "Night mode activated. TAD is building everything on the priority list. "
-            "Go sleep — I'll have a full report ready when you wake up."
-        )
-        self._speak_text(
-            "Night mode activated. I am building everything while you sleep. "
-            "I will have a full report ready when you wake up Joshua."
-        )
-
-        start_night_mode(
-            status_callback=lambda msg: self.msg_queue.put(("night_status", msg))
-        )
-
-    # ── FACE ──────────────────────────────────
-
-    def _draw_face(self, state="idle"):
-        c = self.avatar_canvas
-        c.delete("all")
-        cx, cy, r = 60, 60, 50
-        colors = {
-            "idle":     ("#2a2a38", "#7f77dd"),
-            "thinking": ("#2a1e10", "#ef9f27"),
-            "speaking": ("#102820", "#1d9e75"),
-            "night":    ("#0a0a1e", "#534AB7"),
-            "error":    ("#2a1010", "#e24b4a"),
-        }
-        bg, ring = colors.get(state, colors["idle"])
-        c.create_oval(cx-r, cy-r, cx+r, cy+r, outline=ring, width=2, fill=bg)
-        eye_color = ring
-        if state == "thinking" or state == "night":
-            c.create_arc(cx-22, cy-12, cx-10, cy-4, start=0, extent=180, fill=eye_color, outline="")
-            c.create_arc(cx+10, cy-12, cx+22, cy-4, start=0, extent=180, fill=eye_color, outline="")
-        else:
-            c.create_oval(cx-22, cy-16, cx-10, cy-4, fill=eye_color, outline="")
-            c.create_oval(cx+10, cy-16, cx+22, cy-4, fill=eye_color, outline="")
-            c.create_oval(cx-18, cy-13, cx-14, cy-9, fill="#0d0d0f", outline="")
-            c.create_oval(cx+14, cy-13, cx+18, cy-9, fill="#0d0d0f", outline="")
-        if state == "idle":
-            c.create_arc(cx-16, cy+4, cx+16, cy+22, start=200, extent=140,
-                         style="arc", outline=ring, width=2)
-        elif state == "speaking":
-            c.create_oval(cx-10, cy+8, cx+10, cy+22, fill=ring, outline="")
-        elif state in ("thinking", "night"):
-            c.create_line(cx-12, cy+16, cx+12, cy+16, fill=ring, width=2)
-        elif state == "error":
-            c.create_arc(cx-16, cy+10, cx+16, cy+24, start=20, extent=140,
-                         style="arc", outline=ring, width=2)
-
-    # ── STATUS ────────────────────────────────
-
-    def _set_status(self, state, text=None):
-        labels = {
-            "idle":     "● idle",
-            "thinking": "● thinking",
-            "speaking": "● speaking",
-            "night":    "● building...",
-            "error":    "● error",
-        }
-        colors = {
-            "idle":     ("#1e1e2e", "#7f77dd"),
-            "thinking": ("#2a1e10", "#ef9f27"),
-            "speaking": ("#102820", "#1d9e75"),
-            "night":    ("#0a0a1e", "#534AB7"),
-            "error":    ("#2a1010", "#e24b4a"),
-        }
-        fg, tc = colors.get(state, colors["idle"])
-        self.status_pill.configure(
-            text=labels.get(state, "● idle"),
-            fg_color=fg, text_color=tc
-        )
-        self._draw_face(state)
-        if text:
-            self.transcript.configure(text=text, text_color="#ccccdd")
-        else:
-            self.transcript.configure(
-                text="press Ctrl+Space or type below...",
-                text_color="#555566"
-            )
-
-    # ── CHAT ──────────────────────────────────
-
-    def _append_chat(self, role, text):
-        self.chat_box.configure(state="normal")
-        ts = datetime.now().strftime("%H:%M")
-        prefix = "you" if role == "user" else "tad"
-        self.chat_box.insert("end", f"\n[{ts}] {prefix}: {text}\n")
-        self.chat_box.configure(state="disabled")
-        self.chat_box.see("end")
+    # ── Input handling ────────────────────────────────────────────────────────
 
     def _on_enter(self, event=None):
         self._on_send()
@@ -428,149 +614,301 @@ class TADApp(ctk.CTk):
         self.input_box.delete(0, "end")
         self._handle_input(text)
 
-    def _handle_input(self, text):
+    def _quick_action(self, command: str):
+        self._handle_input(command)
+
+    def _handle_input(self, text: str):
         if self._first_interaction:
             self._first_interaction = False
             self.after(200, self._check_on_wake)
 
         self._append_chat("user", text)
-        self.transcript.configure(text=f'"{text}"', text_color="#ccccdd")
-        self._set_status("thinking", f'"{text}"')
+        self._set_status("thinking")
+        self._update_context(f'"{text[:40]}..."' if len(text) > 40 else f'"{text}"')
 
         is_task = any(k in text.lower() for k in TASK_KEYWORDS)
         if is_task:
-            threading.Thread(target=self._run_agent, args=(text,), daemon=True).start()
+            threading.Thread(
+                target=self._run_agent, args=(text,), daemon=True
+            ).start()
         else:
-            threading.Thread(target=self._call_kimi, args=(text,), daemon=True).start()
+            threading.Thread(
+                target=self._call_claude, args=(text,), daemon=True
+            ).start()
+
+    # ── Agent runner ──────────────────────────────────────────────────────────
+
+    def _run_agent(self, text: str):
+        try:
+            def status_update(msg):
+                self.msg_queue.put(("status", msg))
+            result = run_task(text, status_callback=status_update)
+            if result and result.strip():
+                self.msg_queue.put(("reply", result))
+            else:
+                self.msg_queue.put(("reply", "Task complete — check workflows folder for the full report."))
+        except Exception as e:
+            self.msg_queue.put(("error", str(e)))
+
+    # ── Claude conversation ───────────────────────────────────────────────────
+
+    def _call_claude(self, user_text: str):
+        try:
+            self.conversation.append({"role": "user", "content": user_text})
+
+            # Keep conversation manageable
+            messages = self.conversation[-20:]
+            # Ensure alternating roles
+            valid = []
+            last_role = None
+            for m in messages:
+                if m["role"] != last_role:
+                    valid.append(m)
+                    last_role = m["role"]
+
+            # Remove system message from messages list (goes in system param)
+            user_messages = [m for m in valid if m["role"] != "system"]
+            if not user_messages:
+                user_messages = [{"role": "user", "content": user_text}]
+
+            msg = claude.messages.create(
+                model=C_MODEL,
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                messages=user_messages,
+            )
+            reply = msg.content[0].text if msg.content else ""
+
+            if reply and reply.strip():
+                self.conversation.append({"role": "assistant", "content": reply})
+                self._save_to_memory(user_text, reply)
+                self.msg_queue.put(("reply", reply))
+            else:
+                self.msg_queue.put(("reply", "I'm here — what do you need?"))
+
+        except Exception as e:
+            self.msg_queue.put(("error", str(e)))
+
+    # ── Memory ────────────────────────────────────────────────────────────────
+
+    def _save_to_memory(self, user_text: str, reply: str):
+        mem_dir = ROOT / "memory"
+        mem_dir.mkdir(exist_ok=True)
+        entry = {
+            "ts":   datetime.now().isoformat(),
+            "user": user_text,
+            "tad":  reply,
+        }
+        with open(mem_dir / "history.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+
+    # ── TTS ───────────────────────────────────────────────────────────────────
+
+    def _speak_text(self, text: str):
+        threading.Thread(target=self._speak, args=(text,), daemon=True).start()
+
+    def _speak(self, text: str):
+        self.speaking = True
+        pause_for_tad_speaking()
+        try:
+            tts_engine.say(text[:300])
+            tts_engine.runAndWait()
+        except Exception:
+            pass
+        self.speaking = False
+        resume_after_tad_speaking()
+        self.msg_queue.put(("done_speaking", None))
+
+    # ── Voice ─────────────────────────────────────────────────────────────────
+
+    def _toggle_voice(self):
+        if self._voice_active:
+            return
+        self._voice_active = True
+        self.mic_btn.configure(text="⏹  Stop", text_color=RED)
+        self._set_status("thinking", "listening...")
+
+        def on_transcript(text: str):
+            self.after(0, lambda: self._inject_voice(text))
+
+        def on_error(e: Exception):
+            self.after(0, self._voice_reset)
+
+        start_listening(on_transcript=on_transcript, on_error=on_error)
+
+    def _inject_voice(self, text: str):
+        if text.strip():
+            self.input_box.delete(0, "end")
+            self.input_box.insert(0, text.strip())
+            self._voice_reset()
+            self._on_send()
+        else:
+            self._voice_reset()
+
+    def _voice_reset(self):
+        self._voice_active = False
+        self.mic_btn.configure(text="🎙  Speak", text_color=TEXT_SEC)
+        self._set_status("idle")
+
+    def _toggle_voice_loop(self):
+        active = toggle_voice_loop(
+            on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
+            on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+        )
+        self._update_voice_loop_ui("active" if active else "idle")
+
+    def _update_voice_loop_ui(self, state: str):
+        if state == "active":
+            self.voice_loop_btn.configure(
+                text="🔊  Listening...", text_color=GREEN, fg_color=BG_HOVER
+            )
+        else:
+            self.voice_loop_btn.configure(
+                text="🔊  Hands-free", text_color=TEXT_SEC, fg_color=BG_HOVER
+            )
+
+    # ── Status ────────────────────────────────────────────────────────────────
+
+    def _set_status(self, state: str, text: str = None):
+        labels = {
+            "idle":     "◉  idle",
+            "thinking": "◉  thinking",
+            "speaking": "◉  speaking",
+            "night":    "◉  building",
+            "error":    "◉  error",
+        }
+        colors = {
+            "idle":     (BG_HOVER, ACCENT),
+            "thinking": (BG_HOVER, ORANGE),
+            "speaking": (BG_HOVER, GREEN),
+            "night":    (BG_HOVER, PURPLE),
+            "error":    (BG_HOVER, RED),
+        }
+        fg, tc = colors.get(state, colors["idle"])
+        self.status_pill.configure(
+            text=labels.get(state, "◉  idle"),
+            fg_color=fg, text_color=tc
+        )
+        self.avatar.set_state(state)
+
+        # Update active agent dot
+        agent_map = {
+            "market":   ["research", "market", "scan", "opportunity"],
+            "decision": ["score", "evaluate", "decide"],
+            "build":    ["build", "code", "create"],
+            "ceo":      ["briefing", "summary", "strategy"],
+            "cseo":     ["evolve", "cseo", "fix"],
+            "ops":      ["health", "ops", "check"],
+        }
+        if text:
+            for agent, keywords in agent_map.items():
+                if any(k in str(text).lower() for k in keywords):
+                    self._highlight_agent(agent)
+                    break
+
+    def _highlight_agent(self, active_key: str):
+        for key, dot in self.agent_labels.items():
+            if key == active_key:
+                dot.configure(text_color=GREEN)
+            else:
+                dot.configure(text_color=TEXT_DIM)
+
+    def _update_context(self, text: str):
+        self.context_label.configure(text=text)
+
+    # ── Night mode ────────────────────────────────────────────────────────────
+
+    def _start_night_mode(self):
+        if night_is_running():
+            self._append_chat("tad", "Night mode is already running — TAD is building.")
+            return
+
+        self.night_btn.configure(
+            text="🌙  Building...",
+            fg_color=PURPLE,
+        )
+        self._set_status("night")
+        self._append_chat(
+            "tad",
+            "Night mode activated. Building everything on the priority list. "
+            "Go sleep — full report ready when you wake up."
+        )
+        self._speak_text(
+            "Night mode activated. Building while you sleep Joshua."
+        )
+        start_night_mode(
+            status_callback=lambda msg: self.msg_queue.put(("night_status", msg))
+        )
+
+    # ── On wake check ─────────────────────────────────────────────────────────
 
     def _check_on_wake(self):
-        def _do_check():
+        def _do():
             overnight = check_overnight_report()
-            if overnight:
+            if overnight and overnight.get("total_built", 0) > 0:
                 self.after(0, lambda: self._show_overnight_report(overnight))
                 return
             briefing = check_pending_briefing()
             if briefing:
                 self.after(0, lambda: self._show_briefing_safe(briefing))
-        threading.Thread(target=_do_check, daemon=True).start()
-
-    def _show_briefing_safe(self, briefing: dict):
-        """Show morning briefing on main thread safely."""
-        try:
-            win = MorningBriefingDashboard(briefing)
-            win.lift()
-        except Exception as e:
-            self._append_chat("tad", f"Morning briefing ready — check memory/morning_briefing.json")
+        threading.Thread(target=_do, daemon=True).start()
 
     def _show_overnight_report(self, report: dict):
         try:
             from tad_visual import OvernightReportDashboard
-            def _launch():
-                win = OvernightReportDashboard(report)
-                win.mainloop()
-            threading.Thread(target=_launch, daemon=True).start()
-        except Exception as e:
-            built   = report.get("total_built", 0)
-            files   = report.get("total_files", 0)
-            summary = report.get("exec_summary", "Overnight build complete.")
-            self._append_chat("tad",
-                f"Overnight build complete. {built} items built, {files} files created.\n\n{summary}"
-            )
-            self._speak_text(f"Good morning Joshua. {summary}")
-
-        self.night_btn.configure(
-            text="🌙  start night mode — TAD builds while you sleep",
-            fg_color="#0a0a14",
-            text_color="#534AB7"
-        )
-
-    # ── AGENT ─────────────────────────────────
-
-    def _run_agent(self, text):
-        try:
-            def status_update(msg):
-                self.msg_queue.put(("status", msg))
-            result = run_task(text, status_callback=status_update)
-            self.msg_queue.put(("reply", result))
-        except Exception as e:
-            self.msg_queue.put(("error", str(e)))
-
-    # ── KIMI CHAT ─────────────────────────────
-
-    def _call_kimi(self, user_text):
-        try:
-            self.conversation.append({"role": "user", "content": user_text})
-            response = client.chat.completions.create(
-                model=MODEL,
-                messages=self.conversation,
-                max_tokens=1024,
-            )
-            reply = response.choices[0].message.content
-            if reply:
-                self.conversation.append({"role": "assistant", "content": reply})
-            self._save_to_memory(user_text, reply)
-            self.msg_queue.put(("reply", reply))
-        except Exception as e:
-            self.msg_queue.put(("error", str(e)))
-
-    # ── MEMORY ────────────────────────────────
-
-    def _save_to_memory(self, user_text, reply):
-        mem_dir = Path("memory")
-        mem_dir.mkdir(exist_ok=True)
-        entry = {"ts": datetime.now().isoformat(), "user": user_text, "tad": reply}
-        with open(mem_dir / "history.jsonl", "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
-
-    # ── TTS ───────────────────────────────────
-
-    def _speak_text(self, text: str):
-        threading.Thread(target=self._speak, args=(text,), daemon=True).start()
-
-    def _speak(self, text):
-        self.speaking = True
-        pause_for_tad_speaking()   # stop voice loop picking up TAD's voice
-        try:
-            tts_engine.say(text)
-            tts_engine.runAndWait()
+            self.after(0, lambda: OvernightReportDashboard(report))
         except Exception:
-            pass
-        self.speaking = False
-        resume_after_tad_speaking()  # resume listening after TAD finishes
-        self.msg_queue.put(("done_speaking", None))
+            built   = report.get("total_built", 0)
+            summary = report.get("exec_summary", "")
+            self._append_chat("tad", f"Overnight: built {built} items. {summary}")
 
-    # ── QUEUE POLLING ─────────────────────────
+        self.night_btn.configure(text="🌙  Night Mode", fg_color=ACCENT_DIM)
+
+    def _show_briefing_safe(self, briefing: dict):
+        try:
+            from tad_visual import MorningBriefingDashboard
+            self.after(0, lambda: MorningBriefingDashboard(briefing))
+        except Exception:
+            self._append_chat("tad", f"Morning briefing ready. Action: {briefing.get('action_today','')}")
+
+    # ── Queue polling ─────────────────────────────────────────────────────────
 
     def _poll_queue(self):
         try:
             while True:
                 msg_type, data = self.msg_queue.get_nowait()
                 if msg_type == "status":
-                    self._set_status("thinking", data)
+                    self._set_status("thinking", str(data))
                 elif msg_type == "night_status":
                     if "complete" in str(data).lower():
-                        self._set_status("idle", "night build complete — tap to see results")
+                        self._set_status("idle")
                     else:
-                        self._set_status("night", str(data)[:60])
+                        self._set_status("night", str(data))
                 elif msg_type == "reply":
-                    self._append_chat("tad", data)
-                    self._set_status("speaking", data[:80] + ("..." if len(data) > 80 else ""))
-                    self._speak_text(data)
+                    if data and data.strip():
+                        self._append_chat("tad", data)
+                        self._set_status("speaking")
+                        self._speak_text(data[:300])
                 elif msg_type == "done_speaking":
                     if not night_is_running():
                         self._set_status("idle")
+                    self._update_context("")
                 elif msg_type == "error":
-                    self._set_status("error", f"error: {data}")
-                    self._append_chat("tad", f"[error] {data}")
+                    self._set_status("error")
+                    self._append_chat("tad", f"Error: {data}")
         except queue.Empty:
             pass
         self.after(100, self._poll_queue)
 
-    # ── HOTKEY ────────────────────────────────
+    # ── Hotkeys ───────────────────────────────────────────────────────────────
 
-    def _register_hotkey(self):
+    def _register_hotkeys(self):
         try:
             keyboard.add_hotkey("ctrl+space", self._on_hotkey_wake)
+            register_hotkey(
+                on_transcript=lambda t: self.after(0, lambda: self._inject_voice(t)),
+                on_status=lambda s, m: self.after(0, lambda: self._update_voice_loop_ui(s))
+            )
         except Exception:
             pass
 
@@ -582,33 +920,29 @@ class TADApp(ctk.CTk):
         self.lift()
         self.focus_force()
         self.input_box.focus()
-        self._set_status("idle", "listening... type your message")
 
-    # ── MINIMIZE / CLOSE ──────────────────────
+    # ── Minimize / close ──────────────────────────────────────────────────────
 
     def _on_minimize(self, event):
-        """Auto-start night mode when minimized between 10pm and 5am."""
         if event.widget != self:
             return
         hour = datetime.now().hour
         if (hour >= 22 or hour < 5) and not night_is_running():
-            print("[gui] Minimized — auto-starting night mode")
             self.after(2000, self._start_night_mode)
 
     def _on_close(self):
-        """Confirm before closing if night mode is running."""
         if night_is_running():
-            self._append_chat("tad",
-                "Night mode is still running! TAD is building. "
-                "Minimize instead to keep building while you sleep."
+            self._append_chat(
+                "tad",
+                "Night mode is running — minimize instead to keep building."
             )
         else:
             self.destroy()
 
 
 if __name__ == "__main__":
-    if not KIMI_API_KEY:
-        print("ERROR: KIMI_API_KEY not found in .env file")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        print("ERROR: ANTHROPIC_API_KEY not found in .env")
         sys.exit(1)
     app = TADApp()
     app.mainloop()

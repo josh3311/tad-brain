@@ -1,0 +1,75 @@
+{
+  "history": [
+    {
+      "opportunity_name": "AI Receptionist for HVAC companies",
+      "scores": {
+        "demand": 9,
+        "competition": 8,
+        "buildability": 7,
+        "revenue_speed": 7
+      },
+      "total_score": 31,
+      "decision": "APPROVE",
+      "reasoning": "Real, quantified pain point (40% missed calls = lost revenue) with strong Reddit evidence of desperation. No dedicated HVAC AI receptionist exists despite generic alternatives, creating a clear niche moat. Buildability is solid (call intake + routing + escalation logic via existing APIs) but slightly lower than claimed because HVAC-specific context (appointment scheduling, system details, emergency protocols) requires domain customization.",
+      "risk_flags": [
+        "Sales cycle to HVAC shops may be 4-6 weeks (slower than revenue_speed score suggests)",
+        "Requires phone infrastructure integration (Twilio/VoIP) \u2014 adds deployment complexity",
+        "Customer acquisition might need field sales, not pure self-serve",
+        "Seasonal business means revenue concentration in peak months"
+      ],
+      "market_size": "~$2.1B TAM (47,000 HVAC companies in US \u00d7 avg $45k/year service revenue; even 1% penetration at $500/month SaaS = $28M annual market)",
+      "kill_reason": null,
+      "scored_at": "2026-06-08T21:52:51.009232"
+    },
+    {
+      "opportunity_name": "AI that writes LinkedIn posts",
+      "scores": {
+        "demand": 3,
+        "competition": 2,
+        "buildability": 8,
+        "revenue_speed": 4
+      },
+      "total_score": 17,
+      "decision": "KILL",
+      "reasoning": "Saturated market with zero defensible moat. Dozens of established competitors (Buffer, Copy.ai, Jasper, native LinkedIn features) already solve this at scale with larger teams and distribution. The problem isn't real demand\u2014it's noise disguised as engagement desire. Revenue speed is slow because users abandon tools constantly in this category.",
+      "risk_flags": [
+        "Market saturation from 50+ existing tools",
+        "Zero willingness to pay\u2014users expect free or bundled features",
+        "LinkedIn API restrictions limit feature differentiation",
+        "Churn will be extreme\u2014typical engagement tool lifetime ~3 months",
+        "No TAD defensibility\u2014AI writing posts is commodity now"
+      ],
+      "market_size": "$500M TAM (overcrowded, declining margins)",
+      "kill_reason": "Buildability alone does not justify opportunity. This is a perfect example of 'easy to build, impossible to sell.' The 2/10 competition score was false\u2014the real market has 50+ competitors. Demand is manufactured (people don't pay for this). Killing immediately to preserve build cycles for defensible opportunities.",
+      "scored_at": "2026-06-08T21:52:58.481686"
+    },
+    {
+      "ts": "2026-06-08T21:58:04.954353",
+      "report_type": "opportunity_score",
+      "decision": "GO",
+      "assigned_to": "CTO Agent",
+      "reasoning": "Score of 32/40 exceeds threshold. High demand (9), low competition (8), and proven market pain (40% missed calls) match THE_MONKEY criteria perfectly. HVAC companies are trapped in a solvable problem with clear willingness to pay."
+    },
+    {
+      "opportunity_name": "LLM Token Cost Attribution & Real-Time Spend Dashboard",
+      "scores": {
+        "demand": 9,
+        "competition": 7,
+        "buildability": 8,
+        "revenue_speed": 8
+      },
+      "total_score": 32,
+      "decision": "APPROVE",
+      "reasoning": "Real, documented pain point with companies actively overspending on LLM APIs and no solid real-time solution in market. Buildable MVP in 1-3 nights using OpenAI/Anthropic APIs + basic aggregation layer. Revenue-ready product with clear B2B SaaS monetization path and fast sales cycle (companies want cost visibility immediately).",
+      "risk_flags": [
+        "API rate limits from multiple providers could complicate real-time tracking",
+        "Requires active integration maintenance as new LLM providers emerge",
+        "Customer acquisition depends on reaching engineering/finops teams with limited marketing budget",
+        "Retention risk if product doesn't deliver accuracy within 2-3% of actual bills"
+      ],
+      "market_size": "$2.1B+ (estimated: 50K+ companies using multiple LLM APIs \u00d7 $500-2K annual spend per company on monitoring/optimization tools)",
+      "kill_reason": null,
+      "scored_at": "2026-06-09T02:44:23.998932"
+    }
+  ]
+}

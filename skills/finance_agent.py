@@ -9,6 +9,7 @@ import os
 import re
 from pathlib import Path
 from datetime import datetime, timedelta
+import anthropic
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -18,11 +19,16 @@ ROOT       = Path(__file__).parent.parent
 MEMORY     = ROOT / "memory"
 SKILL_PATH = Path(__file__).parent / "finance_agent.md"
 
-client = OpenAI(
+# Kimi for code generation
+kimi = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
     base_url="https://api.moonshot.ai/v1",
 )
-MODEL = "kimi-k2.6"
+KIMI_MODEL = "kimi-k2.6"
+
+# Claude for reasoning and JSON
+claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+MODEL  = "claude-haiku-4-5-20251001"
 
 # Revenue milestones to flag Joshua
 MILESTONES = [1000, 5000, 10000, 25000, 50000, 100000]
@@ -87,16 +93,8 @@ Return ONLY a JSON object:
 }}"""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=600,
-        )
-        raw    = resp.choices[0].message.content or "{}"
+        resp = claude.messages.create(model=MODEL, max_tokens=600, system=skill, messages=[{"role": "user", "content": prompt}])
+        raw    = msg.content[0].text or "{}"
         clean  = re.sub(r"```json|```", "", raw).strip()
         invoice = json.loads(clean)
         invoice["status"]     = "sent"

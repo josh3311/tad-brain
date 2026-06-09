@@ -9,7 +9,7 @@ import os
 import re
 from pathlib import Path
 from datetime import datetime
-from openai import OpenAI
+import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,11 +19,8 @@ MEMORY     = ROOT / "memory"
 WORKFLOWS  = ROOT / "workflows" / "market-scans"
 SKILL_PATH = Path(__file__).parent / "market_agent.md"
 
-client = OpenAI(
-    api_key=os.getenv("KIMI_API_KEY", ""),
-    base_url="https://api.moonshot.ai/v1",
-)
-MODEL = "kimi-k2.6"
+claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+MODEL  = "claude-haiku-4-5-20251001"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -69,19 +66,96 @@ def _get_previous() -> list:
     return []
 
 
+# ── Web search ───────────────────────────────────────────────────────────────
+
+def _web_search(query: str) -> str:
+    """
+    Search the web using DuckDuckGo (free, no API key needed).
+    Returns top results as text.
+    """
+    try:
+        import urllib.request
+        import urllib.parse
+
+        # DuckDuckGo instant answer API
+        encoded = urllib.parse.quote(query)
+        url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1&skip_disambig=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "TAD-AI/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        results = []
+
+        # Abstract (main answer)
+        if data.get("Abstract"):
+            results.append(f"Summary: {data['Abstract'][:300]}")
+
+        # Related topics
+        for topic in data.get("RelatedTopics", [])[:3]:
+            if isinstance(topic, dict) and topic.get("Text"):
+                results.append(f"- {topic['Text'][:150]}")
+
+        return "\n".join(results) if results else "No results found."
+
+    except Exception as e:
+        _log(f"Web search error: {e}")
+        return "Search unavailable."
+
+
+def _research_opportunity(niche: str) -> dict:
+    """
+    Do real-time research on a niche before scoring.
+    Searches Reddit signals, competitors, and market size.
+    """
+    _log(f"Researching: {niche}")
+    research = {}
+
+    # Search 1 — Reddit pain points
+    reddit_results = _web_search(f"{niche} problems complaints site:reddit.com")
+    research["reddit_signals"] = reddit_results[:400]
+
+    # Search 2 — Existing competitors
+    competitor_results = _web_search(f"AI software tool for {niche} small business")
+    research["competitors"] = competitor_results[:400]
+
+    # Search 3 — Market demand signals
+    demand_results = _web_search(f"{niche} business owners struggling AI automation 2024 2025")
+    research["demand_signals"] = demand_results[:400]
+
+    return research
+
+
+def _get_current_niches() -> str:
+    """
+    Search for currently trending AI pain points in real time.
+    """
+    _log("Searching for current AI pain points...")
+    results = []
+
+    searches = [
+        "small business owners AI automation problems 2025",
+        "what AI tools do small businesses need but don't exist",
+        "AI software gaps underserved markets 2025",
+    ]
+
+    for query in searches:
+        result = _web_search(query)
+        if result and result != "Search unavailable." and result != "No results found.":
+            results.append(result[:300])
+
+    return "\n\n".join(results) if results else ""
+
+
 # ── Core scan engine ──────────────────────────────────────────────────────────
 
 def scan_for_opportunities(focus_area: str = "") -> list:
     """
     Main scan function. Returns top 3 scored opportunities.
-    Each opportunity: { name, problem, demand, competition,
-                        buildability, revenue_speed, total_score, evidence }
     """
-    skill   = _load_skill()
-    monkey  = (ROOT / "THE_MONKEY.md").read_text(encoding="utf-8")[:2000] \
-              if (ROOT / "THE_MONKEY.md").exists() else ""
-    killed  = _get_killed()
+    killed   = _get_killed()
     previous = _get_previous()
+    focus    = focus_area if focus_area else "AI automation for small local businesses"
+    monkey   = (ROOT / "THE_MONKEY.md").read_text(encoding="utf-8")[:500]                if (ROOT / "THE_MONKEY.md").exists() else ""
 
     _log("Starting market scan...")
 
@@ -131,17 +205,21 @@ Score them honestly but always return at least 3 opportunities.
 Return JSON array only. No explanation."""
 
     try:
-        resp = client.chat.completions.create(
+        msg = claude.messages.create(
             model=MODEL,
-            messages=[
-                {"role": "system", "content": skill},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=1,
-            max_tokens=1500,
+            max_tokens=2000,
+            system="You are a market research assistant. Always respond with valid JSON only. No markdown.",
+            messages=[{"role": "user", "content": prompt}],
         )
-        raw   = resp.choices[0].message.content or "[]"
+        raw = msg.content[0].text or "[]"
+        print(f"[MARKET DEBUG] Raw response ({len(raw)} chars): {raw[:300]}")
         clean = re.sub(r"```json|```", "", raw).strip()
+        start = clean.find("[")
+        end   = clean.rfind("]")
+        if start != -1 and end != -1 and end > start:
+            clean = clean[start:end+1]
+        else:
+            clean = "[]"
         opportunities = json.loads(clean)
 
         # Filter out killed and previous
