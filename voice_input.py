@@ -20,9 +20,9 @@ from faster_whisper import WhisperModel
 # ── Config ────────────────────────────────────────────────────────────────────
 SAMPLE_RATE     = 16000          # Whisper expects 16kHz
 BLOCK_SIZE      = 1024           # frames per audio block
-SILENCE_LIMIT   = 2.0            # seconds of silence to stop recording
-SILENCE_THRESH  = 0.01           # RMS below this = silence
-WHISPER_MODEL   = "base.en"      # tiny.en / base.en / small.en / medium.en
+SILENCE_LIMIT   = 2.5            # seconds of silence to stop recording
+SILENCE_THRESH  = 0.015          # raised from 0.01 — stops picking up background noise
+WHISPER_MODEL   = "base.en"      # using cached model — no download needed
 COMPUTE_TYPE    = "int8"         # int8 = fast CPU, float16 = GPU
 
 # Lazy-load model so import doesn't block startup
@@ -83,7 +83,11 @@ def _record_until_silence() -> np.ndarray:
 def transcribe(audio: np.ndarray) -> str:
     """Run faster-whisper on a float32 numpy array. Returns transcript string."""
     model = _get_model()
-    segments, _ = model.transcribe(audio, beam_size=5, language="en")
+    segments, _ = model.transcribe(
+        audio, beam_size=5, language="en",
+        vad_filter=True,          # removes non-speech segments
+        vad_parameters=dict(min_silence_duration_ms=500)
+    )
     text = " ".join(seg.text.strip() for seg in segments).strip()
     print(f"[Voice] Transcript: {text}")
     return text

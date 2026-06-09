@@ -215,6 +215,42 @@
       "evidence": "Enterprise AI teams on Twitter/LinkedIn discuss data governance fears. Lawsuits emerging around training data usage. GDPR/contractual violations becoming board-level concerns.",
       "why_no_competition": "Requires access to model internals and training data fingerprinting. High legal complexity deters most startups. Only enterprises can justify custom builds.",
       "found_date": "2026-06-09T03:01:58.564198"
+    },
+    {
+      "name": "AI Model Output Attribution & Source Tracker",
+      "problem": "Enterprises cannot trace which specific API call, model version, or provider generated which output in production systems, making debugging, compliance audits, and cost allocation impossible across multi-model deployments",
+      "demand": 8,
+      "competition": 8,
+      "buildability": 8,
+      "revenue_speed": 8,
+      "total_score": 32,
+      "evidence": "Enterprise AI ops teams on r/MachineLearning report inability to track outputs to source models; compliance officers struggle with audit trails for regulated industries; no existing product provides complete request-to-output lineage tracking",
+      "why_no_competition": "Requires real-time instrumentation across multiple AI providers and custom deployment monitoring\u2014too niche for generic observability tools, too infrastructure-specific for pure SaaS solutions",
+      "found_date": "2026-06-09T04:22:54.318247"
+    },
+    {
+      "name": "Multi-Provider Token Count Standardizer & Budget Enforcer",
+      "problem": "Different LLM providers (OpenAI, Anthropic, Google, Llama) count tokens differently for the same input, causing budget overruns, unpredictable costs, and inability to fairly compare model pricing",
+      "demand": 8,
+      "competition": 5,
+      "buildability": 9,
+      "revenue_speed": 9,
+      "total_score": 31,
+      "evidence": "Developers report token count mismatches causing budget surprises; no standardized tool exists to normalize token counts across providers; cost estimation remains manual and error-prone in multi-provider setups",
+      "why_no_competition": "Requires maintaining accurate token counting for each provider separately and building a unified comparison layer\u2014too granular for cost management platforms, too provider-specific for general tools",
+      "found_date": "2026-06-09T04:22:54.318261"
+    },
+    {
+      "name": "AI Fine-Tuning ROI & Performance Degradation Monitor",
+      "problem": "Companies invest in fine-tuning custom LLMs but have no way to measure whether the fine-tuned model actually performs better than the base model in production, or when fine-tuned models degrade over time",
+      "demand": 7,
+      "competition": 7,
+      "buildability": 9,
+      "revenue_speed": 7,
+      "total_score": 30,
+      "evidence": "Reddit r/LocalLLMs and r/OpenAI users report fine-tuning experiments that show gains in lab but fail in production; enterprises mention wasted budgets on fine-tuning with no measurable improvement; no product benchmarks fine-tuned vs base models automatically",
+      "why_no_competition": "Requires live production data collection and statistical analysis of model outputs\u2014too specialized for generic ML monitoring platforms, requires domain knowledge of fine-tuning workflows",
+      "found_date": "2026-06-09T04:22:54.318267"
     }
   ]
 }

@@ -27,3 +27,14 @@
 {"ts": "2026-06-09T02:53:01.511824", "msg": "Voice loop started \u2014 listening continuously"}
 {"ts": "2026-06-09T02:53:04.918305", "msg": "Voice loop stopping..."}
 {"ts": "2026-06-09T02:53:07.563066", "msg": "Voice loop stopped"}
+{"ts": "2026-06-09T03:26:42.758387", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-09T03:27:41.560920", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-09T03:27:49.433335", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-09T03:27:56.231161", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-09T03:34:25.812791", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-09T03:46:22.107295", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-09T03:47:46.079137", "msg": "Voice loop started \u2014 listening continuously"}
+{"ts": "2026-06-09T03:47:53.188040", "msg": "Heard: I want you to tell me what's going on with the system."}
+{"ts": "2026-06-09T03:47:53.190688", "role": "user", "text": "I want you to tell me what's going on with the system."}
+{"ts": "2026-06-09T03:47:53.950255", "msg": "Voice loop stopping..."}
+{"ts": "2026-06-09T03:47:56.060478", "msg": "Voice loop stopped"}

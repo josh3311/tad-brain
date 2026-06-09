@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-06-09T02:51:45.951108",
+  "checked_at": "2026-06-09T03:46:23.243361",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
       "status": "healthy",
-      "last_active": "2026-06-09T02:36:04.061975",
+      "last_active": "2026-06-09T03:01:58.568287",
       "last_msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="
     },
     "build_agent": {
@@ -20,8 +20,8 @@
     "cseo_agent": {
       "agent": "cseo_agent",
       "status": "healthy",
-      "last_active": "2026-06-08T13:23:09.907521",
-      "last_msg": "No gaps identified this cycle"
+      "last_active": "2026-06-09T03:01:48.099785",
+      "last_msg": "No bugs found either \u2014 TAD is fully caught up"
     },
     "decision_agent": {
       "agent": "decision_agent",
