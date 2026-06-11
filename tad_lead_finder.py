@@ -1,115 +1,98 @@
 """
-tad_lead_finder.py
-
-Core data model and opportunity scoring for TAD AI lead discovery.
+TAD Lead Finder - Core data model and opportunity scoring.
 """
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
 @dataclass(frozen=True)
 class Lead:
-    """Core data model for an AI industry loophole opportunity."""
-    niche_name: str
-    competition_level: float  # 0.0 = none, 1.0 = saturated
-    pain_severity: float      # 0.0 = none, 1.0 = extreme
-    willingness_to_pay: float # 0.0 = none, 1.0 = very high
-    growth_potential: float   # 0.0 = flat, 1.0 = 100%+ skyrocket
+    name: str
+    competition: float
+    pain: float
+    willingness: float
+    skyrocket: float
 
 
-def calculate_opportunity_score(lead: Lead) -> float:
-    """
-    Calculate an opportunity score (0-100) for a lead.
-    
-    Uses a multiplicative model: an opportunity only scores highly
-    when competition is low AND pain, willingness to pay, and growth
-    potential are all high.
-    """
-    for field_name, value in [
-        ("competition_level", lead.competition_level),
-        ("pain_severity", lead.pain_severity),
-        ("willingness_to_pay", lead.willingness_to_pay),
-        ("growth_potential", lead.growth_potential),
-    ]:
-        if not (0.0 <= value <= 1.0):
-            raise ValueError(f"{field_name} must be between 0.0 and 1.0")
-    
-    score = (
-        (1.0 - lead.competition_level)
-        * lead.pain_severity
-        * lead.willingness_to_pay
-        * lead.growth_potential
-        * 100.0
-    )
-    return round(score, 2)
+def score_lead(lead: Lead) -> float:
+    # TAD opportunity score: equally weighted average of the four pillars.
+    # Returns 0.0 (worst) to 1.0 (perfect loophole).
+    return (lead.competition + lead.pain + lead.willingness + lead.skyrocket) / 4.0
 
 
+@dataclass
 class LeadStore:
-    """In-memory storage and aggregation for leads."""
-    
-    def __init__(self):
-        self._leads: list[Lead] = []
-    
+    # Aggregation layer for recording and summarizing leads.
+    _leads: List[Lead] = field(default_factory=list)
+
     def add(self, lead: Lead) -> None:
         self._leads.append(lead)
-    
-    def summarize(self) -> dict:
+
+    def count(self) -> int:
+        return len(self._leads)
+
+    def average_score(self) -> float:
         if not self._leads:
-            return {
-                "count": 0,
-                "average_score": 0.0,
-                "top_lead": None,
-            }
-        
-        scored = [
-            (lead, calculate_opportunity_score(lead))
-            for lead in self._leads
-        ]
-        total = sum(s for _, s in scored)
-        top_lead, top_score = max(scored, key=lambda x: x[1])
-        
-        return {
-            "count": len(self._leads),
-            "average_score": round(total / len(self._leads), 2),
-            "top_lead": top_lead.niche_name,
-            "top_score": top_score,
-        }
+            return 0.0
+        return sum(score_lead(lead) for lead in self._leads) / len(self._leads)
+
+    def best_lead(self) -> Optional[Lead]:
+        if not self._leads:
+            return None
+        return max(self._leads, key=score_lead)
 
 
 def generate_report(store: LeadStore) -> str:
-    """Return a simple text report summarizing the lead store."""
-    summary = store.summarize()
+    # Build a simple text summary of the lead store.
     lines = [
-        "TAD Lead Finder Report",
-        "=" * 22,
-        f"Total leads: {summary['count']}",
+        "Lead Report",
+        "-----------",
+        f"Total leads: {store.count()}",
+        f"Average score: {store.average_score():.2f}",
     ]
-    if summary["count"] > 0:
-        lines.append(f"Average score: {summary['average_score']}")
-        lines.append(
-            f"Top lead: {summary['top_lead']} "
-            f"(score: {summary['top_score']})"
-        )
+    best = store.best_lead()
+    if best is not None:
+        lines.append(f"Best lead: {best.name} ({score_lead(best):.2f})")
+    else:
+        lines.append("Best lead: None")
     return "\n".join(lines)
 
 
-def _run_tests() -> int:
-    # Valid lead scoring
-    lead = Lead(
-        niche_name="AI Transcription",
-        competition_level=0.2,
-        pain_severity=0.8,
-        willingness_to_pay=0.9,
-        growth_potential=0.7,
-    )
-    score = calculate_opportunity_score(lead)
-    expected = round((0.8 * 0.8 * 0.9 * 0.7 * 100.0), 2)
-    assert score == expected, f"Expected {expected}, got {score}"
-    
-    # Perfect and zero boundaries
-    perfect = Lead("Perfect", 0.0, 1.0, 1.0, 1.0)
-    assert calculate_opportunity_score(perfect) == 100.0
-    
-    zero = Lead("Zero", 1.0, 1.0, 1.0, 1.0)
-    assert calculate_opportunity
+def run_tests() -> None:
+    perfect = Lead("Perfect", 1.0, 1.0, 1.0, 1.0)
+    assert score_lead(perfect) == 1.0, "Perfect lead must score 1.0"
+
+    mediocre = Lead("Mediocre", 0.5, 0.5, 0.5, 0.5)
+    assert score_lead(mediocre) == 0.5, "Mediocre lead must score 0.5"
+
+    mixed = Lead("Mixed", 1.0, 0.0, 1.0, 0.0)
+    assert score_lead(mixed) == 0.5, "Mixed lead must score 0.5"
+
+    store = LeadStore()
+    assert store.count() == 0, "Empty store count must be 0"
+    assert store.average_score() == 0.0, "Empty store average must be 0.0"
+    assert store.best_lead() is None, "Empty store best lead must be None"
+
+    store.add(mediocre)
+    assert store.count() == 1, "Store count must be 1 after one add"
+    assert store.average_score() == 0.5, "Store average must be 0.5"
+    assert store.best_lead() == mediocre, "Only lead must be best"
+
+    store.add(perfect)
+    assert store.count() == 2, "Store count must be 2"
+    assert store.average_score() == 0.75, "Average of 0.5 and 1.0 must be 0.75"
+    assert store.best_lead() == perfect, "Best lead must be perfect"
+
+    report = generate_report(store)
+    assert "Total leads: 2" in report
+    assert "Average score: 0.75" in report
+    assert "Best lead: Perfect (1.00)" in report
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        run_tests()
+    else:
+        sys.exit("Usage: python tad_lead_finder.py --test")
