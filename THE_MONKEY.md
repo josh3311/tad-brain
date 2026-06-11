@@ -419,7 +419,7 @@ Goal: TAD fixes its own bugs and finds real opportunities autonomously.
 - [x] P6-2: Update cseo_agent.py — when priority list empty, scan error logs and fix bugs instead of sleeping (done 2026-06-11)
 - [x] P6-3: Fix tad_gui.py — empty TAD responses (agent routing not returning to chat) (done 2026-06-11)
 - [x] P6-4: Fix tad_gui.py — Tcl threading error on popup launch (done 2026-06-11)
-- [ ] P6-5: Fix voice_input.py — raise silence threshold to stop picking up background noise
+- [x] P6-5: Fix voice_input.py — raise silence threshold to stop picking up background noise (done 2026-06-11)
 - [ ] P6-6: Wire SMTP in .env so TAD can send real emails to leads
 - [x] P6-7: Market scan complete — LLM Token Cost Attribution Dashboard chosen ✓
 - [x] P6-BUILD-1: Build LLM Token Cost Attribution Dashboard — CEO GO decision ✓ (done 2026-06-11)
