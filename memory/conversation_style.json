@@ -10,11 +10,6 @@
     "TAD"
   ],
   "phrases_he_uses": [
-    "being",
-    "logged.",
-    "fixed",
-    "threading,",
-    "start_night_mode(),",
     "check_overnight_report()",
     "check_pending_briefing(),",
     "launcher",
@@ -59,7 +54,12 @@
     "\"findings\":",
     "\"agents\":",
     "\"niches\":",
-    "\"last_updated\":"
+    "\"last_updated\":",
+    "morning",
+    "please",
+    "system",
+    "health",
+    "check"
   ],
   "response_patterns": {},
   "last_updated": "2026-06-08T04:42:57.271832"
