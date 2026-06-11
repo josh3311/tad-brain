@@ -10,8 +10,6 @@
     "TAD"
   ],
   "phrases_he_uses": [
-    "check_overnight_report()",
-    "check_pending_briefing(),",
     "launcher",
     "input,",
     "_toggle_voice,",
@@ -59,7 +57,9 @@
     "please",
     "system",
     "health",
-    "check"
+    "check",
+    "generate",
+    "report"
   ],
   "response_patterns": {},
   "last_updated": "2026-06-08T04:42:57.271832"

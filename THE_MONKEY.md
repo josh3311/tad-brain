@@ -416,7 +416,7 @@ Total skill files: 10 (8 agents + conversation + visual)
 Goal: TAD fixes its own bugs and finds real opportunities autonomously.
 
 - [x] P6-1: Fix market_agent.py — Kimi K2 returning empty response to JSON prompts (done 2026-06-11)
-- [ ] P6-2: Update cseo_agent.py — when priority list empty, scan error logs and fix bugs instead of sleeping
+- [x] P6-2: Update cseo_agent.py — when priority list empty, scan error logs and fix bugs instead of sleeping (done 2026-06-11)
 - [ ] P6-3: Fix tad_gui.py — empty TAD responses (agent routing not returning to chat)
 - [ ] P6-4: Fix tad_gui.py — Tcl threading error on popup launch
 - [ ] P6-5: Fix voice_input.py — raise silence threshold to stop picking up background noise
