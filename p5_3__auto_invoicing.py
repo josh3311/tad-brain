@@ -1,130 +1,139 @@
-"""Minimal auto invoicing core: data model and total calculation."""
+"""Minimal auto-invoicing core: Invoice data model, total calculation,
+aggregation, and simple text reporting.
+"""
 
 import sys
 from dataclasses import dataclass, field
-from decimal import Decimal
 from typing import List
 
 
 @dataclass
 class LineItem:
     description: str
-    quantity: Decimal
-    unit_price: Decimal
+    quantity: float
+    unit_price: float
 
 
 @dataclass
 class Invoice:
-    invoice_id: str
     customer: str
-    tax_rate: Decimal = Decimal("0.00")
-    lines: List[LineItem] = field(default_factory=list)
-
-    def calculate_totals(self):
-        subtotal = Decimal("0.00")
-        for line in self.lines:
-            subtotal += line.quantity * line.unit_price
-        tax = (subtotal * self.tax_rate).quantize(Decimal("0.01"))
-        total = (subtotal + tax).quantize(Decimal("0.01"))
-        return subtotal.quantize(Decimal("0.01")), tax, total
+    tax_rate: float
+    items: List[LineItem] = field(default_factory=list)
+    subtotal: float = 0.0
+    tax_amount: float = 0.0
+    total: float = 0.0
 
 
-@dataclass
-class InvoiceStore:
-    _invoices: List[Invoice] = field(default_factory=list)
+def calculate_totals(inv: Invoice) -> None:
+    # Compute subtotal, tax, and grand total from line items.
+    inv.subtotal = sum(line.quantity * line.unit_price for line in inv.items)
+    inv.tax_amount = inv.subtotal * inv.tax_rate
+    inv.total = inv.subtotal + inv.tax_amount
 
-    def add(self, invoice: Invoice) -> None:
-        self._invoices.append(invoice)
 
-    def get(self, invoice_id: str) -> Invoice:
-        for inv in self._invoices:
-            if inv.invoice_id == invoice_id:
-                return inv
-        raise KeyError(invoice_id)
+class InvoiceBook:
+    # Storage and aggregation layer for multiple invoices.
+    def __init__(self) -> None:
+        self.invoices: List[Invoice] = []
 
-    def summary(self):
-        total_subtotal = Decimal("0.00")
-        total_tax = Decimal("0.00")
-        grand_total = Decimal("0.00")
-        for inv in self._invoices:
-            s, t, tot = inv.calculate_totals()
-            total_subtotal += s
-            total_tax += t
-            grand_total += tot
+    def add(self, inv: Invoice) -> None:
+        self.invoices.append(inv)
+
+    def summary(self) -> dict:
+        # Return aggregated metrics across all stored invoices.
         return {
-            "count": len(self._invoices),
-            "total_subtotal": total_subtotal.quantize(Decimal("0.01")),
-            "total_tax": total_tax.quantize(Decimal("0.01")),
-            "total": grand_total.quantize(Decimal("0.01")),
+            "count": len(self.invoices),
+            "subtotal": sum(i.subtotal for i in self.invoices),
+            "tax_amount": sum(i.tax_amount for i in self.invoices),
+            "total": sum(i.total for i in self.invoices),
         }
 
 
-def _run_tests():
-    # test 1: no tax
-    inv1 = Invoice(
-        invoice_id="INV-001",
-        customer="Acme Corp",
-        lines=[
-            LineItem("Widget", Decimal("2"), Decimal("10.00")),
-            LineItem("Gadget", Decimal("1"), Decimal("5.50")),
-        ],
+def format_report(book: InvoiceBook) -> str:
+    # Generate a plain-text summary report from an InvoiceBook.
+    agg = book.summary()
+    lines = [
+        "Invoice Summary Report",
+        "=" * 22,
+        f"Invoices: {agg['count']}",
+        f"Subtotal: {agg['subtotal']:.2f}",
+        f"Tax:      {agg['tax_amount']:.2f}",
+        f"Total:    {agg['total']:.2f}",
+    ]
+    return "\n".join(lines)
+
+
+def _run_tests() -> int:
+    # Test 1: single item, zero tax.
+    i1 = Invoice(
+        customer="Acme",
+        tax_rate=0.0,
+        items=[LineItem("Bolt", 10, 1.50)]
     )
-    sub1, tax1, tot1 = inv1.calculate_totals()
-    assert sub1 == Decimal("25.50"), f"subtotal mismatch: {sub1}"
-    assert tax1 == Decimal("0.00"), f"tax mismatch: {tax1}"
-    assert tot1 == Decimal("25.50"), f"total mismatch: {tot1}"
+    calculate_totals(i1)
+    assert i1.subtotal == 15.0
+    assert i1.tax_amount == 0.0
+    assert i1.total == 15.0
 
-    # test 2: 10 percent tax
-    inv2 = Invoice(
-        invoice_id="INV-002",
-        customer="Beta LLC",
-        tax_rate=Decimal("0.10"),
-        lines=[LineItem("Service", Decimal("3"), Decimal("100.00"))],
+    # Test 2: multiple items with 8% tax.
+    i2 = Invoice(
+        customer="Wayne",
+        tax_rate=0.08,
+        items=[
+            LineItem("Cape", 1, 100.0),
+            LineItem("Mask", 2, 25.0)
+        ]
     )
-    sub2, tax2, tot2 = inv2.calculate_totals()
-    assert sub2 == Decimal("300.00"), f"subtotal mismatch: {sub2}"
-    assert tax2 == Decimal("30.00"), f"tax mismatch: {tax2}"
-    assert tot2 == Decimal("330.00"), f"total mismatch: {tot2}"
+    calculate_totals(i2)
+    assert i2.subtotal == 150.0
+    assert i2.tax_amount == 12.0
+    assert i2.total == 162.0
 
-    # test 3: storage and aggregation
-    store = InvoiceStore()
-    store.add(inv1)
-    store.add(inv2)
+    # Test 3: InvoiceBook aggregation.
+    book = InvoiceBook()
+    empty = book.summary()
+    assert empty == {"count": 0, "subtotal": 0.0, "tax_amount": 0.0, "total": 0.0}
 
-    retrieved = store.get("INV-001")
-    assert retrieved.invoice_id == "INV-001"
-    assert retrieved.customer == "Acme Corp"
+    book.add(i1)
+    book.add(i2)
+    s = book.summary()
+    assert s["count"] == 2
+    assert s["subtotal"] == 165.0
+    assert s["tax_amount"] == 12.0
+    assert s["total"] == 177.0
 
-    summary = store.summary()
-    assert summary["count"] == 2
-    assert summary["total_subtotal"] == Decimal("325.50")
-    assert summary["total_tax"] == Decimal("30.00")
-    assert summary["total"] == Decimal("355.50")
+    # Test 4: text report on empty book.
+    empty_book = InvoiceBook()
+    rep_empty = format_report(empty_book)
+    assert "Invoices: 0" in rep_empty
+    assert "Subtotal: 0.00" in rep_empty
+    assert "Tax:      0.00" in rep_empty
+    assert "Total:    0.00" in rep_empty
 
-    # test missing invoice raises KeyError
-    try:
-        store.get("INV-999")
-        assert False, "Expected KeyError for missing invoice"
-    except KeyError:
-        pass
+    # Test 5: text report on populated book.
+    rep = format_report(book)
+    assert "Invoices: 2" in rep
+    assert "Subtotal: 165.00" in rep
+    assert "Tax:      12.00" in rep
+    assert "Total:    177.00" in rep
 
-    # test empty store summary
-    empty_store = InvoiceStore()
-    empty_summary = empty_store.summary()
-    assert empty_summary["count"] == 0
-    assert empty_summary["total_subtotal"] == Decimal("0.00")
-    assert empty_summary["total_tax"] == Decimal("0.00")
-    assert empty_summary["total"] == Decimal("0.00")
-
-    print("All tests passed.")
     return 0
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        try:
-            sys.exit(_run_tests())
-        except AssertionError as exc:
-            print(f"Test failed: {exc}")
-            sys.exit(1)
-    print("Usage: python module.py --test")
+        sys.exit(_run_tests())
+    else:
+        # CLI demo: build a tiny book and print report.
+        demo_book = InvoiceBook()
+        demo_inv = Invoice(
+            customer="Demo Corp",
+            tax_rate=0.10,
+            items=[
+                LineItem("Widget", 5, 20.0),
+                LineItem("Gadget", 2, 15.0),
+            ],
+        )
+        calculate_totals(demo_inv)
+        demo_book.add(demo_inv)
+        print(format_report(demo_book))
