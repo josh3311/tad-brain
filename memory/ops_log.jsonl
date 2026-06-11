@@ -114,3 +114,6 @@
 {"ts": "2026-06-11T10:29:27.824793", "msg": "Running full system health check..."}
 {"ts": "2026-06-11T10:29:27.834830", "msg": "Health check complete \u2014 2 issues found"}
 {"ts": "2026-06-11T10:29:27.835240", "msg": "Issues: ['decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-11T11:22:05.623005", "msg": "Running full system health check..."}
+{"ts": "2026-06-11T11:22:05.685209", "msg": "Health check complete \u2014 2 issues found"}
+{"ts": "2026-06-11T11:22:05.685895", "msg": "Issues: ['decision_agent', 'ceo_agent']"}
