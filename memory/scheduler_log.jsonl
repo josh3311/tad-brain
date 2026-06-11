@@ -67,3 +67,33 @@
 {"ts": "2026-06-09T04:46:22.675896", "msg": "Ops: All systems healthy \u2713"}
 {"ts": "2026-06-09T05:46:23.113817", "msg": "Hourly Ops health check..."}
 {"ts": "2026-06-09T05:46:23.137663", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T06:46:23.615734", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T06:46:23.645217", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T07:00:23.733184", "msg": "Firing scheduled task: briefing"}
+{"ts": "2026-06-09T07:00:23.741480", "msg": "7AM \u2014 Building morning briefing..."}
+{"ts": "2026-06-09T07:00:28.881799", "msg": "Morning briefing saved \u2192 C:\\TAD\\memory\\morning_briefing.json"}
+{"ts": "2026-06-09T07:46:24.093934", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T07:46:24.133709", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T08:46:24.575432", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T08:46:24.656642", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T09:46:25.015570", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T09:46:25.037981", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T10:15:09.083445", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-09T10:15:09.083947", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T10:15:10.548760", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T11:05:07.403193", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-09T11:05:07.404492", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T11:05:08.580513", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T11:17:48.429172", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-09T11:17:48.430687", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T11:17:49.670070", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T12:17:48.911481", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T12:17:48.970897", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T13:23:33.755491", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-09T13:23:33.761985", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T13:23:35.308043", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-09T14:23:39.368528", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-09T14:23:39.418111", "msg": "Ops: All systems healthy \u2713"}
+{"ts": "2026-06-11T09:05:19.067906", "msg": "Scheduler started \u2014 night mode 11pm | market scan 3am | briefing 7am | ops every hour"}
+{"ts": "2026-06-11T09:05:19.068156", "msg": "Hourly Ops health check..."}
+{"ts": "2026-06-11T09:05:19.643087", "msg": "\u26a0\ufe0f Ops detected 2 issue(s): \u26a0\ufe0f 2 issue(s) detected \u2014 check memory/system_health.json"}

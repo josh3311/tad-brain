@@ -422,7 +422,7 @@ Goal: TAD fixes its own bugs and finds real opportunities autonomously.
 - [ ] P6-5: Fix voice_input.py — raise silence threshold to stop picking up background noise
 - [ ] P6-6: Wire SMTP in .env so TAD can send real emails to leads
 - [x] P6-7: Market scan complete — LLM Token Cost Attribution Dashboard chosen ✓
-- [ ] P6-BUILD-1: Build LLM Token Cost Attribution Dashboard — CEO GO decision ✓
+- [x] P6-BUILD-1: Build LLM Token Cost Attribution Dashboard — CEO GO decision ✓ (done 2026-06-11)
 
 
 

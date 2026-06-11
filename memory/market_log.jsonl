@@ -99,3 +99,31 @@
 {"ts": "2026-06-09T04:22:54.316041", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
 {"ts": "2026-06-09T04:22:54.322932", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-09-0422.md"}
 {"ts": "2026-06-09T04:22:54.324208", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-09T09:46:45.965566", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-09T09:46:46.013498", "msg": "Starting market scan..."}
+{"ts": "2026-06-09T09:46:55.018794", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-09T09:46:55.023352", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-09-0946.md"}
+{"ts": "2026-06-09T09:46:55.024196", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-09T09:56:49.143708", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-09T09:56:49.163725", "msg": "Starting market scan..."}
+{"ts": "2026-06-09T09:57:00.303706", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-09T09:57:00.307210", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-09-0957.md"}
+{"ts": "2026-06-09T09:57:00.307787", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-09T11:13:29.393843", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-09T11:13:29.413728", "msg": "Starting market scan..."}
+{"ts": "2026-06-09T11:13:42.899967", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-09T11:13:42.903187", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-09-1113.md"}
+{"ts": "2026-06-09T11:13:42.903688", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-09T12:00:28.378492", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-09T12:00:28.416695", "msg": "Starting market scan..."}
+{"ts": "2026-06-09T12:00:40.053301", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-09T12:00:40.060926", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-09-1200.md"}
+{"ts": "2026-06-09T12:00:40.062220", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-11T01:41:39.157047", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-11T01:41:39.181977", "msg": "Starting market scan..."}
+{"ts": "2026-06-11T01:41:39.368320", "msg": "Scan error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CbvwLfKcRqAZWrGcv5TS3'}"}
+{"ts": "2026-06-11T01:41:39.369270", "msg": "No qualifying opportunities found this cycle"}
+{"ts": "2026-06-11T09:04:07.140905", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-11T09:04:07.144033", "msg": "Starting market scan..."}
+{"ts": "2026-06-11T09:04:07.297438", "msg": "Scan error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CbwX5e8DcpbrZYPGsstAC'}"}
+{"ts": "2026-06-11T09:04:07.298322", "msg": "No qualifying opportunities found this cycle"}

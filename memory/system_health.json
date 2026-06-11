@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-06-09T05:46:23.122512",
+  "checked_at": "2026-06-11T09:05:19.634143",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
       "status": "healthy",
-      "last_active": "2026-06-09T04:22:54.324208",
-      "last_msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="
+      "last_active": "2026-06-11T09:04:07.298322",
+      "last_msg": "No qualifying opportunities found this cycle"
     },
     "build_agent": {
       "agent": "build_agent",
@@ -15,20 +15,21 @@
     "finance_agent": {
       "agent": "finance_agent",
       "status": "healthy",
-      "last_active": "2026-06-09T03:49:06.668909",
-      "last_msg": "P&L generated: Revenue $0.00 | Expenses $0.00 | Profit $0.00"
+      "last_active": "2026-06-09T11:15:16.672321",
+      "last_msg": "Invoice generation error: name 'msg' is not defined"
     },
     "cseo_agent": {
       "agent": "cseo_agent",
       "status": "healthy",
-      "last_active": "2026-06-09T04:22:42.629434",
-      "last_msg": "=== Evolution cycle complete: 0 skills built ==="
+      "last_active": "2026-06-11T09:04:06.833863",
+      "last_msg": "No bugs found either \u2014 TAD is fully caught up"
     },
     "decision_agent": {
       "agent": "decision_agent",
-      "status": "healthy",
+      "status": "silent",
       "last_active": "2026-06-09T02:44:24.025374",
-      "last_msg": "APPROVE: LLM Token Cost Attribution & Real-Time Spend Dashboard \u2014 Score: 32/40"
+      "hours_silent": 54.3,
+      "reason": "No activity for 54.3 hours"
     },
     "marketing_agent": {
       "agent": "marketing_agent",
@@ -37,9 +38,10 @@
     },
     "ceo_agent": {
       "agent": "ceo_agent",
-      "status": "healthy",
+      "status": "silent",
       "last_active": "2026-06-08T21:58:04.952371",
-      "last_msg": "Decision: GO \u2192 CTO Agent | Score of 32/40 exceeds threshold. High demand (9), low competition (8), and proven market pain (40% missed calls) match THE_MONKEY criteria perfectly. HVAC companies are trapped in a solvable problem with clear willingness to pay."
+      "hours_silent": 59.1,
+      "reason": "No activity for 59.1 hours"
     }
   },
   "files": {
@@ -48,7 +50,22 @@
     "morning_briefing.json": "ok",
     "finance.json": "ok"
   },
-  "issues": [],
-  "overall": "healthy",
-  "issue_count": 0
+  "issues": [
+    {
+      "agent": "decision_agent",
+      "status": "silent",
+      "last_active": "2026-06-09T02:44:24.025374",
+      "hours_silent": 54.3,
+      "reason": "No activity for 54.3 hours"
+    },
+    {
+      "agent": "ceo_agent",
+      "status": "silent",
+      "last_active": "2026-06-08T21:58:04.952371",
+      "hours_silent": 59.1,
+      "reason": "No activity for 59.1 hours"
+    }
+  ],
+  "overall": "issues_detected",
+  "issue_count": 2
 }

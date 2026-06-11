@@ -38,3 +38,8 @@
 {"ts": "2026-06-09T03:47:53.190688", "role": "user", "text": "I want you to tell me what's going on with the system."}
 {"ts": "2026-06-09T03:47:53.950255", "msg": "Voice loop stopping..."}
 {"ts": "2026-06-09T03:47:56.060478", "msg": "Voice loop stopped"}
+{"ts": "2026-06-09T10:15:09.080557", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-09T11:05:07.400019", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-09T11:17:48.426473", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-09T13:23:33.746666", "msg": "Ctrl+M hotkey registered for voice loop toggle"}
+{"ts": "2026-06-11T09:05:19.065932", "msg": "Ctrl+M hotkey registered for voice loop toggle"}

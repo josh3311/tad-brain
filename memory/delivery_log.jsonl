@@ -1,0 +1,6 @@
+{"ts": "2026-06-09T11:14:53.194258", "msg": "=== Delivering to joshua (joshuafowah0@gmail.com) ==="}
+{"ts": "2026-06-09T11:14:53.213446", "msg": "Zipped: tad_product_20260608041834.zip (0KB)"}
+{"ts": "2026-06-09T11:15:08.665887", "msg": "Email send error: (534, b'5.7.9 Application-specific password required. For more information, go to\\n5.7.9  https://support.google.com/mail/?p=InvalidSecondFactor d75a77b69052e-51775d8161csm192185761cf.17 - gsmtp')"}
+{"ts": "2026-06-09T11:15:08.668209", "msg": "Email queued for later: Your product is ready"}
+{"ts": "2026-06-09T11:15:16.673117", "msg": "Finance Agent notified \u2014 invoice will be sent"}
+{"ts": "2026-06-09T11:15:16.675015", "msg": "=== Delivery complete: queued ==="}
