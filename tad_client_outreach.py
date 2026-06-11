@@ -1,106 +1,153 @@
 """
-Core data model and lead scoring logic for TAD client outreach.
+tad_client_outreach.py
+Core data model and opportunity scoring for TAD client outreach.
 """
 
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import List, Tuple, Dict, Any
 
 
-@dataclass(frozen=True)
-class Lead:
+@dataclass
+class OutreachTarget:
+    # Minimal data model for a prospective client
     name: str
-    pain_score: float  # 1-10, higher = more painful problem
-    willingness_to_pay: float  # 1-10, higher = more willing
-    competition_level: float  # 1-10, lower = better
-    market_potential: float  # 1-10, higher = more upside
+    pain_score: float          # 0.0 to 10.0
+    willingness_to_pay: float  # 0.0 to 10.0
+    competition_level: float   # 0.0 to 10.0, lower is better
+    skyrocket_potential: float # 0.0 to 10.0
 
 
-def outreach_score(lead: Lead) -> float:
-    # Invert competition so that lower input yields higher contribution
-    competition_factor = 11.0 - lead.competition_level
-    score = (
-        lead.pain_score * 0.30
-        + lead.willingness_to_pay * 0.30
-        + lead.market_potential * 0.30
-        + competition_factor * 0.10
-    )
-    return round(score, 2)
+def opportunity_score(target: OutreachTarget) -> float:
+    # Priority = pain * willingness * potential / (competition + 1)
+    if target.pain_score <= 0 or target.willingness_to_pay <= 0:
+        return 0.0
+    raw = (
+        target.pain_score
+        * target.willingness_to_pay
+        * target.skyrocket_potential
+    ) / (target.competition_level + 1.0)
+    return round(raw, 2)
 
 
-class LeadStore:
-    # In-memory collection with sorting and simple aggregation
+class TargetStore:
+    # Storage and aggregation layer for multiple outreach targets
+
     def __init__(self) -> None:
-        self.leads: List[Lead] = []
+        self.targets: List[OutreachTarget] = []
 
-    def add(self, lead: Lead) -> None:
-        self.leads.append(lead)
+    def add(self, target: OutreachTarget) -> None:
+        self.targets.append(target)
 
-    def ranked(self) -> List[Tuple[Lead, float]]:
-        scored = [(lead, outreach_score(lead)) for lead in self.leads]
+    def summary(self) -> Dict[str, Any]:
+        if not self.targets:
+            return {
+                "count": 0,
+                "avg_score": 0.0,
+                "best_name": None,
+                "best_score": 0.0,
+            }
+        scored: List[Tuple[OutreachTarget, float]] = [
+            (t, opportunity_score(t)) for t in self.targets
+        ]
+        total = sum(s for _, s in scored)
+        best_target, best_score = max(scored, key=lambda x: x[1])
+        return {
+            "count": len(self.targets),
+            "avg_score": round(total / len(scored), 2),
+            "best_name": best_target.name,
+            "best_score": best_score,
+        }
+
+    def ranked(self) -> List[Tuple[OutreachTarget, float]]:
+        scored = [(t, opportunity_score(t)) for t in self.targets]
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored
 
-    def summary(self) -> Dict[str, Any]:
-        if not self.leads:
-            return {"count": 0, "average_score": 0.0}
-        scores = [outreach_score(lead) for lead in self.leads]
-        avg = round(sum(scores) / len(scores), 2)
-        return {"count": len(self.leads), "average_score": avg}
 
-
-def generate_report(store: LeadStore) -> str:
-    # Build a simple text summary of the lead store
-    lines: List[str] = []
+def generate_report(store: TargetStore) -> str:
+    # Simple text report summarizing the outreach pipeline
     summary = store.summary()
-    lines.append("=== TAD Client Outreach Report ===")
-    lines.append(f"Total leads: {summary['count']}")
-    lines.append(f"Average outreach score: {summary['average_score']}")
+    lines = [
+        "=== TAD Client Outreach Report ===",
+        f"Total Targets: {summary['count']}",
+        f"Average Score: {summary['avg_score']}",
+    ]
+    if summary["best_name"] is not None:
+        lines.append(
+            f"Best Prospect: {summary['best_name']} "
+            f"(score {summary['best_score']})"
+        )
     lines.append("")
-    ranked = store.ranked()
-    if ranked:
-        lines.append("Ranked leads:")
-        for lead, score in ranked:
-            lines.append(f"  {lead.name}: {score}")
-    else:
-        lines.append("No leads in store.")
+    lines.append("Ranked Prospects:")
+    for target, score in store.ranked():
+        lines.append(f"  {target.name:<15} score={score}")
+    lines.append("==================================")
     return "\n".join(lines)
 
 
-def run_tests() -> int:
-    # Known input 1: excellent opportunity -> should score highest
-    lead_a = Lead(
-        name="NicheAI_A",
-        pain_score=9.0,
-        willingness_to_pay=9.0,
-        competition_level=1.0,
-        market_potential=9.0,
+def _run_tests() -> int:
+    # Self-checks: exit 0 on pass, non-zero on fail
+    ideal = OutreachTarget(
+        name="IdealAI",
+        pain_score=10.0,
+        willingness_to_pay=10.0,
+        competition_level=0.0,
+        skyrocket_potential=10.0,
     )
-    expected_a = 9.1
-    actual_a = outreach_score(lead_a)
-    if actual_a != expected_a:
-        print(f"FAIL lead_a: expected {expected_a}, got {actual_a}")
+    if opportunity_score(ideal) != 1000.0:
+        print("FAIL test 1")
         return 1
 
-    # Known input 2: poor opportunity -> should score lowest
-    lead_b = Lead(
-        name="NicheAI_B",
-        pain_score=3.0,
-        willingness_to_pay=3.0,
-        competition_level=9.0,
-        market_potential=3.0,
+    mediocre = OutreachTarget(
+        name="MehCorp",
+        pain_score=4.0,
+        willingness_to_pay=5.0,
+        competition_level=4.0,
+        skyrocket_potential=6.0,
     )
-    expected_b = 2.9
-    actual_b = outreach_score(lead_b)
-    if actual_b != expected_b:
-        print(f"FAIL lead_b: expected {expected_b}, got {actual_b}")
+    if opportunity_score(mediocre) != 24.0:
+        print("FAIL test 2")
         return 1
 
-    # Test storage and aggregation layer
-    store = LeadStore()
-    store.add(lead_a)
-    store.add(lead_b)
+    store = TargetStore()
+    empty_summary = store.summary()
+    if empty_summary["count"] != 0 or empty_summary["avg_score"] != 0.0:
+        print("FAIL test 3")
+        return 1
+    if empty_summary["best_name"] is not None:
+        print("FAIL test 4")
+        return 1
+
+    store.add(ideal)
+    store.add(mediocre)
+    summary = store.summary()
+    if summary["count"] != 2:
+        print("FAIL test 5")
+        return 1
+    expected_avg = round((1000.0 + 24.0) / 2, 2)
+    if summary["avg_score"] != expected_avg:
+        print("FAIL test 6")
+        return 1
+    if summary["best_name"] != "IdealAI" or summary["best_score"] != 1000.0:
+        print("FAIL test 7")
+        return 1
 
     ranked = store.ranked()
     if len(ranked) != 2:
-        print(f"FAIL ranked length: expected 2, got {len(ranked)}")
+        print("FAIL test 8")
+        return 1
+    if ranked[0][0].name != "IdealAI":
+        print("FAIL test 9")
+        return 1
+    if ranked[1][0].name != "MehCorp":
+        print("FAIL test 10")
+        return 1
+
+    print("PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        sys.exit(_run_tests())
