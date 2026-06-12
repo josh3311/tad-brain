@@ -1,0 +1,42 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-9.0.3, pluggy-1.6.0 -- C:\TAD\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\TAD
+plugins: anyio-4.13.0
+collecting ... collected 33 items
+
+tests/test_config_providers.py::test_claude_chat_returns_str PASSED      [  3%]
+tests/test_config_providers.py::test_claude_chat_returns_empty_string_on_error PASSED [  6%]
+tests/test_config_providers.py::test_claude_json_strips_fences_and_returns_valid_json PASSED [  9%]
+tests/test_config_providers.py::test_kimi_code_extracts_python_fence PASSED [ 12%]
+tests/test_config_providers.py::test_kimi_code_returns_raw_when_no_fence PASSED [ 15%]
+tests/test_config_providers.py::test_kimi_code_returns_empty_string_on_error PASSED [ 18%]
+tests/test_imports.py::test_module_imports_cleanly[market_agent] PASSED  [ 21%]
+tests/test_imports.py::test_module_imports_cleanly[decision_agent] PASSED [ 24%]
+tests/test_imports.py::test_module_imports_cleanly[ceo_agent] PASSED     [ 27%]
+tests/test_imports.py::test_module_imports_cleanly[finance_agent] PASSED [ 30%]
+tests/test_imports.py::test_module_imports_cleanly[ops_agent] PASSED     [ 33%]
+tests/test_imports.py::test_module_imports_cleanly[cseo_agent] PASSED    [ 36%]
+tests/test_imports.py::test_module_imports_cleanly[build_agent] PASSED   [ 39%]
+tests/test_imports.py::test_module_imports_cleanly[marketing_agent] PASSED [ 42%]
+tests/test_imports.py::test_module_imports_cleanly[conversation_engine] PASSED [ 45%]
+tests/test_imports.py::test_module_imports_cleanly[config_providers] PASSED [ 48%]
+tests/test_imports.py::test_module_imports_cleanly[agent] PASSED         [ 51%]
+tests/test_imports.py::test_module_imports_cleanly[scheduler] PASSED     [ 54%]
+tests/test_router.py::test_explicit_commands[run a market scan-market] PASSED [ 57%]
+tests/test_router.py::test_explicit_commands[system health-ops] PASSED   [ 60%]
+tests/test_router.py::test_explicit_commands[p&l report for this month-finance] PASSED [ 63%]
+tests/test_router.py::test_explicit_commands[score this opportunity: AI receptionist for dental offices-decision] PASSED [ 66%]
+tests/test_router.py::test_explicit_commands[ceo briefing-ceo] PASSED    [ 69%]
+tests/test_router.py::test_conversational_routes_to_general[explain how the scheduler works-general] PASSED [ 72%]
+tests/test_router.py::test_conversational_routes_to_general[tell me about yesterday's results-general] PASSED [ 75%]
+tests/test_router.py::test_conversational_routes_to_general[why is the gui slow today-general] PASSED [ 78%]
+tests/test_router.py::test_conversational_routes_to_general[show me the night logs-general] PASSED [ 81%]
+tests/test_router.py::test_conversational_routes_to_general[what do you think about raising prices-general] PASSED [ 84%]
+tests/test_router.py::test_keyword_scoring[industry trends and competitor gaps-market] PASSED [ 87%]
+tests/test_router.py::test_keyword_scoring[cold email outreach to linkedin prospects-marketing] PASSED [ 90%]
+tests/test_router.py::test_keyword_scoring[unpaid invoice payment expense summary-finance] PASSED [ 93%]
+tests/test_router.py::test_keyword_scoring[debug and program the parser module-build] PASSED [ 96%]
+tests/test_router.py::test_keyword_scoring[assess this and rate this idea-decision] PASSED [100%]
+
+============================= 33 passed in 13.02s =============================

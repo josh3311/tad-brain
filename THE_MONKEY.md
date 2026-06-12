@@ -507,3 +507,13 @@ No CRUD action happens without being logged.
   - Files: scheduler.py, skills/ceo_agent.py, skills/decision_agent.py
   - VERIFIED: ran full chain live (Decision APPROVE 29/40 → CEO GO), ops
     health check now reports 0 issues, both agents healthy with fresh last_active
+- TASK 2 DONE: Basic pytest suite at tests/
+  - tests/test_imports.py — 12 modules (9 agents + agent.py, scheduler.py,
+    config_providers.py) import cleanly
+  - tests/test_config_providers.py — claude_chat / claude_json / kimi_code
+    return correct types on mocked clients, fence-stripping + error paths
+  - tests/test_router.py — 15 routing cases, 5 per tier
+    (explicit / conversational / keyword-score)
+  - Files: tests/conftest.py, tests/test_imports.py,
+    tests/test_config_providers.py, tests/test_router.py
+  - VERIFIED: pytest 33/33 passed — output in memory/test_results.txt
