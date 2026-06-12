@@ -26,6 +26,9 @@ from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from tad_encoding import force_utf8
+force_utf8()
+
 load_dotenv()
 
 sys.path.insert(0, str(Path(__file__).parent))

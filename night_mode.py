@@ -1,15 +1,20 @@
 """
-TAD — Night Mode Autonomous Builder v0.5
-Phase 3 — CSEO Agent wired in
+TAD - Night Mode Autonomous Builder v0.6
+Loop 3 fix - iterate-and-test build pattern
 
-Changes from v0.4:
-- CSEO Agent runs first every night (evolution cycle)
-- CSEO identifies gaps and builds new skills automatically
-- Build loop reads Phase 3 roadmap items from THE_MONKEY.md
-- Market Agent runs at 3am scan window
-- Ops Agent logs everything and updates THE_MONKEY.md
-- Evolution report included in overnight report
-- Game-changing discoveries flag Joshua via report
+v0.6.1 patch (2026-06-10):
+- code_executor.import_check fixed (was always failing on absolute
+  Windows paths -- "C:.TAD.module" is invalid Python)
+- Review gate downgraded from claude-opus-4-8 to claude-haiku-4-5
+  (cost control -- Opus was burning the Anthropic balance fast)
+- _plan_features fallback no longer treats the WHOLE item as one
+  giant feature (this caused massive single-shot generations that
+  Kimi truncated mid-string, producing endless syntax errors).
+  Fallback now splits into a fixed small-step plan.
+- Per-item attempt cap (MAX_ITEM_ATTEMPTS) added to run_night_mode's
+  build loop -- after repeated failures on the same item it is logged
+  as blocked and skipped for this run, instead of looping forever
+  and burning the Kimi balance.
 """
 
 import json
@@ -24,30 +29,44 @@ from datetime import datetime, time as dtime
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from tad_encoding import force_utf8
+force_utf8()
+
 load_dotenv()
 
-# ── Agent path setup (must be before any agent imports) ──────────────────────
 ROOT        = Path(__file__).parent
 AGENTS_DIR  = ROOT / "skills"
 if str(AGENTS_DIR) not in sys.path:
     sys.path.insert(0, str(AGENTS_DIR))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-# ── Kimi client ───────────────────────────────────────────────────────────────
+import code_executor
+
 client = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
     base_url="https://api.moonshot.ai/v1",
 )
 MODEL = "kimi-k2.6"
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+REVIEW_MODEL = "claude-haiku-4-5-20251001"
+try:
+    import anthropic
+    _claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+except Exception:
+    _claude = None
+
 MONKEY_PATH = ROOT / "THE_MONKEY.md"
 REPORT_PATH = ROOT / "memory" / "overnight_report.json"
 LOG_PATH    = ROOT / "memory" / "night_log.jsonl"
 
-STOP_HOUR   = 6   # stop loop at 6:00 AM
-_manual_mode = False  # set to True when run manually
+STOP_HOUR   = 6
+_manual_mode = False
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+MAX_FEATURES      = 5
+MAX_FIX_ROUNDS    = 3
+MAX_ITEM_ATTEMPTS = 3
+
 
 def _log(msg: str):
     entry = {"ts": datetime.now().isoformat(), "msg": msg}
@@ -58,8 +77,6 @@ def _log(msg: str):
 
 
 def _past_stop_time() -> bool:
-    """Only stop if explicitly running in scheduled mode (11pm-6am).
-    When run manually (python night_mode.py), never stop early."""
     if _manual_mode:
         return False
     return datetime.now().time() >= dtime(STOP_HOUR, 0)
@@ -69,27 +86,19 @@ def _read_monkey() -> str:
     return MONKEY_PATH.read_text(encoding="utf-8") if MONKEY_PATH.exists() else ""
 
 
-# ── CSEO Evolution phase ──────────────────────────────────────────────────────
-
 def _run_cseo_evolution() -> dict:
-    """
-    Run the CSEO Agent evolution cycle at the start of night mode.
-    Returns evolution report.
-    """
     _log("=== CSEO Evolution cycle starting ===")
     try:
-        sys.path.insert(0, str(AGENTS_DIR))
         from cseo_agent import run_evolution_cycle
         report = run_evolution_cycle()
         built  = report.get("skills_built", 0)
-        _log(f"CSEO evolution complete — {built} new skills built")
+        _log(f"CSEO evolution complete -- {built} new skills built")
 
-        # Check for game changers
         game_changers = report.get("game_changers", [])
         if game_changers:
-            _log(f"🚨 GAME-CHANGING DISCOVERY — flagging for Joshua on wake")
+            _log("GAME-CHANGING DISCOVERY -- flagging for Joshua on wake")
             for gc in game_changers:
-                _log(f"  → {gc.get('gap_name', 'Unknown')}: {gc.get('description', '')}")
+                _log(f"  -> {gc.get('gap_name', 'Unknown')}: {gc.get('description', '')}")
 
         return report
 
@@ -98,24 +107,17 @@ def _run_cseo_evolution() -> dict:
         return {"status": "error", "reason": str(e), "skills_built": 0}
 
 
-# ── Market scan phase ─────────────────────────────────────────────────────────
-
 def _run_market_scan() -> dict:
-    """
-    Run Market Agent scan during night mode.
-    Returns scan report with top opportunities.
-    """
     _log("=== Market Agent scanning for loopholes ===")
     try:
-        sys.path.insert(0, str(AGENTS_DIR))
         from market_agent import run_full_scan
         report = run_full_scan()
         opps   = report.get("opportunities", [])
-        _log(f"Market scan complete — {len(opps)} opportunities found")
+        _log(f"Market scan complete -- {len(opps)} opportunities found")
 
         if opps:
             for opp in opps[:3]:
-                _log(f"  → {opp.get('name')} (Score: {opp.get('total_score')}/40)")
+                _log(f"  -> {opp.get('name')} (Score: {opp.get('total_score')}/40)")
 
         return report
 
@@ -124,24 +126,35 @@ def _run_market_scan() -> dict:
         return {"status": "error", "reason": str(e), "opportunities": []}
 
 
-# ── Ops health check ──────────────────────────────────────────────────────────
-
 def _run_ops_check() -> dict:
-    """Run Ops Agent health check."""
     _log("Ops Agent health check...")
     try:
-        sys.path.insert(0, str(AGENTS_DIR))
         from ops_agent import run_full_health_check, generate_daily_summary
         health  = run_full_health_check()
         summary = generate_daily_summary()
-        _log(f"Ops check complete — {health.get('issue_count', 0)} issues")
+        _log(f"Ops check complete -- {health.get('issue_count', 0)} issues")
         return {"health": health, "summary": summary}
     except Exception as e:
         _log(f"Ops check error: {e}")
         return {"status": "error", "reason": str(e)}
 
 
-# ── Code generation helpers ───────────────────────────────────────────────────
+def _find_skill(task: str) -> dict | None:
+    try:
+        from skill_library import find_skill_for_task
+        return find_skill_for_task(task)
+    except Exception as e:
+        _log(f"Skill lookup error: {e}")
+        return None
+
+
+def _learn_skill(task: str, result_summary: str):
+    try:
+        from skill_library import auto_learn_from_task
+        auto_learn_from_task(task, result_summary, success=True)
+    except Exception as e:
+        _log(f"Skill auto-learn error: {e}")
+
 
 BUILD_SYSTEM = """You are TAD's code generation engine.
 
@@ -151,7 +164,19 @@ RULES:
 3. Start your response with either import or a docstring.
 4. The code must be complete and runnable.
 5. Include if __name__ == "__main__": at the bottom.
-6. Put notes inside Python comments (#), not prose.
+6. The module MUST support a --test mode: when run as
+   `python module.py --test` it runs its own quick self-checks and
+   exits 0 on pass, non-zero on fail. Self-checks must not need
+   network access or API keys.
+7. Build ONLY the feature you are asked for in this cycle. Keep the
+   module small and testable. No speculative extras.
+8. Put notes inside Python comments (#), not prose.
+9. Keep the module SHORT. Prefer fewer, simpler functions over long
+   ones. If you are tempted to write a long f-string or long literal,
+   break it across multiple shorter lines/strings instead -- unterminated
+   strings and unclosed brackets from overly long lines are the most
+   common failure mode. Double-check every opening bracket/quote has
+   a matching close before finishing.
 
 VIOLATION: Returning prose instead of code is a critical failure."""
 
@@ -169,99 +194,146 @@ def _extract_code_block(text: str) -> str:
     return text.strip()
 
 
-def _skeleton_fallback(item_name: str) -> str:
-    safe = re.sub(r"[^a-z0-9_]", "_", item_name.lower())
-    return f'''"""
-TAD — {item_name}
-Auto-generated skeleton.
-"""
-
-def main():
-    print("{item_name} skeleton — implement logic here.")
-
-if __name__ == "__main__":
-    main()
-'''
+def _kimi(messages: list, max_tokens: int = 4000) -> str:
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        temperature=1,
+        max_tokens=max_tokens,
+    )
+    return resp.choices[0].message.content or ""
 
 
-def _build_item(item_name: str, monkey_context: str) -> str:
-    """Generate real Python code for a priority item."""
+_GENERIC_FEATURE_PLAN = [
+    "Core data model and the single most important calculation/logic, "
+    "with a --test mode that checks that calculation on 1-2 known inputs",
+    "Storage or aggregation layer on top of the core model (e.g. recording "
+    "multiple entries and summarizing them), with --test checks",
+    "Simple text or HTML report/output function summarizing the data, "
+    "plus a small CLI demo in __main__, with --test checks",
+]
+
+
+def _plan_features(item_name: str, monkey_context: str) -> list[str]:
     prompt = f"""TAD PROJECT CONTEXT:
-{monkey_context[:3000]}
+{monkey_context[:2000]}
 
-TASK: Write a complete, runnable Python module for: {item_name}
+TASK: {item_name}
 
-Requirements:
-- Real Python code only
-- Importable as module AND runnable standalone
-- Proper docstring, imports, if __name__ == "__main__" block
-- No placeholder TODOs — write actual logic
-- Production quality
+Break this into 2-{MAX_FEATURES} SMALL features, ordered so each one builds
+on the previous. Feature 1 must be the minimal working core. Each feature
+must be independently testable. Keep each feature small enough to implement
+in under ~80 lines of code.
 
-Output Python code only."""
+Return ONLY a JSON array of short feature description strings:
+["feature one", "feature two"]"""
 
-    for attempt in range(1, 4):
-        _log(f"  Build attempt {attempt}/3 for '{item_name}'")
+    try:
+        raw   = _kimi([{"role": "user", "content": prompt}], max_tokens=500)
+        clean = re.sub(r"```json|```", "", raw).strip()
+        features = json.loads(clean)
+        if isinstance(features, list) and features:
+            return [str(f) for f in features[:MAX_FEATURES]]
+    except Exception as e:
+        _log(f"  Feature planning error: {e}")
+
+    _log("  Using generic fallback feature plan (small steps)")
+    return list(_GENERIC_FEATURE_PLAN)
+
+
+def _build_feature(item_name: str, feature: str, current_code: str,
+                   skill: dict | None, monkey_context: str) -> str | None:
+    skill_hint = ""
+    if skill:
+        skill_hint = f"""
+LEARNED SKILL THAT APPLIES (use it):
+{skill.get('name')}: {skill.get('what_it_does', '')}
+{skill.get('code_or_prompt', '')[:1000]}"""
+
+    if current_code:
+        prompt = f"""TASK: {item_name}
+{skill_hint}
+CURRENT MODULE (all features so far pass their tests):
+{current_code}
+
+THIS CYCLE -- add exactly ONE feature: {feature}
+
+Return the COMPLETE updated module with this feature added and its
+self-checks added to the --test mode. Do not remove or break existing
+features. Output Python code only."""
+    else:
+        prompt = f"""TAD PROJECT CONTEXT:
+{monkey_context[:2000]}
+
+TASK: {item_name}
+{skill_hint}
+THIS CYCLE -- build exactly ONE feature, the minimal working core: {feature}
+
+Write a small, complete Python module with this feature only, including
+a --test self-check mode. Output Python code only."""
+
+    for attempt in range(1, 3):
         try:
-            resp = client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": BUILD_SYSTEM},
-                    {"role": "user",   "content": prompt},
-                ],
-                temperature=1,
-                max_tokens=2500,
-            )
-            raw  = resp.choices[0].message.content or ""
+            raw  = _kimi([
+                {"role": "system", "content": BUILD_SYSTEM},
+                {"role": "user",   "content": prompt},
+            ])
             code = _extract_code_block(raw)
-
             if _is_real_python(code):
-                _log(f"  ✓ Real Python on attempt {attempt}")
                 return code
-            else:
-                _log(f"  ✗ Attempt {attempt} returned prose — retrying")
-                prompt += "\n\nPREVIOUS ATTEMPT FAILED — output ONLY Python code."
-
+            _log(f"  Attempt {attempt} returned prose -- retrying")
+            prompt += "\n\nPREVIOUS ATTEMPT FAILED -- output ONLY Python code."
         except Exception as e:
             _log(f"  Kimi error attempt {attempt}: {e}")
             time.sleep(5)
+    return None
 
-    _log(f"  All attempts failed for '{item_name}' — using skeleton")
-    return _skeleton_fallback(item_name)
+
+def _test_failure_summary(test_result: dict) -> str:
+    lines = [test_result.get("message", "unknown failure")]
+    for t in test_result.get("tests", []):
+        if not t.get("success", True):
+            stderr = (t.get("stderr") or "")[:800]
+            stdout = (t.get("stdout") or "")[:400]
+            lines.append(f"[{t.get('type')}] stderr: {stderr}")
+            if stdout:
+                lines.append(f"[{t.get('type')}] stdout: {stdout}")
+    return "\n".join(lines)
 
 
 def _test_and_fix(filepath: Path, code: str, item_name: str) -> bool:
-    """Syntax check and fix loop. Returns True if passing."""
     filepath.write_text(code, encoding="utf-8")
 
-    for fix_round in range(1, 4):
-        result = subprocess.run(
-            [sys.executable, "-m", "py_compile", str(filepath)],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            _log(f"  ✓ Syntax OK: {filepath.name}")
+    for fix_round in range(1, MAX_FIX_ROUNDS + 2):
+        result = code_executor.test_file(str(filepath))
+        if result["success"]:
+            _log(f"  Tests pass: {filepath.name}")
             return True
 
-        error = result.stderr.strip()
-        _log(f"  Syntax error round {fix_round}: {error}")
+        failure = _test_failure_summary(result)
+        _log(f"  Test failure round {fix_round}: {failure[:200]}")
 
-        fix_prompt = f"""Fix this Python syntax error:
-ERROR: {error}
-CODE: {code}
-Return ONLY corrected Python code."""
+        if fix_round > MAX_FIX_ROUNDS:
+            break
+
+        fix_prompt = f"""This Python module failed its tests.
+
+TASK: {item_name}
+TEST OUTPUT:
+{failure}
+
+CODE:
+{code}
+
+Fix the failure and return ONLY the corrected, complete Python module
+(keep the --test self-check mode)."""
 
         try:
-            resp = client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": BUILD_SYSTEM},
-                    {"role": "user",   "content": fix_prompt},
-                ],
-                temperature=1,
-                max_tokens=2500,
-            )
-            fixed = _extract_code_block(resp.choices[0].message.content or "")
+            raw   = _kimi([
+                {"role": "system", "content": BUILD_SYSTEM},
+                {"role": "user",   "content": fix_prompt},
+            ])
+            fixed = _extract_code_block(raw)
             if _is_real_python(fixed):
                 code = fixed
                 filepath.write_text(code, encoding="utf-8")
@@ -274,52 +346,177 @@ Return ONLY corrected Python code."""
     return False
 
 
-def _git_push(item_name: str):
-    """Push to GitHub after each successful build."""
+def _build_and_test(item_name: str, filepath: Path, monkey_context: str) -> dict:
+    skill = _find_skill(item_name)
+    if skill:
+        _log(f"  Using learned skill: {skill.get('name')}")
+
+    features = _plan_features(item_name, monkey_context)
+    _log(f"  Plan: {len(features)} feature(s)")
+    for i, f in enumerate(features, 1):
+        _log(f"    {i}. {f}")
+
+    code  = ""
+    built = []
+
+    for feature in features:
+        if _past_stop_time():
+            _log("  Stop time reached mid-build -- keeping last passing version")
+            break
+
+        _log(f"  Cycle: {feature}")
+        new_code = _build_feature(item_name, feature, code, skill, monkey_context)
+        if not new_code:
+            _log(f"  Generation failed for feature: {feature}")
+            break
+
+        if _test_and_fix(filepath, new_code, item_name):
+            code = filepath.read_text(encoding="utf-8")
+            built.append(feature)
+        else:
+            _log(f"  Feature failed tests after {MAX_FIX_ROUNDS} fixes: {feature}")
+            if code:
+                filepath.write_text(code, encoding="utf-8")
+            else:
+                filepath.unlink(missing_ok=True)
+            break
+
+    if not built:
+        return {"status": "failed", "features_built": [],
+                "features_planned": features, "code": ""}
+
+    status = "success" if len(built) == len(features) else "partial"
+    return {"status": status, "features_built": built,
+            "features_planned": features, "code": code}
+
+
+def _build_item(item_name: str, monkey_context: str) -> str:
+    safe  = re.sub(r"[^a-z0-9_]", "_", item_name.lower()).strip("_")
+    fpath = ROOT / f"{safe}.py"
+    result = _build_and_test(item_name, fpath, monkey_context)
+    return result["code"]
+
+
+REVIEW_SYSTEM = """You are TAD's code reviewer -- the last gate before code is
+committed to the company repo. Review for: real logic (not stubs/placeholders),
+correctness bugs, dangerous operations (deleting files outside the project,
+leaking secrets, unbounded loops), and whether the code plausibly does what
+the task asked.
+
+Return ONLY JSON:
+{"verdict": "approve" | "reject", "reasons": ["..."], "must_fix": ["..."]}
+
+Approve working code even if imperfect. Reject stubs, fake logic,
+or anything dangerous."""
+
+
+def _get_diff(filepath: Path) -> str:
     try:
-        subprocess.run(["git", "add", "."], cwd=ROOT, check=True, capture_output=True)
-        msg = f"[night_mode] {item_name} — {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        result = subprocess.run(
+            ["git", "diff", "HEAD", "--", str(filepath)],
+            cwd=ROOT, capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout
+    except Exception:
+        pass
+    return filepath.read_text(encoding="utf-8")
+
+
+def _claude_review(item_name: str, filepath: Path, features: list[str]) -> dict:
+    if _claude is None or not os.getenv("ANTHROPIC_API_KEY"):
+        _log("  Review SKIPPED -- no ANTHROPIC_API_KEY / anthropic package")
+        return {"verdict": "skipped", "reasons": ["no reviewer available"],
+                "must_fix": []}
+
+    diff = _get_diff(filepath)[:12000]
+    prompt = f"""TASK THE CODE MUST ACCOMPLISH: {item_name}
+
+FEATURES BUILT THIS RUN:
+{json.dumps(features, indent=2)}
+
+DIFF / CODE TO REVIEW ({filepath.name}):
+{diff}
+
+All automated tests (syntax, import, --test run) already pass.
+Review and return your JSON verdict."""
+
+    try:
+        msg = _claude.messages.create(
+            model=REVIEW_MODEL,
+            max_tokens=1500,
+            system=REVIEW_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw   = next((b.text for b in msg.content if b.type == "text"), "{}")
+        clean = re.sub(r"```json|```", "", raw).strip()
+        data  = json.loads(clean)
+        verdict = data.get("verdict", "reject")
+        _log(f"  Claude review: {verdict.upper()}"
+             + (f" -- {'; '.join(data.get('reasons', [])[:2])}" if verdict != "approve" else ""))
+        return {"verdict": verdict,
+                "reasons": data.get("reasons", []),
+                "must_fix": data.get("must_fix", [])}
+    except Exception as e:
+        _log(f"  Review error (treating as skipped): {e}")
+        return {"verdict": "skipped", "reasons": [str(e)], "must_fix": []}
+
+
+def _apply_review_fixes(item_name: str, filepath: Path, must_fix: list[str]) -> bool:
+    if not must_fix:
+        return False
+    code = filepath.read_text(encoding="utf-8")
+    fix_prompt = f"""A code reviewer rejected this module. Fix ONLY these issues:
+{json.dumps(must_fix, indent=2)}
+
+TASK: {item_name}
+CODE:
+{code}
+
+Return ONLY the corrected, complete Python module (keep the --test mode)."""
+    try:
+        raw   = _kimi([
+            {"role": "system", "content": BUILD_SYSTEM},
+            {"role": "user",   "content": fix_prompt},
+        ])
+        fixed = _extract_code_block(raw)
+        if _is_real_python(fixed) and _test_and_fix(filepath, fixed, item_name):
+            return True
+    except Exception as e:
+        _log(f"  Review-fix error: {e}")
+    return False
+
+
+def _git_push(item_name: str, filepath: Path | None = None):
+    try:
+        targets = ["THE_MONKEY.md", "memory"]
+        if filepath is not None:
+            targets.insert(0, str(filepath))
+        subprocess.run(["git", "add", *targets],
+                       cwd=ROOT, check=True, capture_output=True)
+        msg = f"[night_mode] {item_name} -- {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         subprocess.run(["git", "commit", "-m", msg], cwd=ROOT, check=True, capture_output=True)
         subprocess.run(["git", "push"], cwd=ROOT, check=True, capture_output=True)
-        _log(f"  ✓ Pushed to GitHub: {item_name}")
+        _log(f"  Pushed to GitHub: {item_name}")
     except subprocess.CalledProcessError as e:
         _log(f"  Git push failed: {e}")
 
 
-# ── Priority list reader ──────────────────────────────────────────────────────
-
 def _get_priority_items(monkey_text: str) -> list[str]:
-    """Extract unchecked items from Phase 3 roadmap in THE_MONKEY.md."""
     items = []
-    in_phase3 = False
-
     for line in monkey_text.splitlines():
-        # Enter Phase 3 section
-        if "PHASE 3" in line.upper():
-            in_phase3 = True
-        # Exit on next phase
-        elif in_phase3 and re.match(r"###? PHASE [4-9]", line.upper()):
-            in_phase3 = False
-
-        if in_phase3 and line.strip().startswith("- [ ]"):
+        if line.strip().startswith("- [ ]"):
             item = line.strip().replace("- [ ]", "").strip()
-            if item:
+            if item and len(item) > 5:
                 items.append(item)
 
-    # Fallback — any unchecked item anywhere
-    if not items:
-        for line in monkey_text.splitlines():
-            if line.strip().startswith("- [ ]"):
-                item = line.strip().replace("- [ ]", "").strip()
-                if item and len(item) > 5:
-                    items.append(item)
-
-    return items
+    build_items = [i for i in items if re.match(r"P\d+-BUILD-\d+", i)]
+    other_items = [i for i in items if i not in build_items]
+    return build_items + other_items
 
 
 def generate_new_tasks(monkey_text: str) -> list[str]:
-    """Generate new tasks when priority list is empty."""
-    _log("Priority list empty — CSEO generating new tasks...")
+    _log("Priority list empty -- CSEO generating new tasks...")
     prompt = f"""TAD PROJECT CONTEXT:
 {monkey_text[:3000]}
 
@@ -332,13 +529,7 @@ Return ONLY a JSON array of task name strings.
 JSON array only."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=1,
-            max_tokens=500,
-        )
-        raw   = resp.choices[0].message.content or "[]"
+        raw   = _kimi([{"role": "user", "content": prompt}], max_tokens=500)
         clean = re.sub(r"```json|```", "", raw).strip()
         return json.loads(clean)
     except Exception as e:
@@ -353,94 +544,157 @@ JSON array only."""
 
 
 def _mark_done(item_name: str):
-    """Mark item done in THE_MONKEY.md."""
     if not MONKEY_PATH.exists():
         return
     text    = MONKEY_PATH.read_text(encoding="utf-8")
     today   = datetime.now().strftime("%Y-%m-%d")
     updated = text.replace(
         f"- [ ] {item_name}",
-        f"- [x] {item_name} ✓ {today}"
+        f"- [x] {item_name} (done {today})"
     )
     MONKEY_PATH.write_text(updated, encoding="utf-8")
 
 
-# ── Main night mode loop ──────────────────────────────────────────────────────
+def _mark_blocked(item_name: str, reason: str):
+    if not MONKEY_PATH.exists():
+        return
+    text  = MONKEY_PATH.read_text(encoding="utf-8")
+    today = datetime.now().strftime("%Y-%m-%d")
+    target = f"- [ ] {item_name}"
+    replacement = f"- [ ] {item_name} (BLOCKED {today} -- {reason[:80]} -- needs human review)"
+    if target in text and "(BLOCKED" not in text:
+        text = text.replace(target, replacement, 1)
+        MONKEY_PATH.write_text(text, encoding="utf-8")
+
 
 def run_night_mode():
-    _log("=== Night mode v0.5 started ===")
+    _log("=== Night mode v0.6.1 started (iterate-and-test) ===")
 
     report = {
         "started":          datetime.now().isoformat(),
         "built":            [],
         "skipped":          [],
         "errors":           [],
+        "blocked":          [],
         "cseo_evolution":   {},
         "market_scan":      {},
         "ops_health":       {},
         "game_changers":    [],
     }
 
-    # ── PHASE 1: CSEO Evolution (runs first every night) ──────────────────────
     if not _past_stop_time():
         cseo_report = _run_cseo_evolution()
         report["cseo_evolution"]  = cseo_report
         report["game_changers"]   = cseo_report.get("game_changers", [])
 
-    # ── PHASE 2: Market Scan ───────────────────────────────────────────────────
     if not _past_stop_time():
         market_report = _run_market_scan()
         report["market_scan"] = market_report
 
-    # ── PHASE 3: Build loop — priority items from THE_MONKEY.md ───────────────
+    item_attempts: dict[str, int] = {}
+
     while not _past_stop_time():
         monkey = _read_monkey()
         items  = _get_priority_items(monkey)
 
+        items = [i for i in items if item_attempts.get(i, 0) < MAX_ITEM_ATTEMPTS]
+
         if not items:
-            items = generate_new_tasks(monkey)
-            if not items:
-                _log("No tasks found — sleeping 30m")
+            generated = generate_new_tasks(monkey)
+            generated = [i for i in generated
+                          if item_attempts.get(i, 0) < MAX_ITEM_ATTEMPTS]
+            if not generated:
+                _log("No buildable tasks left -- sleeping 30m")
                 time.sleep(1800)
                 continue
+            items = generated
 
         item = items[0]
-        _log(f"Building: {item}")
+        item_attempts[item] = item_attempts.get(item, 0) + 1
+        attempt_n = item_attempts[item]
+
+        if any(x in item.lower() for x in [
+            "skills/", "skill file", ".md", "skill_file",
+            "write skills", "update skills"
+        ]):
+            _log(f"Skipping non-Python item: {item}")
+            _mark_done(item)
+            report["skipped"].append(item)
+            continue
+
+        _log(f"Building ({attempt_n}/{MAX_ITEM_ATTEMPTS}): {item}")
 
         safe  = re.sub(r"[^a-z0-9_]", "_", item.lower()).strip("_")
         fpath = ROOT / f"{safe}.py"
 
-        code = _build_item(item, monkey)
-        ok   = _test_and_fix(fpath, code, item)
+        result = _build_and_test(item, fpath, monkey)
 
-        if ok:
+        if result["status"] == "failed":
+            if attempt_n >= MAX_ITEM_ATTEMPTS:
+                _mark_blocked(item, "build failed after max attempts")
+                report["blocked"].append({"item": item,
+                                          "planned": result["features_planned"]})
+                _log(f"  Blocked after {attempt_n} attempts: {item}")
+            else:
+                report["errors"].append({"item": item, "reason": "build_failed",
+                                         "attempt": attempt_n,
+                                         "planned": result["features_planned"]})
+                _log(f"  Build failed (attempt {attempt_n}): {item}")
+            time.sleep(15)
+            continue
+
+        review = _claude_review(item, fpath, result["features_built"])
+
+        if review["verdict"] == "reject":
+            _log("  Reviewer rejected -- one fix round")
+            if _apply_review_fixes(item, fpath, review["must_fix"]):
+                review = _claude_review(item, fpath, result["features_built"])
+
+        if review["verdict"] == "reject":
+            fpath.unlink(missing_ok=True)
+            if attempt_n >= MAX_ITEM_ATTEMPTS:
+                _mark_blocked(item, "review rejected after max attempts")
+                report["blocked"].append({"item": item, "review": review["reasons"]})
+                _log(f"  Blocked after {attempt_n} attempts (review): {item}")
+            else:
+                report["errors"].append({"item": item, "reason": "review_rejected",
+                                         "attempt": attempt_n,
+                                         "review": review["reasons"]})
+                _log(f"  Review rejected, file removed: {item}")
+            time.sleep(15)
+            continue
+
+        if result["status"] == "success":
             _mark_done(item)
-            _git_push(item)
-            report["built"].append({
-                "item":      item,
-                "file":      str(fpath),
-                "ts":        datetime.now().isoformat(),
-            })
-            _log(f"  ✓ Completed: {item}")
-        else:
-            report["errors"].append(item)
-            _log(f"  ✗ Build failed: {item}")
+        _git_push(item, fpath)
+        report["built"].append({
+            "item":             item,
+            "file":             str(fpath),
+            "features_built":   result["features_built"],
+            "features_planned": result["features_planned"],
+            "build_status":     result["status"],
+            "review":           review["verdict"],
+            "ts":               datetime.now().isoformat(),
+        })
+        _log(f"  Completed ({result['status']}): {item}")
 
-        time.sleep(30)
+        _learn_skill(
+            item,
+            f"Built {fpath.name} with features: {', '.join(result['features_built'])}. "
+            f"All tests passed, review: {review['verdict']}.",
+        )
 
-    # ── PHASE 4: Ops health check before shutdown ──────────────────────────────
+        time.sleep(15)
+
     ops_report = _run_ops_check()
     report["ops_health"] = ops_report
 
-    # ── Save full overnight report ─────────────────────────────────────────────
-    _log("=== Night mode ended — saving report ===")
+    _log("=== Night mode ended -- saving report ===")
     REPORT_PATH.parent.mkdir(exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
-    _log(f"Report saved → {REPORT_PATH}")
+    _log(f"Report saved -> {REPORT_PATH}")
 
-
-# ── Public API (called by tad_gui.py) ─────────────────────────────────────────
 
 _running = False
 
@@ -450,7 +704,6 @@ def is_running() -> bool:
 
 
 def start_night_mode(status_callback=None):
-    """Launch night mode in background thread."""
     global _running
     if _running:
         if status_callback:
@@ -462,10 +715,10 @@ def start_night_mode(status_callback=None):
         _running = True
         try:
             if status_callback:
-                status_callback("Night mode started — CSEO evolving TAD...")
+                status_callback("Night mode started -- CSEO evolving TAD...")
             run_night_mode()
             if status_callback:
-                status_callback("Night mode complete — report ready.")
+                status_callback("Night mode complete -- report ready.")
         except Exception as e:
             _log(f"Night mode error: {e}")
             if status_callback:
@@ -478,7 +731,6 @@ def start_night_mode(status_callback=None):
 
 
 def check_overnight_report() -> dict | None:
-    """Return overnight report for tad_gui.py on first interaction."""
     if REPORT_PATH.exists():
         try:
             data  = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
@@ -487,17 +739,19 @@ def check_overnight_report() -> dict | None:
             market = data.get("market_scan", {})
             opps  = market.get("opportunities", [])
             game_changers = data.get("game_changers", [])
+            blocked = data.get("blocked", [])
 
             summary = (
                 f"Built {len(built)} items. "
                 f"CSEO added {cseo.get('skills_built', 0)} new skills. "
                 f"Market found {len(opps)} opportunities. "
                 f"Skipped {len(data.get('skipped', []))}. "
-                f"Errors: {len(data.get('errors', []))}."
+                f"Errors: {len(data.get('errors', []))}. "
+                f"Blocked: {len(blocked)}."
             )
 
             if game_changers:
-                summary += f" 🚨 {len(game_changers)} game-changing discovery found!"
+                summary += f" {len(game_changers)} game-changing discovery found!"
 
             return {
                 "total_built":    len(built),
@@ -506,6 +760,7 @@ def check_overnight_report() -> dict | None:
                 "built":          built,
                 "skipped":        data.get("skipped", []),
                 "errors":         data.get("errors", []),
+                "blocked":        blocked,
                 "cseo_skills":    cseo.get("skills_built", 0),
                 "opportunities":  opps,
                 "game_changers":  game_changers,

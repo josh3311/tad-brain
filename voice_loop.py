@@ -18,6 +18,9 @@ from pathlib import Path
 from datetime import datetime
 import json
 
+from tad_encoding import force_utf8
+force_utf8()
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 ROOT     = Path(__file__).parent
 MEMORY   = ROOT / "memory"

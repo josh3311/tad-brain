@@ -558,3 +558,29 @@ No CRUD action happens without being logged.
     attribution backlog item), agent-search (real web data for Market
     Agent, zero keys), Pydantic-validated JSON (kills empty-JSON bug
     class), listmonk (outreach deliverability)
+### 2026-06-12 (evening) — Two Quick Fixes Before 3am Night Mode
+- FIX 1 DONE: read_memory_file tool for Conversation Agent
+  - New memory_tools.py: read_memory_file() — read-only, sandboxed to
+    memory/ (path traversal blocked), jsonl files tail last 20 lines,
+    5000-char cap; plus list_memory_files() + Anthropic tool schema
+  - tad_gui._call_claude() now runs a tool-use loop (max 5 rounds) with
+    these tools; SYSTEM_PROMPT instructs: on "what happened / what was
+    built" questions, read session_report.md, decision_log.jsonl,
+    ceo_log.jsonl, metrics.json, pii_audit.jsonl — never claim no access
+  - Files: memory_tools.py (new), tad_gui.py
+  - VERIFIED: live end-to-end — "what was built last night?" → model
+    called read_memory_file(session_report.md) and returned a real
+    6-task summary; traversal attempts ("../tad_gui.py", "..\.env")
+    denied; missing file + jsonl tail paths tested
+- FIX 2 DONE: cp1252 Unicode crash (root-cause fix, option b)
+  - New tad_encoding.py: force_utf8() reconfigures stdout/stderr to
+    UTF-8 (errors=replace) AND sets PYTHONIOENCODING=utf-8 so
+    subprocess children (code_executor builds) inherit it — covers all
+    31 files printing → ✓ ✗ ✅ ❌ without touching them
+  - Called at top of entry points: tad_gui.py, night_mode.py,
+    scheduler.py, agent.py, voice_loop.py, voice_input.py
+  - Build Agent / product_builder / Phase 6 untouched per brief
+  - Files: tad_encoding.py (new) + 6 entry scripts
+  - VERIFIED: reproduced exact U+2192 charmap crash on forced cp1252
+    console, then clean output with fix; re-ran live CEO decision under
+    cp1252 — "[CEO] Decision: GO → CTO Agent" printed without error

@@ -18,6 +18,10 @@ from dotenv import load_dotenv
 import anthropic
 import tkinter as tk
 
+from tad_encoding import force_utf8
+force_utf8()
+
+from memory_tools import MEMORY_TOOL_SCHEMA, call_memory_tool
 from agent import run_task
 from scheduler import start_scheduler, check_pending_briefing
 from night_mode import start_night_mode, check_overnight_report, is_running as night_is_running
@@ -64,7 +68,12 @@ def _load_memory() -> str:
         "You are TAD — Joshua's sovereign AI business agent. "
         "Casual, direct, smart. Never corporate. Address Joshua by name. "
         "Keep responses concise unless detail is asked for. "
-        "Always know your project state. Never ask Joshua to re-explain TAD."
+        "Always know your project state. Never ask Joshua to re-explain TAD. "
+        "You have a read_memory_file tool with read-only access to memory/. "
+        "For 'what happened', 'what was built', 'what did you decide' or "
+        "spend questions, call it on session_report.md, decision_log.jsonl, "
+        "ceo_log.jsonl, metrics.json or pii_audit.jsonl and answer from the "
+        "real contents — never claim you have no access to logs."
     ]
     if profile_path.exists():
         try:
@@ -95,11 +104,17 @@ voices = tts_engine.getProperty("voices")
 if len(voices) > 1:
     tts_engine.setProperty("voice", voices[1].id)
 
+# Only these EXPLICIT phrases trigger the agent pipeline
+# Everything else goes to Claude conversation
 TASK_KEYWORDS = [
-    "research","analyze","analyse","search","find","market","trend",
-    "opportunity","niche","report","look up","scan","what is profitable",
-    "best ai","investigate","run cseo","evolve","fix","build","score",
-    "invoice","health check","p&l","decide","go or no go","briefing",
+    "run a market scan", "market scan", "run cseo", "cseo evolution",
+    "run a full", "health check", "ops check",
+    "score this opportunity", "go or no go", "should we build",
+    "p&l report", "profit and loss", "invoice client",
+    "find leads", "send outreach", "build me a", "build a script",
+    "ceo briefing", "morning briefing", "daily briefing",
+    "find opportunities", "scan for loopholes", "run the market",
+    "evolve tad", "fix all broken",
 ]
 
 
@@ -473,9 +488,13 @@ class TADFace(tk.Canvas):
 
 class ChatMessage(ctk.CTkFrame):
 
-    def __init__(self, parent, role: str, text: str, ts: str, **kwargs):
+    def __init__(self, parent, role: str, text: str, ts: str,
+                 on_edit=None, **kwargs):
         is_user = (role == "user")
         super().__init__(parent, fg_color="transparent", **kwargs)
+        self._text    = text
+        self._on_edit = on_edit
+        self._is_user = is_user
 
         bubble = ctk.CTkFrame(
             self,
@@ -489,15 +508,39 @@ class ChatMessage(ctk.CTkFrame):
         else:
             bubble.pack(anchor="w", padx=(8, 80), pady=3)
 
-        # Role tag
+        # Role + action row
+        top_row = ctk.CTkFrame(bubble, fg_color="transparent")
+        top_row.pack(fill="x", padx=14, pady=(10, 2))
+
         ctk.CTkLabel(
-            bubble,
+            top_row,
             text="you" if is_user else "◈ TAD",
             font=("Segoe UI", 10, "bold"),
             text_color=MID_GREEN if is_user else NEON_PURP,
-        ).pack(anchor="w", padx=14, pady=(10, 2))
+        ).pack(side="left")
 
-        # Message
+        # Copy button
+        copy_btn = ctk.CTkButton(
+            top_row, text="⎘", width=24, height=20,
+            font=("Segoe UI", 10),
+            fg_color="transparent", hover_color=BG_HOVER,
+            text_color=TEXT_DIM, corner_radius=4,
+            command=self._copy_text
+        )
+        copy_btn.pack(side="right")
+
+        # Edit button (user messages only)
+        if is_user and on_edit:
+            edit_btn = ctk.CTkButton(
+                top_row, text="✎", width=24, height=20,
+                font=("Segoe UI", 10),
+                fg_color="transparent", hover_color=BG_HOVER,
+                text_color=TEXT_DIM, corner_radius=4,
+                command=self._edit_message
+            )
+            edit_btn.pack(side="right", padx=(0, 4))
+
+        # Message text
         ctk.CTkLabel(
             bubble,
             text=text,
@@ -515,6 +558,14 @@ class ChatMessage(ctk.CTkFrame):
             font=("Segoe UI", 9),
             text_color=TEXT_DIM,
         ).pack(anchor="e", padx=14, pady=(0, 8))
+
+    def _copy_text(self):
+        self.clipboard_clear()
+        self.clipboard_append(self._text)
+
+    def _edit_message(self):
+        if self._on_edit:
+            self._on_edit(self._text)
 
 
 class WorkingIndicator(ctk.CTkFrame):
@@ -781,18 +832,41 @@ class TADApp(ctk.CTk):
         input_panel.pack(fill="x", padx=14, pady=12)
 
         # Live transcription display
-        # WHAT THIS DOES: shows what Whisper heard so you can edit before sending
-        self.transcript_box = ctk.CTkTextbox(
-            input_panel, height=50,
-            font=("Segoe UI", 12),
-            fg_color=BG_BASE,
+        # WHAT THIS DOES: shows what Whisper heard — EDIT THIS before sending
+        transcript_header = ctk.CTkFrame(input_panel, fg_color="transparent")
+        self._transcript_header = transcript_header
+
+        ctk.CTkLabel(
+            transcript_header,
+            text="🎙  Whisper heard this — edit before sending:",
+            font=("Segoe UI", 10),
             text_color=NEON_GREEN,
+        ).pack(side="left", padx=4)
+
+        ctk.CTkButton(
+            transcript_header,
+            text="✕ discard",
+            font=("Segoe UI", 10),
+            width=70, height=22,
+            fg_color="transparent",
+            hover_color=BG_HOVER,
+            text_color=RED,
+            corner_radius=4,
+            command=self._discard_transcript,
+        ).pack(side="right", padx=4)
+
+        self.transcript_box = ctk.CTkTextbox(
+            input_panel,
+            height=70,
+            font=("Segoe UI", 13),
+            fg_color=BG_DEEP,
+            text_color=TEXT_PRI,
             border_color=NEON_GREEN,
-            border_width=1,
+            border_width=2,
             corner_radius=8,
             wrap="word",
         )
-        # Hidden by default — shows when voice is active
+        # Hidden by default — shows when voice captures something
         self._transcript_visible = False
 
         # Main input row
@@ -811,6 +885,7 @@ class TADApp(ctk.CTk):
         )
         self.input_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.input_box.bind("<Return>", self._on_enter)
+        self.transcript_box.bind("<Return>", self._on_transcript_enter)
 
         # Button row
         btn_row = ctk.CTkFrame(input_panel, fg_color="transparent")
@@ -860,15 +935,42 @@ class TADApp(ctk.CTk):
         if not text or not text.strip():
             return
         ts  = datetime.now().strftime("%H:%M")
-        msg = ChatMessage(self.chat_scroll, role, text, ts)
+        # Save to chat history
+        self._save_chat_message(role, text, ts)
+
+        def on_edit(original_text):
+            self.input_box.delete(0, "end")
+            self.input_box.insert(0, original_text)
+            self.input_box.focus()
+
+        msg = ChatMessage(
+            self.chat_scroll, role, text, ts,
+            on_edit=on_edit if role == "user" else None
+        )
         msg.pack(fill="x", pady=2)
         self.after(60, lambda: self.chat_scroll._parent_canvas.yview_moveto(1.0))
+
+    def _save_chat_message(self, role: str, text: str, ts: str):
+        """Save every message to chat history."""
+        history_dir = ROOT / "memory" / "chat_history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        today = datetime.now().strftime("%Y-%m-%d")
+        path  = history_dir / f"chat_{today}.jsonl"
+        entry = {"ts": ts, "date": today, "role": role, "text": text}
+        with open(path, "a", encoding="utf-8") as f:
+            import json as _json
+            f.write(_json.dumps(entry) + "\n")
 
     # ── Input handling ────────────────────────────────────────────────────────
 
     def _on_enter(self, event=None):
         if not self._thinking:
             self._on_send()
+
+    def _on_transcript_enter(self, event=None):
+        """Press Enter in transcript box to send it."""
+        self._send_transcript()
+        return "break"  # prevent newline in textbox
 
     def _on_send(self):
         if self._thinking:
@@ -934,6 +1036,16 @@ class TADApp(ctk.CTk):
             result = run_task(text, status_callback=status_cb)
             reply  = result if result and result.strip() else "Done — check workflows for full report."
             self.msg_queue.put(("reply", reply))
+
+            # Pick up any chart/report queued by agent.py and hand it to
+            # the main thread for display.
+            try:
+                from agent import get_last_visual
+                visual = get_last_visual()
+                if visual:
+                    self.msg_queue.put(("visual", visual))
+            except Exception as e:
+                print(f"[gui] visual fetch error: {e}")
         except Exception as e:
             self.msg_queue.put(("error", str(e)))
 
@@ -951,11 +1063,32 @@ class TADApp(ctk.CTk):
             if not user_msgs:
                 user_msgs = [{"role": "user", "content": user_text}]
 
-            msg   = claude.messages.create(
-                model=C_MODEL, max_tokens=1024,
-                system=SYSTEM_PROMPT, messages=user_msgs,
-            )
-            reply = msg.content[0].text if msg.content else ""
+            # Tool-use loop: lets Claude read memory/ files (read-only)
+            # before answering "what happened" style questions.
+            reply = ""
+            for _ in range(5):
+                msg = claude.messages.create(
+                    model=C_MODEL, max_tokens=1024,
+                    system=SYSTEM_PROMPT, messages=user_msgs,
+                    tools=MEMORY_TOOL_SCHEMA,
+                )
+                if msg.stop_reason != "tool_use":
+                    reply = "".join(
+                        b.text for b in msg.content if b.type == "text"
+                    )
+                    break
+                user_msgs = user_msgs + [{"role": "assistant", "content": msg.content}]
+                results = []
+                for block in msg.content:
+                    if block.type != "tool_use":
+                        continue
+                    self.msg_queue.put(("status", f"reading memory/{block.input.get('filename', '')}"))
+                    results.append({
+                        "type":        "tool_result",
+                        "tool_use_id": block.id,
+                        "content":     call_memory_tool(block.name, block.input),
+                    })
+                user_msgs = user_msgs + [{"role": "user", "content": results}]
 
             if reply and reply.strip():
                 self.conversation.append({"role": "assistant", "content": reply})
@@ -995,35 +1128,64 @@ class TADApp(ctk.CTk):
 
     def _show_transcript_box(self):
         if not self._transcript_visible:
-            self.transcript_box.pack(fill="x", padx=12, pady=(8, 4), before=self.send_btn.master)
+            self._transcript_header.pack(fill="x", padx=12, pady=(8, 2), before=self.send_btn.master)
+            self.transcript_box.pack(fill="x", padx=12, pady=(0, 4), before=self.send_btn.master)
             self._transcript_visible = True
         self.transcript_box.configure(state="normal")
         self.transcript_box.delete("1.0", "end")
         self.transcript_box.insert("end", "🎙 Listening...")
 
     def _on_transcript(self, text: str):
-        """Show transcript for editing before sending."""
-        if self._transcript_visible:
-            self.transcript_box.delete("1.0", "end")
-            self.transcript_box.insert("end", text)
-            # Auto-send after 1.5s unless user edits
-            self.after(1500, lambda: self._auto_send_transcript(text))
+        """
+        Show transcript in editable box.
+        NOTHING sends automatically — user reviews and hits Send.
+        """
         self._voice_done()
 
-    def _auto_send_transcript(self, original: str):
-        """Send the transcript (user may have edited it)."""
-        if self._transcript_visible:
-            current = self.transcript_box.get("1.0", "end").strip()
+        if not text or not text.strip():
             self._hide_transcript_box()
-            if current and current != "🎙 Listening...":
-                self.input_box.delete(0, "end")
-                self.input_box.insert(0, current)
-                self._on_send()
+            return
+
+        # Show transcript in the edit box
+        self._show_transcript_box()
+        self.transcript_box.configure(state="normal")
+        self.transcript_box.delete("1.0", "end")
+        self.transcript_box.insert("end", text.strip())
+
+        # Move focus to transcript box so user can edit immediately
+        self.transcript_box.focus()
+        self.transcript_box.mark_set("insert", "end")
+
+        # Update send button to use transcript
+        self.send_btn.configure(
+            text="Send transcript  ↵",
+            command=self._send_transcript
+        )
+        self._set_status("idle", "Review your message — edit then Send")
+
+    def _send_transcript(self):
+        """Send the (possibly edited) transcript manually."""
+        text = self.transcript_box.get("1.0", "end").strip()
+        self._hide_transcript_box()
+        # Restore normal send button
+        self.send_btn.configure(
+            text="Send  ↵",
+            command=self._on_send
+        )
+        if text:
+            self._handle_input(text)
 
     def _hide_transcript_box(self):
         if self._transcript_visible:
+            self._transcript_header.pack_forget()
             self.transcript_box.pack_forget()
             self._transcript_visible = False
+
+    def _discard_transcript(self):
+        """Throw away the transcript and start fresh."""
+        self._hide_transcript_box()
+        self.send_btn.configure(text="Send  ↵", command=self._on_send)
+        self._set_status("idle")
 
     def _voice_done(self):
         self._voice_active = False
@@ -1138,6 +1300,27 @@ class TADApp(ctk.CTk):
             self._append_chat("tad",
                 f"Morning briefing: {briefing.get('action_today','')}")
 
+    def _show_visual(self, visual: dict):
+        """Open a chart or report popup. Called on the main thread from
+        _poll_queue after agent.get_last_visual() returns something."""
+        kind = visual.get("kind")
+        data = visual.get("data")
+        try:
+            if kind == "market":
+                from tad_dashboard import show_market_chart
+                show_market_chart(data)
+            elif kind == "finance":
+                from tad_dashboard import show_pnl_chart
+                show_pnl_chart(data)
+            elif kind == "ops":
+                from tad_dashboard import show_ops_chart
+                show_ops_chart(data)
+            elif kind == "report":
+                from tad_visual import show_research_report
+                show_research_report(visual.get("text", ""), visual.get("user_input", ""))
+        except Exception as e:
+            print(f"[gui] show_visual error: {e}")
+
     # ── TTS ───────────────────────────────────────────────────────────────────
 
     def _speak_text(self, text: str):
@@ -1181,6 +1364,9 @@ class TADApp(ctk.CTk):
                         self._append_chat("tad", data)
                         self._set_status("speaking")
                         self._speak_text(data[:400])
+
+                elif msg_type == "visual":
+                    self._show_visual(data)
 
                 elif msg_type == "done_speaking":
                     if not night_is_running():

@@ -23,6 +23,9 @@ from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from tad_encoding import force_utf8
+force_utf8()
+
 load_dotenv()
 
 ROOT          = Path(__file__).parent

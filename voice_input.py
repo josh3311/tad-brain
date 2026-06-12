@@ -17,11 +17,14 @@ import queue
 import sounddevice as sd
 from faster_whisper import WhisperModel
 
+from tad_encoding import force_utf8
+force_utf8()
+
 # ── Config ────────────────────────────────────────────────────────────────────
 SAMPLE_RATE     = 16000          # Whisper expects 16kHz
 BLOCK_SIZE      = 1024           # frames per audio block
 SILENCE_LIMIT   = 2.5            # seconds of silence to stop recording
-SILENCE_THRESH  = 0.015          # raised from 0.01 — stops picking up background noise
+SILENCE_THRESH  = 0.018          # tuned threshold — balance between sensitivity and noise
 WHISPER_MODEL   = "base.en"      # using cached model — no download needed
 COMPUTE_TYPE    = "int8"         # int8 = fast CPU, float16 = GPU
 
@@ -83,10 +86,23 @@ def _record_until_silence() -> np.ndarray:
 def transcribe(audio: np.ndarray) -> str:
     """Run faster-whisper on a float32 numpy array. Returns transcript string."""
     model = _get_model()
+    # TAD vocabulary context — helps Whisper understand domain-specific words
+    tad_context = (
+        "TAD, CSEO, market scan, loophole, agent, opportunity score, "
+        "night mode, CEO briefing, skill file, Kimi, Claude, Anthropic, "
+        "Python, GitHub, invoice, P&L, build agent, decision agent, "
+        "Joshua, sovereign agent, autonomous, niche, revenue"
+    )
     segments, _ = model.transcribe(
-        audio, beam_size=5, language="en",
-        vad_filter=True,          # removes non-speech segments
-        vad_parameters=dict(min_silence_duration_ms=500)
+        audio,
+        beam_size=5,
+        language="en",
+        initial_prompt=tad_context,  # context injection for accuracy
+        vad_filter=True,
+        vad_parameters=dict(
+            min_silence_duration_ms=600,
+            speech_pad_ms=400,
+        )
     )
     text = " ".join(seg.text.strip() for seg in segments).strip()
     print(f"[Voice] Transcript: {text}")
