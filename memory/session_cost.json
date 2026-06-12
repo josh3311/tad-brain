@@ -1,0 +1,18 @@
+{
+  "session": "night-build-2026-06-12",
+  "model_pricing_note": "claude-haiku-4-5 ~$1/MTok in, $5/MTok out (approx)",
+  "tasks": {
+    "task0_credit_check": {
+      "api_calls": 1,
+      "tokens": {"input": 8, "output": 5},
+      "est_cost_usd": 0.0001
+    },
+    "task1_silent_agents": {
+      "api_calls": 4,
+      "tokens_est": {"input": 9000, "output": 1800},
+      "est_cost_usd": 0.018,
+      "note": "1 decision score + 2 CEO make_decision + skill prompts (Haiku)"
+    }
+  },
+  "total_est_cost_usd": 0.018
+}

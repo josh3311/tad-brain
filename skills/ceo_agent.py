@@ -52,7 +52,10 @@ def _log(msg: str):
     entry = {"ts": datetime.now().isoformat(), "msg": msg}
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
-    print(f"[CEO] {msg}")
+    try:
+        print(f"[CEO] {msg}")
+    except UnicodeEncodeError:
+        print(f"[CEO] {msg}".encode("ascii", "replace").decode())
 
 
 # ── Core decision engine ──────────────────────────────────────────────────────
@@ -160,8 +163,11 @@ Speak like a smart business partner, not a corporate report."""
             system=skill,
             messages=[{"role": "user", "content": prompt}],
         )
-        return msg.content[0].text or "No summary available."
+        summary = msg.content[0].text or "No summary available."
+        _log(f"Daily summary generated: {summary[:120]}")
+        return summary
     except Exception as e:
+        _log(f"Daily summary error: {e}")
         return f"CEO summary error: {e}"
 
 

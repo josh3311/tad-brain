@@ -109,10 +109,40 @@ def run_market_scan():
         if opps:
             for opp in opps[:3]:
                 _log(f"  → {opp.get('name')} (Score: {opp.get('total_score')}/40)")
+        run_decision_chain(opps)
         return report
     except Exception as e:
         _log(f"Market Agent error: {e} — falling back to Kimi scan")
         return _kimi_fallback_scan()
+
+
+def run_decision_chain(opportunities: list):
+    """
+    Market → Decision → CEO chain (THE_MONKEY.md).
+    Decision Agent scores the scan's opportunities; the top approved one
+    goes to the CEO Agent for a GO/KILL/ESCALATE call.
+    """
+    if not opportunities:
+        _log("Decision chain skipped — no opportunities from market scan")
+        return
+
+    try:
+        from decision_agent import score_multiple
+        approved = score_multiple(opportunities)
+        _log(f"Decision Agent approved {len(approved)} / {len(opportunities)} opportunities")
+    except Exception as e:
+        _log(f"Decision Agent error: {e}")
+        return
+
+    if not approved:
+        return
+
+    try:
+        from ceo_agent import make_decision
+        verdict = make_decision(approved[0], "opportunity_score")
+        _log(f"CEO verdict on '{approved[0].get('opportunity_name')}': {verdict.get('decision')}")
+    except Exception as e:
+        _log(f"CEO Agent error: {e}")
 
 
 def _kimi_fallback_scan() -> dict:

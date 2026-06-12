@@ -493,3 +493,17 @@ No CRUD action happens without being logged.
 - COMPLETED: Phase 5 — full product-to-delivery-to-invoice-to-feedback loop built
 - TAD AI is now a complete autonomous business system
 - ALL 5 PHASES COMPLETE ✓ 2026-06-08
+
+### 2026-06-12 — Night Build: 6-Task Hardening Pass
+- TASK 1 DONE: Fixed silent decision_agent / ceo_agent
+  - Root cause 1: ceo_agent.generate_daily_summary() (the only CEO function
+    the 7am scheduler calls) never wrote to ceo_log.jsonl → added _log() calls
+  - Root cause 2: decision_agent was never invoked autonomously — added
+    run_decision_chain() to scheduler.py: 3am Market scan now feeds
+    opportunities → decision_agent.score_multiple() → ceo_agent.make_decision()
+  - Bonus fix: _log() console print of "→" (U+2192) crashed with
+    UnicodeEncodeError on cp1252 consoles, turning successful CEO decisions
+    into ERROR — wrapped prints in ceo_agent.py + decision_agent.py
+  - Files: scheduler.py, skills/ceo_agent.py, skills/decision_agent.py
+  - VERIFIED: ran full chain live (Decision APPROVE 29/40 → CEO GO), ops
+    health check now reports 0 issues, both agents healthy with fresh last_active

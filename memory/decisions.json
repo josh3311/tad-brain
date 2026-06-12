@@ -70,6 +70,33 @@
       "market_size": "$2.1B+ (estimated: 50K+ companies using multiple LLM APIs \u00d7 $500-2K annual spend per company on monitoring/optimization tools)",
       "kill_reason": null,
       "scored_at": "2026-06-09T02:44:23.998932"
+    },
+    {
+      "opportunity_name": "AI invoice-chaser for trade contractors",
+      "scores": {
+        "demand": 8,
+        "competition": 6,
+        "buildability": 8,
+        "revenue_speed": 7
+      },
+      "total_score": 29,
+      "decision": "APPROVE",
+      "reasoning": "Real, documented pain point (r/smallbusiness evidence confirms contractors actively lose revenue to unpaid invoices). Buildable MVP in 1-3 nights using email/SMS APIs + basic follow-up automation. Revenue arrives fast (payment processing integration on day one; SaaS subscription model enables recurring revenue within first month).",
+      "risk_flags": [
+        "Competition score adjusted down to 6 (not 7) \u2014 accounting for existing invoice tools like FreshBooks, Zoho, Wave that have some automation; however, none specifically target contractor-first workflow",
+        "Customer acquisition cost may be high without contractor network relationships",
+        "Legal complexity around debt collection messaging in some states \u2014 requires careful compliance review before revenue push"
+      ],
+      "market_size": "~2.8M small construction/trade contractors in US + Canada; average invoice lag = $15-40K per contractor annually; TAM ~$42-112B if capturing even 0.1% = $420-1.1M",
+      "kill_reason": null,
+      "scored_at": "2026-06-12T00:54:24.542048"
+    },
+    {
+      "ts": "2026-06-12T00:56:13.243349",
+      "report_type": "opportunity_score",
+      "decision": "GO",
+      "assigned_to": "CTO Agent",
+      "reasoning": "Score of 29 exceeds threshold of 28. Trade contractors face real invoice collection pain with no dominant AI solution. Fast build window and niche market alignment with THE_MONKEY.md mission."
     }
   ]
 }

@@ -48,7 +48,10 @@ def _log(msg: str):
     entry = {"ts": datetime.now().isoformat(), "msg": msg}
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
-    print(f"[DECISION] {msg}")
+    try:
+        print(f"[DECISION] {msg}")
+    except UnicodeEncodeError:
+        print(f"[DECISION] {msg}".encode("ascii", "replace").decode())
 
 
 # ── Core scoring engine ───────────────────────────────────────────────────────
