@@ -1,97 +1,94 @@
-# Night Build Session Report — 2026-06-12
+# Fix Brief Session Report — 2026-06-12 (afternoon/evening)
 
-**Brief:** 6-Task Hardening Pass | **Status: 6/6 done + credit check** | **Est. API spend: ~$0.03** (details in session_cost.json)
-
-All work committed and pushed to GitHub per task (commits e8a3cf6 → 898c5db on main).
-
----
-
-## Per-task status
-
-### TASK 0 — Credit check: DONE
-Minimal Haiku ping returned "pong" (13 tokens). Balance OK, run proceeded.
-
-### TASK 1 — Silent decision_agent / ceo_agent: DONE
-- **Root cause 1:** `ceo_agent.generate_daily_summary()` — the only CEO function
-  the 7am scheduler calls — never wrote to ceo_log.jsonl, so the health checker
-  (which reads the last `ts` in each agent's jsonl) saw it as silent. Added `_log()`.
-- **Root cause 2:** decision_agent was never invoked outside explicit chat
-  commands. Added `run_decision_chain()` to scheduler.py: 3am Market scan now
-  feeds opportunities → `decision_agent.score_multiple()` → top approved →
-  `ceo_agent.make_decision()` (the Market → Decision → CEO chain from THE_MONKEY.md).
-- **Bonus bug found during verification:** `_log()` printing "→" (U+2192) raised
-  UnicodeEncodeError on cp1252 consoles and converted a *successful* CEO decision
-  into ERROR. Wrapped console prints in ceo_agent.py + decision_agent.py.
-- **Files:** scheduler.py, skills/ceo_agent.py, skills/decision_agent.py
-- **Verification:** Live chain run (Decision APPROVE 29/40 → CEO GO); ops health
-  check went from 2 issues → 0, both agents healthy with fresh last_active.
-
-### TASK 2 — Test suite: DONE
-- tests/conftest.py, test_imports.py (12→15 modules), test_config_providers.py
-  (6 tests, mocked clients incl. fence-stripping and error paths), test_router.py
-  (15 cases, 5 per tier: explicit / conversational / keyword).
-- **Verification:** pytest passed; output captured in memory/test_results.txt.
-  Final suite count after Tasks 4–5 additions: **43/43 passing**.
-
-### TASK 3 — Observability skill: DONE
-- skills/tad_observability.py: per-agent call_count, error_count,
-  avg_response_time, last_error, last_call → memory/metrics.json (thread-safe).
-- Hooked via ONE wrapper: agent.run_task() dispatch now routes every agent call
-  through `observe_call()` — no per-agent edits.
-- Drive-by fix: run_task referenced undefined `SKILLS_DIR`/`_log`, which silently
-  disabled the learned-skill-library check; now uses AGENTS_DIR.
-- **Verification:** Ran "system health" + "p&l report" through run_task —
-  metrics.json populated with real ops/finance entries; error path verified
-  (error_count + last_error recorded).
-
-### TASK 4 — PII skill: DONE
-- skills/tad_pii.py: `scan_for_pii()` (emails, phones, SSN/SIN, addresses —
-  regex only), `redact_pii()`, `check_before_storage()`.
-- Wired into ops_agent._write() as pre-storage gate; hits logged **masked**
-  to memory/pii_audit.jsonl (audit log never stores raw PII).
-- **Verification:** Fake email+phone flagged with masked audit entry; clean
-  system text (timestamps, scores, $ amounts) → zero false positives; 7 new tests.
-
-### TASK 5 — user-research-skill review: DONE
-- Cloned cookiy-ai/user-research-skill to temp only (deleted after; NOT merged).
-  It's a Claude-skill wrapper around the paid Cookiy platform API — all
-  platform routes skipped (no key).
-- Extracted 2 concepts into skills/tad_user_research.py, reimplemented on Haiku:
-  `synthetic_feedback()` (persona reactions + willingness-to-pay → Decision
-  Agent demand signal, Marketing objection list) and `build_screening_criteria()`
-  (behavior-first lead qualification for Marketing Agent).
-- **Verification:** Imports cleanly (in test suite); live self-test produced 2
-  realistic personas (avg WTP 5/10, concrete objections) + screening criteria.
-
-### TASK 6 — GitHub scan: DONE (report only)
-- memory/github_scan_report.md: 10 tools with repo links, relevance, integration
-  sketch, key requirements. NO cloning, NO code changes.
-- Top picks: LiteLLM (cost-attribution backlog item + spend caps), agent-search
-  (real web data for Market Agent, zero keys), Pydantic-validated JSON
-  (kills the empty/malformed-JSON bug class), listmonk (outreach deliverability).
+**Brief:** 3 Tasks — kimi-k2.6 empty-content fix, CSEO→Haiku code-gen, review-gate fail-closed
+**Status: 3/3 done, all verified live, all pushed**
+(Previous night-build report is in git history at commit `5c4bff7`.)
 
 ---
 
-## Files changed this session
-- Modified: scheduler.py, agent.py, skills/ceo_agent.py, skills/decision_agent.py,
-  skills/ops_agent.py, THE_MONKEY.md
-- New: skills/tad_observability.py, skills/tad_pii.py, skills/tad_user_research.py,
-  tests/ (5 files), memory/{session_cost.json, test_results.txt, metrics.json,
-  pii_audit.jsonl, user_research_log.jsonl, github_scan_report.md, session_report.md}
+## TASK 1 — kimi-k2.6 empty-content fix — DONE
+**Commits:** `0d1dfee` (+ build artifacts `242f308`, `9ce8dd5`)
+**Files:** skills/build_agent.py, night_mode.py
 
-## What's next (prioritized, for THE_MONKEY.md backlog)
-1. **Watch tonight's 3am run** — first autonomous Market → Decision → CEO chain;
-   confirm decision_log/ceo_log get entries without manual triggering.
-2. **LiteLLM proxy** (from scan report) — per-agent cost attribution + budget
-   caps; directly completes the p6_build_1 backlog item.
-3. **agent-search / SearXNG** — give the Market Agent real web data; current
-   scans are LLM recall only.
-4. **Pydantic-validate LLM JSON** in config_providers.claude_json — recurring
-   empty/malformed JSON bug class (p6_1) disappears.
-5. **Wire synthetic_feedback into the decision chain** — run it on the top
-   approved opportunity before the CEO verdict for a demand-validated GO.
-6. **Pre-existing repo hygiene** — many uncommitted modified files from before
-   this session (tad_gui.py, night_mode.py, voice_input.py, etc.) are still
-   unstaged; needs a review-and-commit pass.
-7. **Sweep other agents' _log prints** for the same cp1252 UnicodeEncodeError
-   bug fixed in ceo/decision (any agent printing → or ✓ can crash a live call).
+The brief's fix (raise max_tokens 8000, retry 12000 on empty) was implemented but
+proved insufficient on live test: a 12000-token retry was STILL 100% consumed by
+reasoning (finish_reason=length, content=""). Probing the Moonshot API found the
+real control: `thinking={"type":"disabled"}` — which the API only allows with
+temperature=0.6 (a forced deviation from the "Kimi temp=1" rule; falls back to
+the old thinking-mode call if the param is ever rejected).
+
+Final design (shared by build_agent `_kimi_call` and night_mode `_kimi`):
+- thinking disabled, temp 0.6, max_tokens default 8000 (was 3000/500)
+- retry once at 12000 on ANY finish_reason=length — empty OR truncated, since
+  truncated code can compile by luck
+- retries logged to memory/build_log.jsonl (both files)
+- unclosed-``` fence extraction hardened; module-size rule added to BUILD_SYSTEM
+
+**Verification:** `build_agent.build()` on the approved item "AI Output Bias
+Detection for Sensitive Domains" (28/40, decisions.json GO):
+finish_reason=**stop**, 4561 completion tokens, 508-line module parses + syntax
+check passed, real entries in build_log.jsonl, pushed by build_agent itself —
+**the first successful build_agent artifact ever**
+(ai_output_bias_detection_for_sensitive_domains.py).
+
+## TASK 2 — CSEO code-gen → Claude Haiku via claude_chat — DONE
+**Commits:** `01760fd` (+ CSEO's own `108e1c1`)
+**Files:** skills/cseo_agent.py
+
+Brief premise was stale: cseo_agent defined a Kimi client but never called it —
+generation already used claude.messages.create directly. Actual change: all CSEO
+generation (skill .md + patch .py) now goes through config_providers.claude_chat
+(Haiku, temp default), py code-gen at max_tokens=2000 per brief; dead Kimi client
+removed. Kimi remains build_agent/night_mode-only. Also fixed: unclosed-fence
+extraction + BUILD_SYSTEM now caps modules ~100 lines so patches fit the 2000-token
+budget (first verify attempt failed on truncated 200+ line modules).
+
+**Verification:** seeded the known self_test ZeroDivisionError into
+error_log.json → `_find_bugs_to_fix()` picked it up → `build_skill()` produced
+skills/learned/fix_self_test_error.py (185 lines, parses, syntax check passed,
+real logic — not empty/prose) + .md skill file. Seeded error marked resolved
+afterwards so tonight's CSEO won't chase it.
+
+## TASK 3 — Review gate fails closed — DONE
+**Commit:** `be9958f`
+**Files:** night_mode.py
+
+`_claude_review` no-key and exception paths now return verdict "error" (was
+"skipped"); run_night_mode blocks anything not "approve" after the reject/fix
+round — logs `review_failed_blocking_push` with the error, records it in
+report["errors"], keeps the built file LOCAL for morning review, never pushes
+or marks done. Reject path unchanged.
+
+**Verification:** harnessed single-item run_night_mode with the Anthropic client
+raising a simulated 400 credit error → `_git_push` called **0 times**, item not
+in report["built"], `review_failed_blocking_push` in night_log.jsonl and the
+overnight report, file kept local.
+
+---
+
+## File diffs (task commits, excl. generated artifacts)
+```
+night_mode.py         | 93 ++++++++++++++++++++++++++++++++++--------
+skills/build_agent.py | 81 ++++++++++++++++++++++++++--------
+skills/cseo_agent.py  | 44 +++++++++++----------
+3 files changed, 161 insertions(+), 57 deletions(-)
+```
+
+## API token spend (approx, from captured usage)
+| Task | Provider | Tokens (prompt + completion) | Notes |
+|------|----------|------------------------------|-------|
+| 1 | Kimi | ~47k (incl. 20k burned proving the reasoning arms-race, 3 small probes) | diagnosis + 2 full builds |
+| 2 | Claude Haiku | ~18k | 1 failed verify run (4 calls) + 1 successful (2 calls) |
+| 3 | none | 0 | review error simulated, no real API calls |
+
+## What's next (suggested for THE_MONKEY.md backlog)
+1. Wire decisions.json GO verdicts → build_agent.build() (diagnosis Finding 1 —
+   still unwired; today's build was invoked manually).
+2. Guard against double night_mode launch (GUI thread + scheduler subprocess ran
+   interleaved on 2026-06-11 night).
+3. config_providers.kimi_code still uses old thinking-mode call at
+   max_tokens=3000 — port the Task 1 no-think fix there too.
+4. conversation_engine.py:197 NameError (`resp` vs `msg`) silently disables all
+   response shaping.
+5. build_agent's generated 508-line module ignored the ~250-line rule — consider
+   a hard line-count check in review.
