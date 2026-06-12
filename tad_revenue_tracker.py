@@ -1,77 +1,82 @@
-"""TAD Revenue Tracker — core data model and total revenue calculation."""
+"""TAD Revenue Tracker - core data model and net profit calculation."""
 
-import sys
 from dataclasses import dataclass
 from typing import Dict, List
+import sys
 
 
 @dataclass
-class RevenueEntry:
-    # single source of truth for one revenue event
-    source: str   # e.g. "API Sales"
-    amount: float # dollars, negative for refunds
-    date: str     # YYYY-MM-DD
+class Transaction:
+    source: str
+    revenue: float
+    api_cost: float
 
 
 class RevenueTracker:
-    # holds all entries and performs the one vital calculation
-    def __init__(self):
-        self.entries: List[RevenueEntry] = []
+    def __init__(self) -> None:
+        self.transactions: List[Transaction] = []
 
-    def add_entry(self, source: str, amount: float, date: str) -> None:
-        self.entries.append(RevenueEntry(source, amount, date))
+    def add(self, txn: Transaction) -> None:
+        self.transactions.append(txn)
 
     def total_revenue(self) -> float:
-        return sum(entry.amount for entry in self.entries)
+        return sum(t.revenue for t in self.transactions)
 
-    def revenue_by_source(self) -> Dict[str, float]:
-        # aggregation layer: summarize totals per source
+    def total_api_cost(self) -> float:
+        return sum(t.api_cost for t in self.transactions)
+
+    def net_profit(self) -> float:
+        return self.total_revenue() - self.total_api_cost()
+
+    def profit_by_source(self) -> Dict[str, float]:
         result: Dict[str, float] = {}
-        for entry in self.entries:
-            result[entry.source] = result.get(entry.source, 0.0) + entry.amount
+        for t in self.transactions:
+            net = t.revenue - t.api_cost
+            result[t.source] = result.get(t.source, 0.0) + net
         return result
 
-    def text_report(self) -> str:
-        # simple text summary of revenue totals
-        lines: List[str] = []
-        lines.append("Revenue Report")
-        lines.append("=" * 14)
-        lines.append(f"Total Revenue: ${self.total_revenue():.2f}")
-        lines.append("")
-        lines.append("By Source:")
-        for source, amount in sorted(self.revenue_by_source().items()):
-            lines.append(f"  {source}: ${amount:.2f}")
-        return "\n".join(lines)
+
+class Ledger:
+    # Storage layer that accumulates multiple RevenueTracker batches.
+    def __init__(self) -> None:
+        self.batches: Dict[str, RevenueTracker] = {}
+
+    def record(self, name: str, tracker: RevenueTracker) -> None:
+        if name not in self.batches:
+            self.batches[name] = tracker
+        else:
+            self.batches[name].transactions.extend(tracker.transactions)
 
 
-def run_tests() -> int:
-    # self-checks with known inputs; no network or keys needed
-    try:
-        tracker = RevenueTracker()
-        assert tracker.total_revenue() == 0.0
-        assert tracker.revenue_by_source() == {}
+def _test() -> None:
+    rt = RevenueTracker()
+    rt.add(Transaction("ads", 100.0, 10.0))
+    rt.add(Transaction("subs", 50.0, 5.0))
 
-        tracker.add_entry("API Sales", 100.0, "2024-01-01")
-        tracker.add_entry("API Sales", 50.0, "2024-01-02")
-        tracker.add_entry("Subscriptions", -10.0, "2024-01-03")
+    assert rt.total_revenue() == 150.0
+    assert rt.total_api_cost() == 15.0
+    assert rt.net_profit() == 135.0
 
-        assert tracker.total_revenue() == 140.0
-        by_source = tracker.revenue_by_source()
-        assert by_source["API Sales"] == 150.0
-        assert by_source["Subscriptions"] == -10.0
+    by_src = rt.profit_by_source()
+    assert by_src == {"ads": 90.0, "subs": 45.0}
 
-        report = tracker.text_report()
-        assert "Total Revenue: $140.00" in report
-        assert "API Sales: $150.00" in report
-        assert "Subscriptions: $-10.00" in report
+    ledger = Ledger()
+    ledger.record("batch1", rt)
+    assert ledger.batches["batch1"].net_profit() == 135.0
 
-        print("tests passed")
-        return 0
-    except AssertionError:
-        print("tests failed")
-        return 1
+    rt2 = RevenueTracker()
+    rt2.add(Transaction("ads", 20.0, 2.0))
+    ledger.record("batch1", rt2)
+    assert ledger.batches["batch1"].total_revenue() == 170.0
+
+    print("PASS")
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        sys.exit(run_tests())
+        try:
+            _test()
+        except Exception:
+            sys.exit(1)
+    else:
+        print("Usage: python tad_revenue_tracker.py --test")
