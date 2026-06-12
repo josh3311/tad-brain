@@ -131,3 +131,7 @@
 {"ts": "2026-06-11T10:30:34.267649", "msg": "Starting market scan..."}
 {"ts": "2026-06-11T10:30:34.437211", "msg": "Scan error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Cbwdg1XiiHiCnrTEHqVon'}"}
 {"ts": "2026-06-11T10:30:34.437931", "msg": "No qualifying opportunities found this cycle"}
+{"ts": "2026-06-11T16:56:55.937219", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-11T16:56:55.970419", "msg": "Starting market scan..."}
+{"ts": "2026-06-11T16:56:56.248844", "msg": "Scan error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Cbx98r4qN6LbjWaoFtjZT'}"}
+{"ts": "2026-06-11T16:56:56.249751", "msg": "No qualifying opportunities found this cycle"}
