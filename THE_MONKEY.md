@@ -537,3 +537,18 @@ No CRUD action happens without being logged.
   - VERIFIED: fake email+phone flagged with masked audit entry; clean
     system text (timestamps/scores/$ amounts) zero false positives;
     pytest 40/40
+- TASK 5 DONE: cookiy-ai/user-research-skill review → skills/tad_user_research.py
+  - Cloned to temp only (NOT merged); repo is a Claude-skill wrapper around
+    the paid Cookiy platform API (s-api.cookiy.ai) — all platform routes
+    skipped (no key)
+  - Extracted 2 concepts, reimplemented locally on Claude Haiku:
+    1. synthetic_feedback(opportunity) — AI-persona reactions with
+       willingness-to-pay + objections → demand signal for Decision Agent,
+       objection list for Marketing Agent
+    2. build_screening_criteria(profile) — behavior-first lead
+       qualification (2-4 questions, screen-out first, no yes/no) for
+       Marketing Agent targeting
+  - Files: skills/tad_user_research.py (+ added to import tests)
+  - VERIFIED: live self-test — 2 realistic personas (avg WTP 5/10, 1/2
+    would buy, concrete objections) + screening criteria with qualifying
+    thresholds; logs to memory/user_research_log.jsonl

@@ -13,6 +13,9 @@ AGENT_MODULES = [
     "build_agent",
     "marketing_agent",
     "conversation_engine",
+    "tad_observability",
+    "tad_pii",
+    "tad_user_research",
 ]
 
 CORE_MODULES = [
