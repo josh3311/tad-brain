@@ -552,3 +552,9 @@ No CRUD action happens without being logged.
   - VERIFIED: live self-test — 2 realistic personas (avg WTP 5/10, 1/2
     would buy, concrete objections) + screening criteria with qualifying
     thresholds; logs to memory/user_research_log.jsonl
+- TASK 6 DONE: GitHub auto-scan → memory/github_scan_report.md (REPORT ONLY,
+  nothing cloned/merged — awaiting Joshua's review)
+  - 10 free/open tools mapped to TAD gaps; top picks: LiteLLM (cost
+    attribution backlog item), agent-search (real web data for Market
+    Agent, zero keys), Pydantic-validated JSON (kills empty-JSON bug
+    class), listmonk (outreach deliverability)
