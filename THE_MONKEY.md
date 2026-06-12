@@ -649,3 +649,21 @@ No CRUD action happens without being logged.
   tokens, 508-line module parses + syntax check passed, logged to
   build_log.jsonl, pushed by build_agent itself. First successful
   build_agent artifact ever.
+
+### 2026-06-12 — Fix Brief Task 2: CSEO generation switched to claude_chat (Haiku)
+- Brief premise was stale: cseo_agent.py defined a Kimi client but never
+  called it — patch/skill generation already hit claude.messages.create
+  directly. Change made: all CSEO generation (skill .md + patch .py) now
+  goes through config_providers.claude_chat (Haiku, temp default), py
+  code-gen at max_tokens=2000 per brief; dead Kimi client removed.
+  Kimi remains build_agent/night_mode-only (Task 1 territory).
+- Also fixed in cseo_agent: unclosed-``` fence extraction (same bug as
+  build_agent) and BUILD_SYSTEM now demands <~100-line modules so the
+  patch fits the 2000-token budget completely (first verify run failed
+  on truncated 200+ line modules).
+- Files: skills/cseo_agent.py
+- VERIFIED: seeded the known self_test ZeroDivisionError into
+  error_log.json -> _find_bugs_to_fix() picked it up -> build_skill()
+  produced skills/learned/fix_self_test_error.py (185 lines, parses,
+  syntax check passed, real logic not prose/empty) + .md skill file,
+  pushed by CSEO itself. Seeded error marked resolved after test.

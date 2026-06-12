@@ -12,7 +12,6 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 import anthropic
-from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,12 +21,13 @@ MEMORY      = ROOT / "memory"
 SKILLS_DIR  = ROOT / "skills" / "learned"
 SKILL_PATH  = Path(__file__).parent / "cseo_agent.md"
 
-# Kimi for code generation
-kimi = OpenAI(
-    api_key=os.getenv("KIMI_API_KEY", ""),
-    base_url="https://api.moonshot.ai/v1",
-)
-KIMI_MODEL = "kimi-k2.6"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# 2026-06-12 fix brief Task 2: ALL CSEO generation (diagnosis, skill files,
+# patch code) goes through claude_chat (Haiku via config_providers) — the
+# unused Kimi client is removed. Kimi stays build_agent-only.
+from config_providers import claude_chat
 
 # Claude for reasoning and JSON
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
@@ -43,7 +43,9 @@ PROTECTED = [
 BUILD_SYSTEM = """You are TAD's self-evolution engine.
 Output ONLY raw Python 3 code. Never prose or plans.
 Every file must be complete, tested, and runnable.
-Start with imports or a docstring."""
+Start with imports or a docstring.
+Keep the module under ~100 lines — it must fit the response budget
+COMPLETELY. A small finished module beats a large truncated one."""
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,6 +82,10 @@ def _extract_code(text: str) -> str:
         match = re.search(pattern, text, re.DOTALL)
         if match:
             return match.group(1).strip()
+    # unclosed fence (truncated output) — strip the opening marker
+    match = re.search(r"```(?:python)?\s*(.*)", text, re.DOTALL)
+    if match and text.lstrip().startswith("```"):
+        return match.group(1).strip()
     return text.strip()
 
 
@@ -151,7 +157,7 @@ Return JSON array only. Top 3 gaps maximum."""
 
     try:
         resp = claude.messages.create(model=MODEL, max_tokens=800, system=skill, messages=[{"role": "user", "content": prompt}])
-        raw   = msg.content[0].text or "[]"
+        raw   = resp.content[0].text or "[]"
         clean = re.sub(r"```json|```", "", raw).strip()
         gaps  = json.loads(clean)
         _log(f"Identified {len(gaps)} capability gaps")
@@ -215,16 +221,9 @@ Write a complete skill.md file following this exact structure:
 Return the complete skill file content only."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": _load_skill()},
-                {"role": "user",   "content": md_prompt},
-            ],
-            temperature=1,
-            max_tokens=1500,
-        )
-        md_content = msg.content[0].text or ""
+        md_content = claude_chat(_load_skill(), md_prompt, max_tokens=1500)
+        if not md_content.strip():
+            raise RuntimeError("claude_chat returned empty skill file")
 
         # Save skill.md
         SKILLS_DIR.mkdir(parents=True, exist_ok=True)
@@ -258,8 +257,7 @@ Output Python code only."""
 
     for attempt in range(1, 4):
         try:
-            resp = claude.messages.create(model=MODEL, max_tokens=2500, system=BUILD_SYSTEM, messages=[{"role": "user", "content": py_prompt}])
-            raw  = msg.content[0].text or ""
+            raw  = claude_chat(BUILD_SYSTEM, py_prompt, max_tokens=2000)
             code = _extract_code(raw)
 
             if not _is_real_python(code):
@@ -340,7 +338,7 @@ Only mark is_game_changing true if ALL scores are 8 or above."""
 
     try:
         resp = claude.messages.create(model=MODEL, max_tokens=300, system=skill, messages=[{"role": "user", "content": prompt}])
-        raw    = msg.content[0].text or "{}"
+        raw    = resp.content[0].text or "{}"
         clean  = re.sub(r"```json|```", "", raw).strip()
         result = json.loads(clean)
         return result.get("is_game_changing", False)
@@ -382,7 +380,7 @@ Under 200 words."""
 
     try:
         resp = claude.messages.create(model=MODEL, max_tokens=400, system=skill, messages=[{"role": "user", "content": prompt}])
-        report_text = msg.content[0].text or ""
+        report_text = resp.content[0].text or ""
 
         report = {
             "cycle_date":    datetime.now().isoformat(),
