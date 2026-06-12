@@ -667,3 +667,15 @@ No CRUD action happens without being logged.
   produced skills/learned/fix_self_test_error.py (185 lines, parses,
   syntax check passed, real logic not prose/empty) + .md skill file,
   pushed by CSEO itself. Seeded error marked resolved after test.
+
+### 2026-06-12 — Fix Brief Task 3: review gate now FAILS CLOSED
+- _claude_review: no-API-key and exception paths now return verdict
+  "error" (was "skipped"); run_night_mode blocks anything not "approve"
+  after the reject/fix round: logs review_failed_blocking_push with the
+  error, records it in report["errors"], keeps the built file LOCAL for
+  morning review, never pushes or marks done. Reject path unchanged.
+- Files: night_mode.py
+- VERIFIED: harnessed single-item run_night_mode with Anthropic client
+  raising simulated 400 credit error -> _git_push called 0 times, item
+  not in report["built"], review_failed_blocking_push in night_log.jsonl
+  and overnight report, file kept local.

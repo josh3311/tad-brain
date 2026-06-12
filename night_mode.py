@@ -473,9 +473,12 @@ def _get_diff(filepath: Path) -> str:
 
 
 def _claude_review(item_name: str, filepath: Path, features: list[str]) -> dict:
+    # Fix brief 2026-06-12 Task 3: the review gate FAILS CLOSED. Any
+    # condition that prevents a real review (no key, API/credit error,
+    # exception) returns verdict "error" and the caller blocks the push.
     if _claude is None or not os.getenv("ANTHROPIC_API_KEY"):
-        _log("  Review SKIPPED -- no ANTHROPIC_API_KEY / anthropic package")
-        return {"verdict": "skipped", "reasons": ["no reviewer available"],
+        _log("  Review FAILED -- no ANTHROPIC_API_KEY / anthropic package (blocking push)")
+        return {"verdict": "error", "reasons": ["no reviewer available"],
                 "must_fix": []}
 
     diff = _get_diff(filepath)[:12000]
@@ -507,8 +510,8 @@ Review and return your JSON verdict."""
                 "reasons": data.get("reasons", []),
                 "must_fix": data.get("must_fix", [])}
     except Exception as e:
-        _log(f"  Review error (treating as skipped): {e}")
-        return {"verdict": "skipped", "reasons": [str(e)], "must_fix": []}
+        _log(f"  Review error (blocking push): {e}")
+        return {"verdict": "error", "reasons": [str(e)], "must_fix": []}
 
 
 def _apply_review_fixes(item_name: str, filepath: Path, must_fix: list[str]) -> bool:
@@ -710,6 +713,19 @@ def run_night_mode():
                                          "attempt": attempt_n,
                                          "review": review["reasons"]})
                 _log(f"  Review rejected, file removed: {item}")
+            time.sleep(15)
+            continue
+
+        if review["verdict"] != "approve":
+            # Review could not run (API/credit failure etc.) — FAIL CLOSED:
+            # keep the file local for morning review but never push unreviewed
+            # code or mark the item done.
+            reason = "; ".join(review.get("reasons", []))[:200]
+            _log(f"  review_failed_blocking_push: {reason} — {fpath.name} kept local, NOT pushed")
+            report["errors"].append({"item": item,
+                                     "reason": "review_failed_blocking_push",
+                                     "attempt": attempt_n,
+                                     "review": review.get("reasons", [])})
             time.sleep(15)
             continue
 
