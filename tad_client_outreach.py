@@ -1,144 +1,57 @@
-"""Core data model and opportunity scoring for TAD client outreach."""
+"""Core data model and priority scorer for TAD client outreach.
+
+The priority_score formula identifies which niche opportunities
+warrant immediate outreach by balancing pain, budget, growth,
+and competition.
+"""
 
 from dataclasses import dataclass
 import sys
 
 
-@dataclass
-class Lead:
-    company_name: str
-    pain_score: int          # 1-10, higher = more painful problem
-    competition_score: int   # 1-10, lower = less competition
-    willingness_score: int   # 1-10, higher = more willing to pay
-    potential_score: int     # 1-10, higher = skyrocket potential
+@dataclass(frozen=True)
+class OutreachTarget:
+    """A prospective niche or client opportunity."""
+    name: str
+    problem_pain: float       # 1.0 (low) to 10.0 (extreme)
+    competition_level: float  # 1.0 (none) to 10.0 (saturated)
+    willingness_to_pay: float # 1.0 (low) to 10.0 (high)
+    growth_potential: float   # 1.0 (flat) to 10.0 (skyrocket)
 
-    def opportunity_score(self) -> float:
-        # TAD mission: high pain + willingness + potential, divided by competition.
-        if self.competition_score <= 0:
-            raise ValueError("competition_score must be > 0")
+    def priority_score(self) -> float:
+        """Higher score = better outreach target."""
+        if self.problem_pain <= 0 or self.willingness_to_pay <= 0:
+            return 0.0
+        if self.growth_potential <= 0 or self.competition_level <= 0:
+            return 0.0
         return (
-            self.pain_score *
-            self.willingness_score *
-            self.potential_score
-        ) / self.competition_score
+            self.problem_pain
+            * self.willingness_to_pay
+            * self.growth_potential
+        ) / self.competition_level
 
 
-class LeadStore:
-    # In-memory aggregation layer for recorded leads.
-    def __init__(self):
-        self.leads = []
-
-    def add(self, lead):
-        # Append a lead to the store.
-        self.leads.append(lead)
-
-    def summary(self):
-        # Return count, average opportunity score, and best company name.
-        if not self.leads:
-            return {"count": 0, "average_score": 0.0, "best_company": None}
-        scores = []
-        for lead in self.leads:
-            scores.append(lead.opportunity_score())
-        total = sum(scores)
-        best_index = 0
-        best_score = scores[0]
-        for i in range(1, len(scores)):
-            if scores[i] > best_score:
-                best_score = scores[i]
-                best_index = i
-        best_company = self.leads[best_index].company_name
-        return {
-            "count": len(self.leads),
-            "average_score": total / len(self.leads),
-            "best_company": best_company,
-        }
-
-
-def generate_report(store: LeadStore) -> str:
-    # Build a plain-text report from a LeadStore summary.
-    summary = store.summary()
-    lines = [
-        "TAD Client Outreach Report",
-        "==========================",
-        f"Total leads: {summary['count']}",
-        f"Average opportunity score: {summary['average_score']:.2f}",
-        f"Best company: {summary['best_company'] or 'N/A'}",
-    ]
-    if summary["count"] > 0:
-        lines.append("")
-        lines.append("Lead Details:")
-        lines.append("-------------")
-        for lead in store.leads:
-            score = lead.opportunity_score()
-            lines.append(
-                f"- {lead.company_name}: pain={lead.pain_score}, "
-                f"competition={lead.competition_score}, "
-                f"willingness={lead.willingness_score}, "
-                f"potential={lead.potential_score}, "
-                f"score={score:.2f}"
-            )
-    return "\n".join(lines)
-
-
-def _run_tests() -> int:
-    # Known input 1: ideal niche (low competition, high fit).
-    ideal = Lead("IdealCo", 9, 1, 9, 9)
-    if ideal.opportunity_score() != 729.0:
-        print("FAIL: ideal score mismatch")
+def run_tests() -> int:
+    """Self-check on known inputs. Returns 0 for pass, 1 for fail."""
+    target_a = OutreachTarget(
+        name="AI_Logistics_Gap",
+        problem_pain=8.0,
+        competition_level=2.0,
+        willingness_to_pay=9.0,
+        growth_potential=10.0,
+    )
+    if target_a.priority_score() != 360.0:
         return 1
 
-    # Known input 2: saturated niche (high competition, moderate fit).
-    saturated = Lead("SaturatedCo", 5, 10, 5, 5)
-    if saturated.opportunity_score() != 12.5:
-        print("FAIL: saturated score mismatch")
+    target_b = OutreachTarget(
+        name="AI_Chatbot_Crowd",
+        problem_pain=8.0,
+        competition_level=8.0,
+        willingness_to_pay=9.0,
+        growth_potential=10.0,
+    )
+    if target_b.priority_score() != 90.0:
         return 1
 
-    # Test 3: empty store summary.
-    store = LeadStore()
-    empty_summary = store.summary()
-    if empty_summary != {"count": 0, "average_score": 0.0, "best_company": None}:
-        print("FAIL: empty store summary mismatch")
-        return 1
-
-    # Test 4: store aggregation.
-    store.add(ideal)
-    store.add(saturated)
-    full_summary = store.summary()
-    expected_summary = {
-        "count": 2,
-        "average_score": 370.75,
-        "best_company": "IdealCo",
-    }
-    if full_summary != expected_summary:
-        print("FAIL: full store summary mismatch")
-        return 1
-
-    # Test 5: empty store report.
-    empty_store = LeadStore()
-    empty_report = generate_report(empty_store)
-    if "Total leads: 0" not in empty_report or "N/A" not in empty_report:
-        print("FAIL: empty report missing expected content")
-        return 1
-
-    # Test 6: populated store report.
-    populated_store = LeadStore()
-    populated_store.add(ideal)
-    populated_store.add(saturated)
-    populated_report = generate_report(populated_store)
-    if "IdealCo" not in populated_report:
-        print("FAIL: populated report missing company name")
-        return 1
-    if "729.00" not in populated_report:
-        print("FAIL: populated report missing expected score")
-        return 1
-    if "TAD Client Outreach Report" not in populated_report:
-        print("FAIL: populated report missing header")
-        return 1
-
-    print("PASS")
-    return 0
-
-
-if __name__ == "__main__":
-    if "--test" in sys.argv:
-        sys.exit(_run_tests())
+    if target_a.priority_score() <= target_b.priority_score():
+        return
