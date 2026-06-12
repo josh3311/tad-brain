@@ -90,17 +90,80 @@ AGENT_SKILLS = {
 # Visual triggers — these task types get visual engine treatment
 VISUAL_TRIGGERS = ["research", "market", "finance", "build", "cseo"]
 
+# v1.0: holds the raw structured data (opportunities/pnl/health) from the
+# last agent run so _trigger_visual can render a real chart, not just text.
+_LAST_CHART_DATA = {"agent_type": None, "data": None}
+
+# v1.0.1: the pending visual the GUI should display on the main thread
+# after run_task() returns. kind: "market" | "finance" | "ops" | "report" | None
+_LAST_VISUAL = {"kind": None, "data": None, "text": None, "user_input": None}
+
 
 # ── Agent identification ──────────────────────────────────────────────────────
 
 def identify_agent(user_input: str) -> str:
     """
     Identify which agent should handle this task.
-    Returns agent type string.
+    Uses intent detection — not just keyword matching.
+    Prioritises the MOST SPECIFIC match, not just any match.
     """
-    text = user_input.lower()
+    text = user_input.lower().strip()
 
-    # Score each agent route
+    # ── Priority 1: Explicit agent commands ──────────────────────────────
+    # These are unambiguous — always route here first
+    if any(p in text for p in ["run cseo", "cseo evolution", "evolve tad", "fix all broken"]):
+        print(f"[router] Identified agent: cseo (explicit command)")
+        return "cseo"
+
+    if any(p in text for p in ["run a market scan", "market scan", "find opportunities",
+                                "scan for loopholes", "find niches"]):
+        print(f"[router] Identified agent: market (explicit command)")
+        return "market"
+
+    if any(p in text for p in ["score this opportunity", "score this:", "evaluate this opportunity",
+                                "should we build", "go or no go"]):
+        print(f"[router] Identified agent: decision (explicit command)")
+        return "decision"
+
+    if any(p in text for p in ["p&l report", "profit and loss", "invoice", "financial report",
+                                "how much revenue", "finance report"]):
+        print(f"[router] Identified agent: finance (explicit command)")
+        return "finance"
+
+    if any(p in text for p in ["health check", "system health", "ops check", "what is running",
+                                "agent status", "system status"]):
+        print(f"[router] Identified agent: ops (explicit command)")
+        return "ops"
+
+    if any(p in text for p in ["ceo briefing", "daily briefing", "morning briefing",
+                                "what should i focus", "today's priorities"]):
+        print(f"[router] Identified agent: ceo (explicit command)")
+        return "ceo"
+
+    # ── Priority 2: Build requests ────────────────────────────────────────
+    # Only route to build if explicitly asking to build/code something NEW
+    build_phrases = ["build me", "build a ", "create a script", "write a script",
+                     "code a ", "develop a ", "write me a ", "create a module",
+                     "write a module", "build the ", "create the "]
+    if any(p in text for p in build_phrases):
+        print(f"[router] Identified agent: build (explicit build request)")
+        return "build"
+
+    # ── Priority 3: Conversational — route to Claude, NOT agents ─────────
+    # These are questions/requests that should be answered in conversation
+    conversational_signals = [
+        "look into", "analyze", "analyse", "explain", "what happened",
+        "why is", "how does", "tell me", "what is", "can you",
+        "help me", "i want you to", "could you", "please", "fix the",
+        "fix my", "fix this", "look at", "check", "review",
+        "what do you think", "is there", "are there", "show me",
+        "investigate", "find out", "figure out", "understand",
+    ]
+    if any(p in text for p in conversational_signals):
+        print(f"[router] Identified agent: general (conversational request — routing to Claude)")
+        return "general"
+
+    # ── Priority 4: Score keyword matches ─────────────────────────────────
     scores = {}
     for agent, keywords in AGENT_ROUTES.items():
         score = sum(1 for kw in keywords if kw in text)
@@ -109,9 +172,14 @@ def identify_agent(user_input: str) -> str:
 
     if scores:
         best = max(scores, key=scores.get)
-        print(f"[router] Identified agent: {best} (score: {scores[best]})")
-        return best
+        # Only trust keyword match if score is 2+
+        # Score of 1 is too ambiguous
+        if scores[best] >= 2:
+            print(f"[router] Identified agent: {best} (score: {scores[best]})")
+            return best
 
+    # ── Default: general Claude conversation ─────────────────────────────
+    print(f"[router] Identified agent: general (default — Claude handles this)")
     return "general"
 
 
@@ -174,6 +242,8 @@ def run_market_agent(user_input: str, status_callback=None) -> str:
         from market_agent import run_full_scan
         report = run_full_scan(focus_area=user_input)
         opps   = report.get("opportunities", [])
+        _LAST_CHART_DATA["agent_type"] = "market"
+        _LAST_CHART_DATA["data"]       = opps
         if opps:
             summary = f"Found {len(opps)} opportunities. Top: {opps[0].get('name')} — Score {opps[0].get('total_score')}/40"
         else:
@@ -207,9 +277,18 @@ def run_finance_agent(user_input: str, status_callback=None) -> str:
         from finance_agent import get_financial_summary, generate_pnl
         if "p&l" in user_input.lower() or "report" in user_input.lower():
             pnl = generate_pnl()
+            _LAST_CHART_DATA["agent_type"] = "finance"
+            _LAST_CHART_DATA["data"]       = pnl
             return f"P&L Report — Revenue: ${pnl.get('total_revenue'):.2f} | Expenses: ${pnl.get('total_expenses'):.2f} | Profit: ${pnl.get('net_profit'):.2f} | Margin: {pnl.get('profit_margin')}"
         else:
             summary = get_financial_summary()
+            _LAST_CHART_DATA["agent_type"] = "finance"
+            _LAST_CHART_DATA["data"]       = {
+                "total_revenue":  summary.get("monthly_revenue", 0),
+                "total_expenses": summary.get("monthly_revenue", 0) - summary.get("monthly_profit", 0),
+                "net_profit":     summary.get("monthly_profit", 0),
+                "profit_margin":  summary.get("profit_margin", "0%"),
+            }
             return f"Financial Status — Monthly Revenue: ${summary.get('monthly_revenue', 0):.2f} | Profit: ${summary.get('monthly_profit', 0):.2f} | Margin: {summary.get('profit_margin', '0%')} | Unpaid Invoices: {summary.get('unpaid_invoices', 0)}"
     except Exception as e:
         print(f"[agent] Finance Agent import error: {e}")
@@ -225,6 +304,8 @@ def run_ops_agent(user_input: str, status_callback=None) -> str:
         health = run_full_health_check()
         status = get_system_status()
         issues = health.get("issue_count", 0)
+        _LAST_CHART_DATA["agent_type"] = "ops"
+        _LAST_CHART_DATA["data"]       = health
         return f"System Status: {status} | Agents checked: {len(health.get('agents', {}))} | Issues: {issues}"
     except Exception as e:
         print(f"[agent] Ops Agent import error: {e}")
@@ -321,19 +402,40 @@ def _shape_response(raw: str, message: str) -> str:
 # ── Visual trigger ────────────────────────────────────────────────────────────
 
 def _trigger_visual(response: str, agent_type: str, user_input: str):
-    """Trigger Visual Engine for complex explanations — must run on main thread."""
-    try:
-        from tad_visual import show_research_report
-        if agent_type in VISUAL_TRIGGERS:
-            # Schedule on main thread to avoid Tcl threading errors
-            import threading
-            if threading.current_thread() is threading.main_thread():
-                show_research_report(response, user_input)
-            else:
-                # Pass back via queue — tad_gui.py will display it
-                print(f"[agent] Visual queued for main thread")
-    except Exception as e:
-        print(f"[agent] Visual trigger error: {e}")
+    """
+    Stash visual info for the GUI to display on the main thread.
+    run_task() runs in a background thread (tad_gui.py's _run_agent),
+    so we can't safely create Tk windows here — the GUI calls
+    get_last_visual() after run_task() returns and schedules display
+    via self.after(0, ...).
+    """
+    chart_data = _LAST_CHART_DATA.get("data") if _LAST_CHART_DATA.get("agent_type") == agent_type else None
+
+    if chart_data is not None:
+        _LAST_VISUAL["kind"]       = agent_type   # "market" | "finance" | "ops"
+        _LAST_VISUAL["data"]       = chart_data
+        _LAST_VISUAL["text"]       = response
+        _LAST_VISUAL["user_input"] = user_input
+    elif agent_type in VISUAL_TRIGGERS:
+        _LAST_VISUAL["kind"]       = "report"
+        _LAST_VISUAL["data"]       = None
+        _LAST_VISUAL["text"]       = response
+        _LAST_VISUAL["user_input"] = user_input
+    else:
+        _LAST_VISUAL["kind"] = None
+
+    # Reset chart data slot so a stale chart isn't reused next time
+    _LAST_CHART_DATA["agent_type"] = None
+    _LAST_CHART_DATA["data"]       = None
+
+
+def get_last_visual() -> dict | None:
+    """Called by tad_gui.py on the main thread after run_task() returns."""
+    if _LAST_VISUAL["kind"] is None:
+        return None
+    visual = dict(_LAST_VISUAL)
+    _LAST_VISUAL["kind"] = None
+    return visual
 
 
 # ── Main task router ──────────────────────────────────────────────────────────
@@ -341,31 +443,43 @@ def _trigger_visual(response: str, agent_type: str, user_input: str):
 def run_task(user_input: str, status_callback=None) -> str:
     """
     Main entry point. Identifies the right agent and routes the task.
+    Checks learned skill library before routing.
     """
     _status(status_callback, "identifying agent...")
+
+    # Check skill library first
+    try:
+        sys.path.insert(0, str(AGENTS_DIR))
+        from skill_library import find_skill_for_task, auto_learn_from_task
+        matching_skill = find_skill_for_task(user_input)
+        if matching_skill:
+            _status(status_callback, f"using skill: {matching_skill['name']}")
+    except Exception:
+        matching_skill = None
+        auto_learn_from_task = None
 
     agent_type = identify_agent(user_input)
     _status(status_callback, f"{agent_type} agent activated...")
 
-    # Route to the correct agent
+    # Route to the correct agent — every call goes through the
+    # observability wrapper so memory/metrics.json tracks all agents
+    from skills.tad_observability import observe_call
+
     if agent_type == "market" or agent_type == "research":
-        raw = run_market_agent(user_input, status_callback)
-
+        runner = lambda: run_market_agent(user_input, status_callback)
     elif agent_type == "decision":
-        raw = run_decision_agent(user_input, status_callback)
-
+        runner = lambda: run_decision_agent(user_input, status_callback)
     elif agent_type == "finance":
-        raw = run_finance_agent(user_input, status_callback)
-
+        runner = lambda: run_finance_agent(user_input, status_callback)
     elif agent_type == "ops":
-        raw = run_ops_agent(user_input, status_callback)
-
+        runner = lambda: run_ops_agent(user_input, status_callback)
     elif agent_type == "cseo":
-        raw = run_cseo_agent(user_input, status_callback)
-
+        runner = lambda: run_cseo_agent(user_input, status_callback)
     else:
         # CEO, build, marketing, general — all use Kimi with skill file
-        raw = _run_kimi_with_skill(user_input, agent_type, status_callback)
+        runner = lambda: _run_kimi_with_skill(user_input, agent_type, status_callback)
+
+    raw = observe_call(agent_type, runner)
 
     # Shape response through Conversation Engine
     _status(status_callback, "shaping response...")
@@ -379,6 +493,18 @@ def run_task(user_input: str, status_callback=None) -> str:
 
     # Trigger visual for complex tasks
     _trigger_visual(final, agent_type, user_input)
+
+    # Auto-learn from completed task
+    try:
+        from skill_library import auto_learn_from_task
+        if auto_learn_from_task and final and len(final) > 50:
+            threading.Thread(
+                target=auto_learn_from_task,
+                args=(user_input, final, True),
+                daemon=True
+            ).start()
+    except Exception:
+        pass
 
     return final
 

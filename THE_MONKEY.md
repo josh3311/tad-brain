@@ -1,5 +1,5 @@
 # THE_MONKEY.md — TAD Master Build File
-# Last updated: 2026-06-11
+# Last updated: 2026-06-12
 # CEO: Joshua Abraham
 # Agent: TAD (Total Autonomous Director)
 
@@ -517,3 +517,14 @@ No CRUD action happens without being logged.
   - Files: tests/conftest.py, tests/test_imports.py,
     tests/test_config_providers.py, tests/test_router.py
   - VERIFIED: pytest 33/33 passed — output in memory/test_results.txt
+- TASK 3 DONE: Observability skill — skills/tad_observability.py
+  - Tracks per-agent: call_count, error_count, avg_response_time,
+    last_error, last_call → memory/metrics.json (thread-safe)
+  - Hooked via ONE wrapper: agent.run_task() dispatch now routes every
+    agent call through observe_call() — no per-agent edits
+  - Drive-by fix: run_task referenced undefined SKILLS_DIR / _log, which
+    silently disabled the learned-skill-library check → now uses AGENTS_DIR
+  - Files: skills/tad_observability.py, agent.py
+  - VERIFIED: ran 'system health' + 'p&l report' through run_task —
+    metrics.json populated with real ops/finance entries; error path
+    self-test records error_count + last_error; pytest still 33/33

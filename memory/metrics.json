@@ -1,0 +1,26 @@
+{
+  "ops": {
+    "call_count": 1,
+    "error_count": 0,
+    "total_time_s": 0.562,
+    "avg_response_time": 0.562,
+    "last_error": null,
+    "last_call": "2026-06-12T01:04:08.029233"
+  },
+  "finance": {
+    "call_count": 1,
+    "error_count": 0,
+    "total_time_s": 0.916,
+    "avg_response_time": 0.916,
+    "last_error": null,
+    "last_call": "2026-06-12T01:04:29.872968"
+  },
+  "self_test": {
+    "call_count": 2,
+    "error_count": 1,
+    "total_time_s": 0.05,
+    "avg_response_time": 0.025,
+    "last_error": "ZeroDivisionError: division by zero",
+    "last_call": "2026-06-12T01:04:49.759546"
+  }
+}
