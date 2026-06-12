@@ -472,6 +472,37 @@ No CRUD action happens without being logged.
 
 ## SESSION LOG
 
+### 2026-06-12 — CSEO routing fix (fabrication bug closed)
+**Problem:** "use CSEO, run self-fix" routed to the Conversation Agent, which
+fabricated a fake execution log (fake commits, fake metrics) — no real function
+ran. Root cause: router only matched "run cseo"/"cseo evolution"; the phrase
+fell through to conversational handling.
+**Fix (agent.py):**
+- Priority-0 routing: any mention of "cseo"/"self-fix" or "<name> agent" now
+  routes to the real agent before the conversational classifier can grab it
+- run_cseo_agent now calls run_evolution_cycle() and reports its result
+  verbatim — Kimi role-play fallback removed; errors/no-gaps reported plainly
+- CSEO output bypasses the Haiku conversation-engine re-narration
+- Fixed missing `import threading` (auto-learn was silently never running)
+**Verified:** real cycle ran 130s, built autonomous_loophole_monetization_pipeline
+(commit f5a3a4a, 327-line real diff), honestly reported 1 failed skill.
+**Audit — same fabrication risk elsewhere:**
+- market/decision/finance/ops runners fall back to Kimi role-play on import
+  error (Kimi has only web_search/file_write/file_read — any commit/metric it
+  claims is invented). Should fail plainly like CSEO now does.
+- build/marketing/ceo never call real modules — skills/ceo_agent.py and
+  skills/marketing_agent.py exist but agent.py never imports them
+- market/finance/ops real output still re-narrated through Haiku _shape_response
+
+### CSEO Auto-build 2026-06-12
+- [x] CSEO built: autonomous_loophole_monetization_pipeline ✓ 2026-06-12
+
+
+### CSEO Auto-build 2026-06-12
+- [x] CSEO built: loophole_validation___market_sizing_engine ✓ 2026-06-12
+- [x] CSEO built: autonomous_revenue_testing___proof_of_concept_builder ✓ 2026-06-12
+
+
 ### 2026-06-06
 - Fixed night_mode.py — threading, start_night_mode(), check_overnight_report()
 - Fixed scheduler.py — check_pending_briefing(), 11pm launcher

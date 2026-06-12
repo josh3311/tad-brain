@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+import threading
 from pathlib import Path
 from datetime import datetime
 from openai import OpenAI
@@ -111,6 +112,27 @@ def identify_agent(user_input: str) -> str:
     Prioritises the MOST SPECIFIC match, not just any match.
     """
     text = user_input.lower().strip()
+
+    # ── Priority 0: Agent named explicitly ────────────────────────────────
+    # If the user names an agent ("use CSEO", "market agent", ...), that wins
+    # over everything — these must NEVER fall through to conversation, where
+    # Kimi/Haiku would role-play the agent and fabricate an execution log.
+    if "cseo" in text or "self-fix" in text or "self fix" in text:
+        print(f"[router] Identified agent: cseo (named explicitly)")
+        return "cseo"
+    NAMED_AGENTS = {
+        "market agent":    "market",
+        "decision agent":  "decision",
+        "finance agent":   "finance",
+        "ops agent":       "ops",
+        "build agent":     "build",
+        "marketing agent": "marketing",
+        "ceo agent":       "ceo",
+    }
+    for name, agent in NAMED_AGENTS.items():
+        if name in text:
+            print(f"[router] Identified agent: {agent} (named explicitly)")
+            return agent
 
     # ── Priority 1: Explicit agent commands ──────────────────────────────
     # These are unambiguous — always route here first
@@ -316,18 +338,41 @@ def run_ops_agent(user_input: str, status_callback=None) -> str:
 
 
 def run_cseo_agent(user_input: str, status_callback=None) -> str:
-    """Run CSEO evolution cycle."""
+    """Run the REAL CSEO evolution cycle and report its output verbatim.
+
+    No LLM fallback here on purpose: if run_evolution_cycle() can't run,
+    we say so plainly. Letting Kimi role-play the CSEO is how fabricated
+    execution logs (fake commits, fake metrics) reached chat."""
     _status(status_callback, "CSEO Agent running evolution cycle...")
     try:
         sys.path.insert(0, str(AGENTS_DIR))
         from cseo_agent import run_evolution_cycle
         result = run_evolution_cycle()
-        built  = result.get("skills_built", 0)
-        report = result.get("report_text", "Evolution cycle complete.")
-        return f"CSEO built {built} new skills this cycle.\n\n{report}"
     except Exception as e:
-        print(f"[agent] CSEO Agent import error: {e}")
-        return _run_kimi_with_skill(user_input, "cseo", status_callback)
+        print(f"[agent] CSEO Agent error: {e}")
+        return f"CSEO error: {e} — evolution cycle did NOT run."
+
+    status = result.get("status", "")
+    if status == "error":
+        return f"CSEO error: {result.get('reason', 'unknown')} — no skills were built."
+    if status == "no_gaps":
+        return ("CSEO ran a real evolution cycle: 0 gaps and 0 bugs found — "
+                "nothing to fix this cycle.")
+
+    built   = result.get("skills_built", 0)
+    failed  = result.get("skills_failed", 0)
+    gaps    = result.get("gaps_found", 0)
+    gc      = result.get("game_changers", [])
+    lines   = [f"CSEO evolution cycle ran — gaps found: {gaps}, "
+               f"skills built: {built}, failed: {failed}."]
+    for s in result.get("built_skills", []):
+        mark = "✓" if s.get("status") == "success" else "✗"
+        lines.append(f"  {mark} {s.get('skill_name', 'unknown')}")
+    if gc:
+        lines.append(f"🚨 {len(gc)} game-changing discovery flagged for Joshua.")
+    if result.get("report_text"):
+        lines.append("\n" + result["report_text"])
+    return "\n".join(lines)
 
 
 # ── Kimi fallback with skill ──────────────────────────────────────────────────
@@ -484,9 +529,14 @@ def run_task(user_input: str, status_callback=None) -> str:
 
     raw = observe_call(agent_type, runner)
 
-    # Shape response through Conversation Engine
-    _status(status_callback, "shaping response...")
-    final = _shape_response(raw, user_input)
+    # Shape response through Conversation Engine — EXCEPT for real execution
+    # reports. CSEO output is factual (what actually ran/built); re-narrating
+    # it through Haiku risks fabricated details. Return it verbatim.
+    if agent_type == "cseo":
+        final = raw
+    else:
+        _status(status_callback, "shaping response...")
+        final = _shape_response(raw, user_input)
 
     # Save to memory
     _save_run(user_input, final, agent_type)
