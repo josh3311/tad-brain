@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-06-11T20:09:47.378157",
+  "checked_at": "2026-06-11T23:09:48.749575",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
       "status": "healthy",
-      "last_active": "2026-06-11T16:56:56.249751",
+      "last_active": "2026-06-11T23:00:54.587847",
       "last_msg": "No qualifying opportunities found this cycle"
     },
     "build_agent": {
@@ -21,15 +21,15 @@
     "cseo_agent": {
       "agent": "cseo_agent",
       "status": "healthy",
-      "last_active": "2026-06-11T09:04:06.833863",
+      "last_active": "2026-06-11T23:00:54.178920",
       "last_msg": "No bugs found either \u2014 TAD is fully caught up"
     },
     "decision_agent": {
       "agent": "decision_agent",
       "status": "silent",
       "last_active": "2026-06-09T02:44:24.025374",
-      "hours_silent": 65.4,
-      "reason": "No activity for 65.4 hours"
+      "hours_silent": 68.4,
+      "reason": "No activity for 68.4 hours"
     },
     "marketing_agent": {
       "agent": "marketing_agent",
@@ -40,8 +40,8 @@
       "agent": "ceo_agent",
       "status": "silent",
       "last_active": "2026-06-08T21:58:04.952371",
-      "hours_silent": 70.2,
-      "reason": "No activity for 70.2 hours"
+      "hours_silent": 73.2,
+      "reason": "No activity for 73.2 hours"
     }
   },
   "files": {
@@ -55,15 +55,15 @@
       "agent": "decision_agent",
       "status": "silent",
       "last_active": "2026-06-09T02:44:24.025374",
-      "hours_silent": 65.4,
-      "reason": "No activity for 65.4 hours"
+      "hours_silent": 68.4,
+      "reason": "No activity for 68.4 hours"
     },
     {
       "agent": "ceo_agent",
       "status": "silent",
       "last_active": "2026-06-08T21:58:04.952371",
-      "hours_silent": 70.2,
-      "reason": "No activity for 70.2 hours"
+      "hours_silent": 73.2,
+      "reason": "No activity for 73.2 hours"
     }
   ],
   "overall": "issues_detected",
