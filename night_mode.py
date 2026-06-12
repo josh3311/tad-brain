@@ -191,17 +191,66 @@ def _extract_code_block(text: str) -> str:
         match = re.search(pattern, text, re.DOTALL)
         if match:
             return match.group(1).strip()
+    # unclosed fence (truncated output) — strip the opening marker
+    match = re.search(r"```(?:python)?\s*(.*)", text, re.DOTALL)
+    if match and text.lstrip().startswith("```"):
+        return match.group(1).strip()
     return text.strip()
 
 
-def _kimi(messages: list, max_tokens: int = 4000) -> str:
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        temperature=1,
-        max_tokens=max_tokens,
-    )
-    return resp.choices[0].message.content or ""
+def _log_kimi_retry(msg: str):
+    # Brief 2026-06-12: retry events go to build_log.jsonl (shared with build_agent)
+    entry = {"ts": datetime.now().isoformat(), "msg": msg}
+    build_log = ROOT / "memory" / "build_log.jsonl"
+    build_log.parent.mkdir(exist_ok=True)
+    with open(build_log, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+    _log(msg)
+
+
+# kimi-k2.6 is a reasoning model: with thinking ON, chain-of-thought
+# consumes max_tokens BEFORE answer tokens emit (verified 2026-06-12:
+# 12000 tokens fully spent on reasoning, content=""). Thinking is
+# disabled for code-gen; the API then requires temperature=0.6.
+KIMI_NO_THINK = {"thinking": {"type": "disabled"}}
+
+
+def _kimi_raw(messages: list, max_tokens: int):
+    try:
+        return client.chat.completions.create(
+            model=MODEL, messages=messages,
+            temperature=0.6, max_tokens=max_tokens,
+            extra_body=KIMI_NO_THINK,
+        )
+    except Exception as e:
+        # model variant without thinking control — fall back to old call
+        _log(f"kimi no-think rejected ({str(e)[:100]}) — falling back to thinking mode")
+        return client.chat.completions.create(
+            model=MODEL, messages=messages,
+            temperature=1, max_tokens=max_tokens,
+        )
+
+
+def _kimi(messages: list, max_tokens: int = 8000) -> str:
+    """
+    Single entry for kimi-k2.6 calls. Retries once at 12000 on ANY
+    length finish: empty content means reasoning ate the whole budget;
+    non-empty means the answer was truncated mid-stream.
+    """
+    resp    = _kimi_raw(messages, max_tokens)
+    choice  = resp.choices[0]
+    content = choice.message.content or ""
+    if choice.finish_reason == "length":
+        kind = "empty" if not content.strip() else f"truncated ({len(content)} chars)"
+        _log_kimi_retry(f"kimi_length_retry: {kind} content at max_tokens={max_tokens}, retrying at 12000")
+        resp   = _kimi_raw(messages, 12000)
+        choice = resp.choices[0]
+        retry_content = choice.message.content or ""
+        if retry_content.strip():
+            content = retry_content
+        if choice.finish_reason == "length" or not content.strip():
+            _log_kimi_retry(f"kimi_length_retry FAILED: still {choice.finish_reason} at 12000")
+    return content
 
 
 _GENERIC_FEATURE_PLAN = [
@@ -229,7 +278,7 @@ Return ONLY a JSON array of short feature description strings:
 ["feature one", "feature two"]"""
 
     try:
-        raw   = _kimi([{"role": "user", "content": prompt}], max_tokens=500)
+        raw   = _kimi([{"role": "user", "content": prompt}])
         clean = re.sub(r"```json|```", "", raw).strip()
         features = json.loads(clean)
         if isinstance(features, list) and features:
@@ -529,7 +578,7 @@ Return ONLY a JSON array of task name strings.
 JSON array only."""
 
     try:
-        raw   = _kimi([{"role": "user", "content": prompt}], max_tokens=500)
+        raw   = _kimi([{"role": "user", "content": prompt}])
         clean = re.sub(r"```json|```", "", raw).strip()
         return json.loads(clean)
     except Exception as e:

@@ -627,3 +627,25 @@ No CRUD action happens without being logged.
   check finish_reason==length and retry with bigger budget; then wire
   decisions.json GO verdicts → build_agent.build() and guard against
   double night_mode launch. Joshua to review before any change.
+
+### 2026-06-12 — Fix Brief Task 1: kimi-k2.6 empty-content fix (build_agent + night_mode)
+- ROOT FIX went deeper than the brief: raising max_tokens alone LOST the
+  arms race — a 12000-token retry was still 100% consumed by reasoning
+  (finish_reason=length, content=""). Probing the Moonshot API found the
+  real control: thinking={"type":"disabled"} (requires temperature=0.6,
+  API-enforced). All night_mode/_build_agent code-gen calls now run
+  no-think at temp 0.6 (deviation from "Kimi temp=1" rule — the API
+  forbids 1.0 with thinking disabled; falls back to old thinking-mode
+  call if a future model variant rejects the param).
+- Plus per brief: max_tokens 8000 default (was 3000/500), retry once at
+  12000 on ANY finish_reason=length (empty OR truncated — truncated code
+  can compile by luck), retries logged to memory/build_log.jsonl.
+- Hardened _extract_code/_extract_code_block for unclosed ``` fences
+  (truncated output previously failed syntax check on the fence line);
+  added module-size rule to build_agent BUILD_SYSTEM.
+- Files: skills/build_agent.py, night_mode.py
+- VERIFIED: build_agent.build() on "AI Output Bias Detection for
+  Sensitive Domains" (28/40 GO) → finish_reason=stop, 4561 completion
+  tokens, 508-line module parses + syntax check passed, logged to
+  build_log.jsonl, pushed by build_agent itself. First successful
+  build_agent artifact ever.

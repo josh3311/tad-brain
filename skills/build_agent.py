@@ -43,6 +43,8 @@ ABSOLUTE RULES:
 5. Include if __name__ == "__main__": at the bottom.
 6. Use proper error handling on all external calls.
 7. Add logging to memory/ folder for every major action.
+8. Keep the module under ~250 lines. Prefer fewer, simpler functions —
+   a small working module beats a large truncated one.
 
 VIOLATION: Returning a plan or prose instead of code is a critical failure."""
 
@@ -86,12 +88,63 @@ def _extract_code(text: str) -> str:
         match = re.search(pattern, text, re.DOTALL)
         if match:
             return match.group(1).strip()
+    # unclosed fence (truncated output) — strip the opening marker so the
+    # syntax check fails on the real code, not on the ``` line
+    match = re.search(r"```(?:python)?\s*(.*)", text, re.DOTALL)
+    if match and text.lstrip().startswith("```"):
+        return match.group(1).strip()
     return text.strip()
 
 
 def _is_real_python(code: str) -> bool:
     markers = ["import ", "def ", "class ", "if __name__"]
     return any(m in code for m in markers)
+
+
+# kimi-k2.6 is a reasoning model: with thinking ON, chain-of-thought
+# consumes max_tokens BEFORE answer tokens emit (verified 2026-06-12:
+# 12000 tokens fully spent on reasoning, content=""). Thinking is
+# disabled for code-gen; the API then requires temperature=0.6.
+KIMI_NO_THINK = {"thinking": {"type": "disabled"}}
+
+
+def _kimi_raw(messages: list, max_tokens: int):
+    try:
+        return client.chat.completions.create(
+            model=MODEL, messages=messages,
+            temperature=0.6, max_tokens=max_tokens,
+            extra_body=KIMI_NO_THINK,
+        )
+    except Exception as e:
+        # model variant without thinking control — fall back to old call
+        _log(f"kimi no-think rejected ({str(e)[:100]}) — falling back to thinking mode")
+        return client.chat.completions.create(
+            model=MODEL, messages=messages,
+            temperature=1, max_tokens=max_tokens,
+        )
+
+
+def _kimi_call(messages: list, max_tokens: int = 8000) -> str:
+    """
+    Single entry for kimi-k2.6 code-gen. Retries once at 12000 on ANY
+    length finish: empty content means reasoning ate the whole budget;
+    non-empty means the answer was truncated mid-stream (may still
+    compile by luck — never trust it). Retries logged to build_log.jsonl.
+    """
+    resp    = _kimi_raw(messages, max_tokens)
+    choice  = resp.choices[0]
+    content = choice.message.content or ""
+    if choice.finish_reason == "length":
+        kind = "empty" if not content.strip() else f"truncated ({len(content)} chars)"
+        _log(f"kimi_length_retry: {kind} content at max_tokens={max_tokens}, retrying at 12000")
+        resp   = _kimi_raw(messages, 12000)
+        choice = resp.choices[0]
+        retry_content = choice.message.content or ""
+        if retry_content.strip():
+            content = retry_content
+        if choice.finish_reason == "length" or not content.strip():
+            _log(f"kimi_length_retry FAILED: still {choice.finish_reason} at 12000")
+    return content
 
 
 # ── Syntax and execution testing ──────────────────────────────────────────────
@@ -151,16 +204,10 @@ Output the Python code directly. Start with imports or docstring."""
     for attempt in range(1, 4):
         _log(f"Code generation attempt {attempt}/3 for {filename}")
         try:
-            resp = client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": BUILD_SYSTEM},
-                    {"role": "user",   "content": prompt},
-                ],
-                temperature=1,
-                max_tokens=3000,
-            )
-            raw  = resp.choices[0].message.content or ""
+            raw  = _kimi_call([
+                {"role": "system", "content": BUILD_SYSTEM},
+                {"role": "user",   "content": prompt},
+            ])
             code = _extract_code(raw)
 
             if _is_real_python(code):
@@ -191,16 +238,10 @@ Fix the error and return ONLY the corrected Python code.
 No explanation. Start with imports or docstring."""
 
     try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": BUILD_SYSTEM},
-                {"role": "user",   "content": fix_prompt},
-            ],
-            temperature=1,
-            max_tokens=3000,
-        )
-        raw  = resp.choices[0].message.content or ""
+        raw  = _kimi_call([
+            {"role": "system", "content": BUILD_SYSTEM},
+            {"role": "user",   "content": fix_prompt},
+        ])
         code = _extract_code(raw)
         return code if _is_real_python(code) else None
     except Exception as e:
