@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-06-12T01:04:08.020935",
+  "checked_at": "2026-06-12T01:07:16.408866",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
@@ -15,7 +15,7 @@
     "finance_agent": {
       "agent": "finance_agent",
       "status": "healthy",
-      "last_active": "2026-06-11T10:22:46.705604",
+      "last_active": "2026-06-12T01:04:29.871767",
       "last_msg": "P&L generated: Revenue $0.00 | Expenses $0.00 | Profit $0.00"
     },
     "cseo_agent": {

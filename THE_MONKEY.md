@@ -528,3 +528,12 @@ No CRUD action happens without being logged.
   - VERIFIED: ran 'system health' + 'p&l report' through run_task —
     metrics.json populated with real ops/finance entries; error path
     self-test records error_count + last_error; pytest still 33/33
+- TASK 4 DONE: PII handling skill — skills/tad_pii.py
+  - scan_for_pii(text): regex-only detection of emails, phones, SSN/SIN,
+    street addresses — no external API; redact_pii() for scrubbing
+  - check_before_storage() wired into ops_agent._write() as pre-storage
+    gate; hits logged (masked, never raw) to memory/pii_audit.jsonl
+  - Files: skills/tad_pii.py, skills/ops_agent.py, tests/test_pii.py
+  - VERIFIED: fake email+phone flagged with masked audit entry; clean
+    system text (timestamps/scores/$ amounts) zero false positives;
+    pytest 40/40

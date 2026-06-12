@@ -72,7 +72,17 @@ def _read(filename: str) -> dict:
 
 def _write(filename: str, data: dict):
     MEMORY.mkdir(exist_ok=True)
-    (MEMORY / filename).write_text(json.dumps(data, indent=2), encoding="utf-8")
+    payload = json.dumps(data, indent=2)
+    # Pre-storage PII check — flags client data before it lands in memory/
+    try:
+        from tad_pii import check_before_storage
+        result = check_before_storage(payload, source=f"ops_agent:{filename}")
+        if result["has_pii"]:
+            _log(f"PII WARNING: {sum(result['counts'].values())} item(s) "
+                 f"detected writing {filename} — see memory/pii_audit.jsonl")
+    except Exception:
+        pass
+    (MEMORY / filename).write_text(payload, encoding="utf-8")
 
 
 def _log(msg: str):

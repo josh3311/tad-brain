@@ -1,0 +1,1 @@
+{"ts": "2026-06-12T01:07:16.412441", "source": "ops_agent:_pii_smoke_test.json", "counts": {"email": 1, "ssn_sin": 0, "phone": 1, "address": 0}, "flags": [{"type": "email", "masked": "ja****************om", "position": 34}, {"type": "phone", "masked": "41********99", "position": 69}]}
