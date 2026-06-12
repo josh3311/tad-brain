@@ -1,83 +1,96 @@
 """TAD Opportunity Scorer — core data model and scoring logic."""
 
-import sys
 from dataclasses import dataclass
-from typing import List, Optional
+import sys
 
 
-@dataclass
+@dataclass(frozen=True)
 class Opportunity:
+    # Core data model for a niche opportunity.
     name: str
-    competition: float       # 0 (none) to 10 (saturated)
-    pain_score: float        # 0 to 10
-    willingness_to_pay: float  # 0 to 10
-    growth_potential: float  # 0 to 10
+    competition_level: float   # 0.0 = none, 1.0 = saturated
+    pain_level: float          # 0.0 = no pain, 1.0 = extreme
+    willingness_to_pay: float  # 0.0 = none, 1.0 = very high
+    skyrocket_potential: float # 0.0 = flat, 1.0 = 100%+ growth
 
 
-def calculate_score(opp: Opportunity) -> float:
-    # invert competition so lower is better
-    low_competition = 10.0 - opp.competition
-    total = (
-        opp.pain_score * 0.25
+class OpportunityError(ValueError):
+    # Raised when opportunity fields are out of bounds.
+    pass
+
+
+def score_opportunity(opp: Opportunity) -> float:
+    # Calculate TAD score (0–100).
+    # Weights reflect TAD mission priorities.
+    for attr in (
+        opp.competition_level,
+        opp.pain_level,
+        opp.willingness_to_pay,
+        opp.skyrocket_potential,
+    ):
+        if not (0.0 <= attr <= 1.0):
+            raise OpportunityError(
+                "Opportunity metrics must be between 0.0 and 1.0"
+            )
+
+    low_competition = 1.0 - opp.competition_level
+    weighted = (
+        low_competition * 0.30
+        + opp.pain_level * 0.30
         + opp.willingness_to_pay * 0.25
-        + opp.growth_potential * 0.25
-        + low_competition * 0.25
+        + opp.skyrocket_potential * 0.15
     )
-    return round(total, 2)
+    return weighted * 100.0
 
 
-class OpportunityStore:
-    # simple in-memory storage with aggregation helpers
-    def __init__(self) -> None:
-        self._items: List[Opportunity] = []
-
-    def add(self, opp: Opportunity) -> None:
-        self._items.append(opp)
-
-    def best(self) -> Optional[Opportunity]:
-        if not self._items:
-            return None
-        return max(self._items, key=calculate_score)
-
-    def average_score(self) -> float:
-        if not self._items:
-            return 0.0
-        total = sum(calculate_score(o) for o in self._items)
-        return round(total / len(self._items), 2)
-
-
-def _tests() -> bool:
-    passed = True
-
+def _run_tests():
+    # Self-checks: no network or API keys needed.
     perfect = Opportunity(
-        "Perfect", 0.0, 10.0, 10.0, 10.0
+        name="Perfect",
+        competition_level=0.0,
+        pain_level=1.0,
+        willingness_to_pay=1.0,
+        skyrocket_potential=1.0,
     )
-    if calculate_score(perfect) != 10.0:
-        passed = False
+    assert score_opportunity(perfect) == 100.0
 
     worst = Opportunity(
-        "Worst", 10.0, 0.0, 0.0, 0.0
+        name="Worst",
+        competition_level=1.0,
+        pain_level=0.0,
+        willingness_to_pay=0.0,
+        skyrocket_potential=0.0,
     )
-    if calculate_score(worst) != 0.0:
-        passed = False
+    assert score_opportunity(worst) == 0.0
 
-    # -- storage and aggregation checks --
-    store = OpportunityStore()
-    if store.best() is not None:
-        passed = False
-    if store.average_score() != 0.0:
-        passed = False
+    mid = Opportunity(
+        name="Mid",
+        competition_level=0.5,
+        pain_level=0.5,
+        willingness_to_pay=0.5,
+        skyrocket_potential=0.5,
+    )
+    assert score_opportunity(mid) == 50.0
 
-    store.add(perfect)
-    store.add(worst)
-    if store.best() is not perfect:
-        passed = False
-    if store.average_score() != 5.0:
-        passed = False
+    try:
+        bad = Opportunity(
+            name="Bad",
+            competition_level=1.5,
+            pain_level=0.0,
+            willingness_to_pay=0.0,
+            skyrocket_potential=0.0,
+        )
+        score_opportunity(bad)
+        raise AssertionError("Expected OpportunityError")
+    except OpportunityError:
+        pass
 
-    return passed
+    print("OK")
 
 
 if __name__ == "__main__":
-    if "--test" in sys.argv:
-        sys.exit(0 if _tests() else 1)
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        _run_tests()
+    else:
+        print("Usage: python tad_opportunity_scorer.py --test")
+        sys.exit(1)
