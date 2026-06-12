@@ -1,176 +1,144 @@
-"""Core data model and outreach priority scoring for TAD client outreach."""
+"""Core data model and opportunity scoring for TAD client outreach."""
 
-import sys
 from dataclasses import dataclass
+import sys
 
 
-@dataclass(frozen=True)
-class OutreachLead:
-    name: str
-    niche: str
-    pain_score: float
-    competition_level: float
-    willingness_to_pay: float
-    skyrocket_potential: float
+@dataclass
+class Lead:
+    company_name: str
+    pain_score: int          # 1-10, higher = more painful problem
+    competition_score: int   # 1-10, lower = less competition
+    willingness_score: int   # 1-10, higher = more willing to pay
+    potential_score: int     # 1-10, higher = skyrocket potential
 
-
-def calculate_priority(lead: OutreachLead) -> float:
-    # Validate inputs are within 0-10 range
-    for label, value in (
-        ("pain_score", lead.pain_score),
-        ("competition_level", lead.competition_level),
-        ("willingness_to_pay", lead.willingness_to_pay),
-        ("skyrocket_potential", lead.skyrocket_potential),
-    ):
-        if not (0.0 <= value <= 10.0):
-            raise ValueError(f"{label} must be between 0.0 and 10.0")
-
-    inverted_competition = 10.0 - lead.competition_level
-    score = (
-        lead.pain_score * 0.30
-        + inverted_competition * 0.30
-        + lead.willingness_to_pay * 0.20
-        + lead.skyrocket_potential * 0.20
-    )
-    return round(score, 2)
+    def opportunity_score(self) -> float:
+        # TAD mission: high pain + willingness + potential, divided by competition.
+        if self.competition_score <= 0:
+            raise ValueError("competition_score must be > 0")
+        return (
+            self.pain_score *
+            self.willingness_score *
+            self.potential_score
+        ) / self.competition_score
 
 
 class LeadStore:
-    # Simple in-memory storage and aggregation for outreach leads.
+    # In-memory aggregation layer for recorded leads.
     def __init__(self):
-        self._leads = []
+        self.leads = []
 
-    def add(self, lead: OutreachLead) -> None:
-        self._leads.append(lead)
+    def add(self, lead):
+        # Append a lead to the store.
+        self.leads.append(lead)
 
     def summary(self):
-        # Return count, average priority, and highest-priority lead.
-        if not self._leads:
-            return {"count": 0, "avg_priority": 0.0, "top_lead": None}
-
-        priorities = [calculate_priority(lead) for lead in self._leads]
-        avg = round(sum(priorities) / len(priorities), 2)
-        top_index = priorities.index(max(priorities))
+        # Return count, average opportunity score, and best company name.
+        if not self.leads:
+            return {"count": 0, "average_score": 0.0, "best_company": None}
+        scores = []
+        for lead in self.leads:
+            scores.append(lead.opportunity_score())
+        total = sum(scores)
+        best_index = 0
+        best_score = scores[0]
+        for i in range(1, len(scores)):
+            if scores[i] > best_score:
+                best_score = scores[i]
+                best_index = i
+        best_company = self.leads[best_index].company_name
         return {
-            "count": len(self._leads),
-            "avg_priority": avg,
-            "top_lead": self._leads[top_index],
+            "count": len(self.leads),
+            "average_score": total / len(self.leads),
+            "best_company": best_company,
         }
 
 
 def generate_report(store: LeadStore) -> str:
-    # Build a simple text summary of the lead store.
-    data = store.summary()
-    count = data["count"]
-    avg = data["avg_priority"]
-    top = data["top_lead"]
+    # Build a plain-text report from a LeadStore summary.
+    summary = store.summary()
     lines = [
-        "=== TAD Client Outreach Report ===",
-        f"Total Leads: {count}",
-        f"Average Priority: {avg}",
+        "TAD Client Outreach Report",
+        "==========================",
+        f"Total leads: {summary['count']}",
+        f"Average opportunity score: {summary['average_score']:.2f}",
+        f"Best company: {summary['best_company'] or 'N/A'}",
     ]
-    if top is not None:
-        lines.append(
-            f"Top Lead: {top.name} ({top.niche}) "
-            f"- Priority {calculate_priority(top)}"
-        )
-    else:
-        lines.append("Top Lead: None")
-    lines.append("===================================")
+    if summary["count"] > 0:
+        lines.append("")
+        lines.append("Lead Details:")
+        lines.append("-------------")
+        for lead in store.leads:
+            score = lead.opportunity_score()
+            lines.append(
+                f"- {lead.company_name}: pain={lead.pain_score}, "
+                f"competition={lead.competition_score}, "
+                f"willingness={lead.willingness_score}, "
+                f"potential={lead.potential_score}, "
+                f"score={score:.2f}"
+            )
     return "\n".join(lines)
 
 
 def _run_tests() -> int:
-    try:
-        ideal = OutreachLead(
-            name="Ideal",
-            niche="Agentic Compliance",
-            pain_score=10.0,
-            competition_level=0.0,
-            willingness_to_pay=10.0,
-            skyrocket_potential=10.0,
-        )
-        assert calculate_priority(ideal) == 10.0
+    # Known input 1: ideal niche (low competition, high fit).
+    ideal = Lead("IdealCo", 9, 1, 9, 9)
+    if ideal.opportunity_score() != 729.0:
+        print("FAIL: ideal score mismatch")
+        return 1
 
-        crowded = OutreachLead(
-            name="Crowded",
-            niche="Copywriting",
-            pain_score=8.0,
-            competition_level=10.0,
-            willingness_to_pay=8.0,
-            skyrocket_potential=8.0,
-        )
-        assert calculate_priority(crowded) == 5.6
+    # Known input 2: saturated niche (high competition, moderate fit).
+    saturated = Lead("SaturatedCo", 5, 10, 5, 5)
+    if saturated.opportunity_score() != 12.5:
+        print("FAIL: saturated score mismatch")
+        return 1
 
-        store = LeadStore()
-        empty = store.summary()
-        assert empty["count"] == 0
-        assert empty["avg_priority"] == 0.0
-        assert empty["top_lead"] is None
+    # Test 3: empty store summary.
+    store = LeadStore()
+    empty_summary = store.summary()
+    if empty_summary != {"count": 0, "average_score": 0.0, "best_company": None}:
+        print("FAIL: empty store summary mismatch")
+        return 1
 
-        store.add(ideal)
-        single = store.summary()
-        assert single["count"] == 1
-        assert single["avg_priority"] == 10.0
-        assert single["top_lead"] == ideal
+    # Test 4: store aggregation.
+    store.add(ideal)
+    store.add(saturated)
+    full_summary = store.summary()
+    expected_summary = {
+        "count": 2,
+        "average_score": 370.75,
+        "best_company": "IdealCo",
+    }
+    if full_summary != expected_summary:
+        print("FAIL: full store summary mismatch")
+        return 1
 
-        store.add(crowded)
-        multi = store.summary()
-        assert multi["count"] == 2
-        assert multi["avg_priority"] == 7.8
-        assert multi["top_lead"] == ideal
+    # Test 5: empty store report.
+    empty_store = LeadStore()
+    empty_report = generate_report(empty_store)
+    if "Total leads: 0" not in empty_report or "N/A" not in empty_report:
+        print("FAIL: empty report missing expected content")
+        return 1
 
-        # Test report generation
-        empty_store = LeadStore()
-        empty_report = generate_report(empty_store)
-        assert "Total Leads: 0" in empty_report
-        assert "Average Priority: 0.0" in empty_report
-        assert "Top Lead: None" in empty_report
-
-        full_store = LeadStore()
-        full_store.add(ideal)
-        full_store.add(crowded)
-        full_report = generate_report(full_store)
-        assert "Total Leads: 2" in full_report
-        assert "Average Priority: 7.8" in full_report
-        assert "Ideal" in full_report
-        assert "Agentic Compliance" in full_report
-        assert "Priority 10.0" in full_report
-    except Exception:
-        print("FAIL")
+    # Test 6: populated store report.
+    populated_store = LeadStore()
+    populated_store.add(ideal)
+    populated_store.add(saturated)
+    populated_report = generate_report(populated_store)
+    if "IdealCo" not in populated_report:
+        print("FAIL: populated report missing company name")
+        return 1
+    if "729.00" not in populated_report:
+        print("FAIL: populated report missing expected score")
+        return 1
+    if "TAD Client Outreach Report" not in populated_report:
+        print("FAIL: populated report missing header")
         return 1
 
     print("PASS")
     return 0
 
 
-def _demo() -> None:
-    # Small CLI demo showing report output.
-    store = LeadStore()
-    store.add(
-        OutreachLead(
-            name="Acme AI",
-            niche="Agentic Compliance",
-            pain_score=9.0,
-            competition_level=2.0,
-            willingness_to_pay=8.0,
-            skyrocket_potential=9.0,
-        )
-    )
-    store.add(
-        OutreachLead(
-            name="Beta Bots",
-            niche="Customer Support",
-            pain_score=7.0,
-            competition_level=5.0,
-            willingness_to_pay=6.0,
-            skyrocket_potential=7.0,
-        )
-    )
-    print(generate_report(store))
-
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+    if "--test" in sys.argv:
         sys.exit(_run_tests())
-    _demo()

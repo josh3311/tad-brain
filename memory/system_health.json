@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-06-11T23:09:48.749575",
+  "checked_at": "2026-06-12T00:09:49.160000",
   "agents": {
     "market_agent": {
       "agent": "market_agent",
@@ -28,8 +28,8 @@
       "agent": "decision_agent",
       "status": "silent",
       "last_active": "2026-06-09T02:44:24.025374",
-      "hours_silent": 68.4,
-      "reason": "No activity for 68.4 hours"
+      "hours_silent": 69.4,
+      "reason": "No activity for 69.4 hours"
     },
     "marketing_agent": {
       "agent": "marketing_agent",
@@ -40,8 +40,8 @@
       "agent": "ceo_agent",
       "status": "silent",
       "last_active": "2026-06-08T21:58:04.952371",
-      "hours_silent": 73.2,
-      "reason": "No activity for 73.2 hours"
+      "hours_silent": 74.2,
+      "reason": "No activity for 74.2 hours"
     }
   },
   "files": {
@@ -55,15 +55,15 @@
       "agent": "decision_agent",
       "status": "silent",
       "last_active": "2026-06-09T02:44:24.025374",
-      "hours_silent": 68.4,
-      "reason": "No activity for 68.4 hours"
+      "hours_silent": 69.4,
+      "reason": "No activity for 69.4 hours"
     },
     {
       "agent": "ceo_agent",
       "status": "silent",
       "last_active": "2026-06-08T21:58:04.952371",
-      "hours_silent": 73.2,
-      "reason": "No activity for 73.2 hours"
+      "hours_silent": 74.2,
+      "reason": "No activity for 74.2 hours"
     }
   ],
   "overall": "issues_detected",
