@@ -584,3 +584,46 @@ No CRUD action happens without being logged.
   - VERIFIED: reproduced exact U+2192 charmap crash on forced cp1252
     console, then clean output with fix; re-ran live CEO decision under
     cp1252 — "[CEO] Decision: GO → CTO Agent" printed without error
+
+### 2026-06-12 — DIAGNOSIS: why night_mode produces no output (no fixes applied — awaiting Joshua review)
+- FINDING 1 — build_agent.py is ORPHANED. Nothing in the codebase calls
+  build_agent.build(): not night_mode.py (it has its own inline Kimi build
+  loop), not scheduler.py (run_decision_chain ends at the CEO verdict and
+  the GO is dropped), not agent.py (routes "build" keywords to the generic
+  Kimi-with-skill-file fallback, never imports build_agent). The CEO GO at
+  2026-06-12T03:00:59 assigned "CTO Agent" — no dispatcher reads that field.
+- FINDING 2 — approval/build pipelines are disconnected, timing is moot.
+  night_mode launches 11pm and reads ONLY "- [ ]" checkboxes in
+  THE_MONKEY.md; approvals land at 3am in memory/decisions.json, which no
+  build path reads. Even with perfect timing the approved item could never
+  be built — the data never flows.
+- FINDING 3 — build_agent HAS proper logging (memory/build_log.jsonl +
+  build_log.json, matching what ops_agent health check watches) and a clean
+  build(opportunity_dict) entry point expecting {name, problem, scores...}
+  exactly like opportunity_log.json records. It shows "silent" in health
+  checks simply because it is never invoked.
+- FINDING 4 (ROOT CAUSE of empty Kimi output) — manual build_agent.build()
+  on the approved item ("AI Output Bias Detection for Sensitive Domains",
+  28/40, CEO GO) failed: all 3 attempts "returned prose". Probe of the raw
+  API response: finish_reason=length, completion_tokens=3000, content="".
+  kimi-k2.6 is a REASONING model — it streams chain-of-thought into a
+  separate reasoning_content field first; with max_tokens=3000 (build_agent)
+  / 500 (night_mode _plan_features, generate_new_tasks) the budget is
+  consumed by reasoning before any answer tokens are emitted → content is
+  empty. Control test: trivial prompt → finish_reason=stop, real content,
+  404 reasoning tokens. This is the same bug class as p6_1 (market_agent
+  empty JSON) and explains last nights repeating "Task generation error:
+  Expecting value: line 1 column 1" in night_log.jsonl.
+- FINDING 5 — secondary issues seen in last nights night_log.jsonl:
+  (a) Anthropic review gate hit "credit balance too low" at 00:36/00:43
+  (treated as skipped, code pushed unreviewed); balance works again today.
+  (b) Two interleaved night_mode loops ran concurrently (~00:33-00:45) —
+  likely GUI thread + scheduler-detached process double-launch.
+  (c) After the 5 hardcoded fallback tasks hit MAX_ITEM_ATTEMPTS, task
+  generation always returned empty → "No buildable tasks left — sleeping
+  30m" forever = the visible "no output".
+- SUGGESTED FIX DIRECTION (NOT applied): raise max_tokens substantially on
+  all kimi-k2.6 calls and/or cap reasoning (Moonshot reasoning controls),
+  check finish_reason==length and retry with bigger budget; then wire
+  decisions.json GO verdicts → build_agent.build() and guard against
+  double night_mode launch. Joshua to review before any change.
