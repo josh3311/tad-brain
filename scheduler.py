@@ -96,6 +96,38 @@ def launch_night_mode():
     })
 
 
+# ── Build dispatcher ─────────────────────────────────────────────────────────
+
+def _run_build_safely(opportunity: dict):
+    """
+    Runs build_agent.build() in a background thread so the scheduler's
+    hourly ops checks keep firing while the build runs (2-5 min).
+    Logs real result OR real error — never fabricates output.
+    """
+    # Normalise field name: decision_agent returns 'opportunity_name',
+    # build_agent.build() expects 'name'.
+    if "name" not in opportunity and "opportunity_name" in opportunity:
+        opportunity = dict(opportunity)
+        opportunity["name"] = opportunity["opportunity_name"]
+
+    opp_name = opportunity.get("name", "unknown")
+    try:
+        from skills import build_agent
+        result = build_agent.build(opportunity)
+        _log(f"Build complete: {opp_name} — {result}")
+    except Exception as e:
+        error_msg = f"build_failed: {str(e)}"
+        _log(f"Build error: {opp_name} — {str(e)}")
+        log_entry = {
+            "ts":          datetime.now().isoformat(),
+            "msg":         error_msg,
+            "opportunity": opp_name,
+        }
+        log_path = ROOT / "memory" / "build_log.jsonl"
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
+
+
 # ── 3am — Market Agent scan ───────────────────────────────────────────────────
 
 def run_market_scan():
@@ -144,6 +176,13 @@ def run_decision_chain(opportunities: list):
         from ceo_agent import make_decision
         verdict = make_decision(approved[0], "opportunity_score")
         _log(f"CEO verdict on '{approved[0].get('opportunity_name')}': {verdict.get('decision')}")
+        if verdict.get("decision") == "GO":
+            build_thread = threading.Thread(
+                target=_run_build_safely,
+                args=(approved[0],),
+                daemon=True,
+            )
+            build_thread.start()
     except Exception as e:
         _log(f"CEO Agent error: {e}")
 

@@ -100,6 +100,76 @@ def kimi_code(system: str, user: str, max_tokens: int = 3000) -> str:
         return ""
 
 
+def claude_build(prompt: str, max_tokens: int = 8000) -> str:
+    """
+    Claude Sonnet (BUILD_MODEL env var) — primary Build Agent model.
+    Better code quality than Kimi, no reasoning-token workarounds needed.
+    Same ANTHROPIC_API_KEY as Haiku — no new key required.
+    Falls back to kimi_code() automatically if this fails (via _generate_code).
+    """
+    build_model = os.getenv("BUILD_MODEL", "claude-sonnet-4-6")
+    try:
+        msg = claude.messages.create(
+            model=build_model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text or ""
+    except Exception as e:
+        print(f"[claude_build] Error: {e}")
+        return ""
+
+
+def minimax_code(prompt: str, max_tokens: int = 8000) -> str:
+    """
+    MiniMax M3 — Build Agent fallback #1.
+    Fires automatically if claude_build() fails or returns empty.
+    SWE-Bench score: 59.0% (competitive with Kimi K2.6's 58.6%).
+    OpenAI-compatible API — same request structure as other providers.
+    """
+    import requests
+    api_key = os.getenv("MINIMAX_API_KEY")
+    if not api_key:
+        raise ValueError("MINIMAX_API_KEY not set in .env")
+    response = requests.post(
+        "https://api.minimax.io/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}",
+                 "Content-Type": "application/json"},
+        json={"model": "MiniMax-M3",
+              "messages": [{"role": "user", "content": prompt}],
+              "max_tokens": max_tokens,
+              "temperature": 0.6},
+        timeout=120
+    )
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
+
+
+def deepseek_code(prompt: str, max_tokens: int = 8000) -> str:
+    """
+    DeepSeek V4 Pro — Build Agent fallback #2 (cheapest per token).
+    Fires automatically if both claude_build() and minimax_code() fail.
+    MIT licensed model. $1.74/$3.48 per 1M tokens input/output.
+    OpenAI-compatible API.
+    """
+    import requests
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise ValueError("DEEPSEEK_API_KEY not set in .env")
+    response = requests.post(
+        "https://api.deepseek.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}",
+                 "Content-Type": "application/json"},
+        json={"model": "deepseek-coder",
+              "messages": [{"role": "user", "content": prompt}],
+              "max_tokens": max_tokens,
+              "temperature": 0.6},
+        timeout=120
+    )
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
+
+
 if __name__ == "__main__":
     print("TAD Provider Config — Test")
     print("=" * 40)

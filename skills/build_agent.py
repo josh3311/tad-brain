@@ -171,6 +171,45 @@ def _auto_install(error: str) -> bool:
     return False
 
 
+# ── Resilient multi-model code generation ────────────────────────────────────
+
+def _generate_code(prompt: str, max_tokens: int = 8000) -> str:
+    """
+    Resilient code generation with silent fallback chain.
+    Priority: Claude Sonnet → Kimi K2.6 → MiniMax M3 → DeepSeek V4 Pro.
+    Logs which model succeeded to build_log.jsonl for cost tracking.
+    Only returns empty string if ALL four models fail — never fabricates.
+    """
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from config_providers import claude_build, minimax_code, deepseek_code
+
+    # Kimi uses _kimi_call which handles the no-think mode and length retry.
+    def _kimi_wrapper(p: str, mt: int) -> str:
+        return _kimi_call([
+            {"role": "system", "content": BUILD_SYSTEM},
+            {"role": "user",   "content": p},
+        ], mt)
+
+    attempts = [
+        ("claude-sonnet", claude_build),
+        ("kimi-k2.6",     _kimi_wrapper),
+        ("minimax-m3",    minimax_code),
+        ("deepseek-v4",   deepseek_code),
+    ]
+    for model_name, fn in attempts:
+        try:
+            result = fn(prompt, max_tokens)
+            if result and result.strip():
+                _log(f"Code generated via {model_name}")
+                return result
+            _log(f"{model_name} returned empty — trying next model")
+        except Exception as e:
+            _log(f"{model_name} failed: {str(e)} — trying next model")
+    _log("all_code_models_failed — build cannot proceed")
+    return ""
+
+
 # ── Code generation ───────────────────────────────────────────────────────────
 
 def generate_code(opportunity: dict, filename: str) -> str | None:
@@ -204,10 +243,7 @@ Output the Python code directly. Start with imports or docstring."""
     for attempt in range(1, 4):
         _log(f"Code generation attempt {attempt}/3 for {filename}")
         try:
-            raw  = _kimi_call([
-                {"role": "system", "content": BUILD_SYSTEM},
-                {"role": "user",   "content": prompt},
-            ])
+            raw  = _generate_code(prompt)
             code = _extract_code(raw)
 
             if _is_real_python(code):
@@ -238,10 +274,7 @@ Fix the error and return ONLY the corrected Python code.
 No explanation. Start with imports or docstring."""
 
     try:
-        raw  = _kimi_call([
-            {"role": "system", "content": BUILD_SYSTEM},
-            {"role": "user",   "content": fix_prompt},
-        ])
+        raw  = _generate_code(fix_prompt)
         code = _extract_code(raw)
         return code if _is_real_python(code) else None
     except Exception as e:
