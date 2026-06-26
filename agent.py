@@ -145,6 +145,15 @@ def identify_agent(user_input: str) -> str:
         print(f"[router] Identified agent: market (explicit command)")
         return "market"
 
+    if any(p in text for p in ["run marketing", "run marketing agent", "launch marketing",
+                                "marketing campaign", "start outreach"]):
+        print(f"[router] Identified agent: marketing (explicit command)")
+        return "marketing"
+
+    if any(p in text for p in ["ask ceo", "ceo decision", "ceo report"]):
+        print(f"[router] Identified agent: ceo (explicit command)")
+        return "ceo"
+
     if any(p in text for p in ["score this opportunity", "score this:", "evaluate this opportunity",
                                 "should we build", "go or no go"]):
         print(f"[router] Identified agent: decision (explicit command)")
@@ -275,8 +284,8 @@ def run_market_agent(user_input: str, status_callback=None) -> str:
             summary = "No qualifying opportunities found this scan. Expanding search..."
         return summary
     except Exception as e:
-        print(f"[agent] Market Agent import error: {e}")
-        return _run_kimi_with_skill(user_input, "market", status_callback)
+        print(f"[agent] Market Agent error: {e}")
+        return f"Market Agent error: {str(e)} — did not run"
 
 
 def run_decision_agent(user_input: str, status_callback=None) -> str:
@@ -290,8 +299,8 @@ def run_decision_agent(user_input: str, status_callback=None) -> str:
         result = score_opportunity(opp)
         return f"Decision: {result.get('decision')} — Score {result.get('total_score')}/40. {result.get('reasoning')}"
     except Exception as e:
-        print(f"[agent] Decision Agent import error: {e}")
-        return _run_kimi_with_skill(user_input, "decision", status_callback)
+        print(f"[agent] Decision Agent error: {e}")
+        return f"Decision Agent error: {str(e)} — did not run"
 
 
 def run_finance_agent(user_input: str, status_callback=None) -> str:
@@ -316,8 +325,8 @@ def run_finance_agent(user_input: str, status_callback=None) -> str:
             }
             return f"Financial Status — Monthly Revenue: ${summary.get('monthly_revenue', 0):.2f} | Profit: ${summary.get('monthly_profit', 0):.2f} | Margin: {summary.get('profit_margin', '0%')} | Unpaid Invoices: {summary.get('unpaid_invoices', 0)}"
     except Exception as e:
-        print(f"[agent] Finance Agent import error: {e}")
-        return _run_kimi_with_skill(user_input, "finance", status_callback)
+        print(f"[agent] Finance Agent error: {e}")
+        return f"Finance Agent error: {str(e)} — did not run"
 
 
 def run_ops_agent(user_input: str, status_callback=None) -> str:
@@ -333,8 +342,8 @@ def run_ops_agent(user_input: str, status_callback=None) -> str:
         _LAST_CHART_DATA["data"]       = health
         return f"System Status: {status} | Agents checked: {len(health.get('agents', {}))} | Issues: {issues}"
     except Exception as e:
-        print(f"[agent] Ops Agent import error: {e}")
-        return _run_kimi_with_skill(user_input, "ops", status_callback)
+        print(f"[agent] Ops Agent error: {e}")
+        return f"Ops Agent error: {str(e)} — did not run"
 
 
 def run_cseo_agent(user_input: str, status_callback=None) -> str:
@@ -373,6 +382,60 @@ def run_cseo_agent(user_input: str, status_callback=None) -> str:
     if result.get("report_text"):
         lines.append("\n" + result["report_text"])
     return "\n".join(lines)
+
+
+def run_marketing_agent(user_input: str, status_callback=None) -> str:
+    """Run the real Marketing Agent — calls run_outreach_cycle() verbatim.
+    No Kimi role-play fallback: if the real function fails, say so plainly."""
+    _status(status_callback, "Marketing Agent running outreach cycle...")
+    try:
+        sys.path.insert(0, str(AGENTS_DIR))
+        from marketing_agent import run_outreach_cycle
+        # Pull latest built product from build_log, or use a sensible default
+        product = {"name": "TAD AI Product", "description": user_input}
+        try:
+            import json
+            build_log_path = ROOT / "memory" / "build_log.json"
+            if build_log_path.exists():
+                builds = json.loads(build_log_path.read_text(encoding="utf-8")).get("builds", [])
+                successful = [b for b in builds if b.get("status") == "success"]
+                if successful:
+                    latest = successful[-1]
+                    product = {
+                        "name":        latest.get("opportunity", latest.get("filename", "TAD Product")),
+                        "description": f"AI automation tool built by TAD: {latest.get('filename', '')}",
+                    }
+        except Exception:
+            pass
+        result = run_outreach_cycle(product)
+        leads = result.get("leads_found", 0)
+        msgs  = result.get("messages_crafted", 0)
+        return f"Marketing cycle complete: {leads} leads found, {msgs} messages crafted for {result.get('product', 'product')}."
+    except Exception as e:
+        print(f"[agent] Marketing Agent error: {e}")
+        return f"Marketing Agent error: {str(e)} — did NOT run"
+
+
+def run_ceo_agent(user_input: str, status_callback=None) -> str:
+    """Run the real CEO Agent for chat-triggered decision requests.
+    Returns real output verbatim — no Kimi role-play fallback."""
+    _status(status_callback, "CEO Agent processing decision...")
+    try:
+        sys.path.insert(0, str(AGENTS_DIR))
+        from ceo_agent import generate_daily_summary, make_decision
+        # Briefing / summary requests
+        if any(p in user_input.lower() for p in ["briefing", "summary", "report", "daily"]):
+            summary = generate_daily_summary()
+            return summary
+        # Decision on a specific item
+        result = make_decision({"request": user_input}, "chat_request")
+        decision = result.get("decision", "UNKNOWN")
+        reasoning = result.get("reasoning", "")
+        action = result.get("action", "")
+        return f"CEO Decision: {decision}\n{reasoning}\nNext: {action}"
+    except Exception as e:
+        print(f"[agent] CEO Agent error: {e}")
+        return f"CEO Agent error: {str(e)} — did NOT run"
 
 
 # ── Kimi fallback with skill ──────────────────────────────────────────────────
@@ -523,16 +586,23 @@ def run_task(user_input: str, status_callback=None) -> str:
         runner = lambda: run_ops_agent(user_input, status_callback)
     elif agent_type == "cseo":
         runner = lambda: run_cseo_agent(user_input, status_callback)
+    elif agent_type == "marketing":
+        runner = lambda: run_marketing_agent(user_input, status_callback)
+    elif agent_type == "ceo":
+        runner = lambda: run_ceo_agent(user_input, status_callback)
     else:
-        # CEO, build, marketing, general — all use Kimi with skill file
+        # build, general — use Kimi with skill file
         runner = lambda: _run_kimi_with_skill(user_input, agent_type, status_callback)
 
     raw = observe_call(agent_type, runner)
 
     # Shape response through Conversation Engine — EXCEPT for real execution
-    # reports. CSEO output is factual (what actually ran/built); re-narrating
-    # it through Haiku risks fabricated details. Return it verbatim.
-    if agent_type == "cseo":
+    # reports. These agents return factual data (metrics, decisions, health);
+    # re-narrating through Haiku risks fabricated or distorted numbers.
+    # Return verbatim. Only pure conversational responses go through shaping.
+    VERBATIM_AGENTS = {"cseo", "market", "decision", "finance", "ops",
+                       "marketing", "ceo"}
+    if agent_type in VERBATIM_AGENTS:
         final = raw
     else:
         _status(status_callback, "shaping response...")
