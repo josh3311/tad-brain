@@ -32,6 +32,8 @@ from dotenv import load_dotenv
 from tad_encoding import force_utf8
 force_utf8()
 
+from skills.build_agent import _generate_code
+
 load_dotenv()
 
 ROOT        = Path(__file__).parent
@@ -278,12 +280,15 @@ Return ONLY a JSON array of short feature description strings:
 ["feature one", "feature two"]"""
 
     try:
-        raw   = _kimi([{"role": "user", "content": prompt}])
+        raw   = _generate_code(prompt)
         clean = re.sub(r"```json|```", "", raw).strip()
         features = json.loads(clean)
         if isinstance(features, list) and features:
             return [str(f) for f in features[:MAX_FEATURES]]
     except Exception as e:
+        if "Connection error" in str(e) or "connection" in str(e).lower():
+            _log(f"[NIGHT] All models unreachable: {str(e)} — using fallback plan")
+            return list(_GENERIC_FEATURE_PLAN)
         _log(f"  Feature planning error: {e}")
 
     _log("  Using generic fallback feature plan (small steps)")
@@ -323,18 +328,17 @@ a --test self-check mode. Output Python code only."""
 
     for attempt in range(1, 3):
         try:
-            raw  = _kimi([
-                {"role": "system", "content": BUILD_SYSTEM},
-                {"role": "user",   "content": prompt},
-            ])
+            raw  = _generate_code(prompt)
             code = _extract_code_block(raw)
             if _is_real_python(code):
                 return code
             _log(f"  Attempt {attempt} returned prose -- retrying")
             prompt += "\n\nPREVIOUS ATTEMPT FAILED -- output ONLY Python code."
         except Exception as e:
-            _log(f"  Kimi error attempt {attempt}: {e}")
-            time.sleep(5)
+            if "Connection error" in str(e) or "connection" in str(e).lower():
+                _log(f"[NIGHT] All models unreachable: {str(e)} — skipping build")
+                break
+            raise
     return None
 
 
@@ -378,10 +382,7 @@ Fix the failure and return ONLY the corrected, complete Python module
 (keep the --test self-check mode)."""
 
         try:
-            raw   = _kimi([
-                {"role": "system", "content": BUILD_SYSTEM},
-                {"role": "user",   "content": fix_prompt},
-            ])
+            raw   = _generate_code(fix_prompt)
             fixed = _extract_code_block(raw)
             if _is_real_python(fixed):
                 code = fixed
@@ -389,6 +390,9 @@ Fix the failure and return ONLY the corrected, complete Python module
             else:
                 break
         except Exception as e:
+            if "Connection error" in str(e) or "connection" in str(e).lower():
+                _log(f"[NIGHT] All models unreachable: {str(e)} — skipping build")
+                break
             _log(f"  Fix error: {e}")
             break
 
@@ -527,15 +531,15 @@ CODE:
 
 Return ONLY the corrected, complete Python module (keep the --test mode)."""
     try:
-        raw   = _kimi([
-            {"role": "system", "content": BUILD_SYSTEM},
-            {"role": "user",   "content": fix_prompt},
-        ])
+        raw   = _generate_code(fix_prompt)
         fixed = _extract_code_block(raw)
         if _is_real_python(fixed) and _test_and_fix(filepath, fixed, item_name):
             return True
     except Exception as e:
-        _log(f"  Review-fix error: {e}")
+        if "Connection error" in str(e) or "connection" in str(e).lower():
+            _log(f"[NIGHT] All models unreachable: {str(e)} — skipping build")
+        else:
+            _log(f"  Review-fix error: {e}")
     return False
 
 
@@ -581,11 +585,14 @@ Return ONLY a JSON array of task name strings.
 JSON array only."""
 
     try:
-        raw   = _kimi([{"role": "user", "content": prompt}])
+        raw   = _generate_code(prompt)
         clean = re.sub(r"```json|```", "", raw).strip()
         return json.loads(clean)
     except Exception as e:
-        _log(f"Task generation error: {e}")
+        if "Connection error" in str(e) or "connection" in str(e).lower():
+            _log(f"[NIGHT] All models unreachable: {str(e)} — using fallback task list")
+        else:
+            _log(f"Task generation error: {e}")
         return [
             "tad_opportunity_scorer",
             "tad_lead_finder",

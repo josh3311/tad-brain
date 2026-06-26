@@ -5,6 +5,9 @@
 
 ---
 
+## RECENT FIXES
+- 2026-06-26: night_mode.py uses _generate_code() fallback chain — Kimi outages no longer block overnight builds
+
 ## WHAT IS TAD AI
 
 TAD AI is a fully autonomous agentic enterprise that constantly solves
@@ -471,6 +474,11 @@ The Ops Agent logs every CRUD action to memory/crud_log.json.
 No CRUD action happens without being logged.
 
 ## SESSION LOG
+
+### CSEO Auto-build 2026-06-26
+- [x] CSEO built: autonomous_revenue_validation___deal_closure_loop ✓ 2026-06-26
+- [x] CSEO built: real_time_market_opportunity_tracking___early_detection ✓ 2026-06-26
+
 
 ### 2026-06-12 — CSEO routing fix (fabrication bug closed)
 **Problem:** "use CSEO, run self-fix" routed to the Conversation Agent, which
