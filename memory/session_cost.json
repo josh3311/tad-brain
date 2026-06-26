@@ -1,45 +1,37 @@
 {
-  "session": "night-build-2026-06-12",
-  "model_pricing_note": "claude-haiku-4-5 ~$1/MTok in, $5/MTok out (approx); Kimi not used this session",
+  "session": "2026-06-26-tasks-1-4",
+  "model_pricing_note": "claude-haiku ~$1/$5 per MTok in/out; claude-sonnet ~$3/$15 per MTok; Kimi in fallback only",
   "tasks": {
     "task0_credit_check": {
       "api_calls": 1,
-      "tokens": {"input": 8, "output": 5},
-      "est_cost_usd": 0.0001
+      "model": "claude-haiku-4-5",
+      "tokens_est": {"input": 8, "output": 5},
+      "est_cost_usd": 0.001
     },
-    "task1_silent_agents": {
-      "api_calls": 4,
-      "tokens_est": {"input": 9000, "output": 1800},
-      "est_cost_usd": 0.018,
-      "note": "1 decision score + 2 CEO make_decision + health verify (Haiku)"
-    },
-    "task2_test_suite": {
+    "task4_build_model_chain": {
       "api_calls": 0,
-      "est_cost_usd": 0,
-      "note": "all tests use mocked clients"
+      "est_cost_usd": 0.0,
+      "note": "code edits + pytest only, no API calls"
     },
-    "task3_observability": {
-      "api_calls": 2,
-      "tokens_est": {"input": 2000, "output": 400},
-      "est_cost_usd": 0.004,
-      "note": "2 run_task verification commands (ops + finance, mostly local; conversation_engine shaping)"
+    "task1_go_dispatcher": {
+      "api_calls": 1,
+      "model": "claude-sonnet-4-6",
+      "note": "1 smoke build test (test_build_smoke opportunity via _generate_code)",
+      "tokens_est": {"input": 2000, "output": 4000},
+      "est_cost_usd": 0.066
     },
-    "task4_pii": {
+    "task2_fail_plainly": {
       "api_calls": 0,
-      "est_cost_usd": 0,
-      "note": "regex only, no API"
+      "est_cost_usd": 0.0,
+      "note": "code edits + pytest only"
     },
-    "task5_user_research": {
-      "api_calls": 2,
-      "tokens_est": {"input": 1200, "output": 2200},
-      "est_cost_usd": 0.012,
-      "note": "synthetic_feedback (2 personas) + build_screening_criteria self-test (Haiku)"
-    },
-    "task6_github_scan": {
+    "task3_routing": {
       "api_calls": 0,
-      "est_cost_usd": 0,
-      "note": "web search via Claude Code session, no ANTHROPIC_API_KEY/KIMI spend"
+      "est_cost_usd": 0.0,
+      "note": "code edits + routing verify (no API)"
     }
   },
-  "total_est_cost_usd": 0.034
+  "total_est_cost_usd": 0.067,
+  "per_task_cap_usd": 1.0,
+  "cap_breached": false
 }

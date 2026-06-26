@@ -1,94 +1,91 @@
-# Fix Brief Session Report — 2026-06-12 (afternoon/evening)
+# TAD Session Report — 2026-06-26
 
-**Brief:** 3 Tasks — kimi-k2.6 empty-content fix, CSEO→Haiku code-gen, review-gate fail-closed
-**Status: 3/3 done, all verified live, all pushed**
-(Previous night-build report is in git history at commit `5c4bff7`.)
-
----
-
-## TASK 1 — kimi-k2.6 empty-content fix — DONE
-**Commits:** `0d1dfee` (+ build artifacts `242f308`, `9ce8dd5`)
-**Files:** skills/build_agent.py, night_mode.py
-
-The brief's fix (raise max_tokens 8000, retry 12000 on empty) was implemented but
-proved insufficient on live test: a 12000-token retry was STILL 100% consumed by
-reasoning (finish_reason=length, content=""). Probing the Moonshot API found the
-real control: `thinking={"type":"disabled"}` — which the API only allows with
-temperature=0.6 (a forced deviation from the "Kimi temp=1" rule; falls back to
-the old thinking-mode call if the param is ever rejected).
-
-Final design (shared by build_agent `_kimi_call` and night_mode `_kimi`):
-- thinking disabled, temp 0.6, max_tokens default 8000 (was 3000/500)
-- retry once at 12000 on ANY finish_reason=length — empty OR truncated, since
-  truncated code can compile by luck
-- retries logged to memory/build_log.jsonl (both files)
-- unclosed-``` fence extraction hardened; module-size rule added to BUILD_SYSTEM
-
-**Verification:** `build_agent.build()` on the approved item "AI Output Bias
-Detection for Sensitive Domains" (28/40, decisions.json GO):
-finish_reason=**stop**, 4561 completion tokens, 508-line module parses + syntax
-check passed, real entries in build_log.jsonl, pushed by build_agent itself —
-**the first successful build_agent artifact ever**
-(ai_output_bias_detection_for_sensitive_domains.py).
-
-## TASK 2 — CSEO code-gen → Claude Haiku via claude_chat — DONE
-**Commits:** `01760fd` (+ CSEO's own `108e1c1`)
-**Files:** skills/cseo_agent.py
-
-Brief premise was stale: cseo_agent defined a Kimi client but never called it —
-generation already used claude.messages.create directly. Actual change: all CSEO
-generation (skill .md + patch .py) now goes through config_providers.claude_chat
-(Haiku, temp default), py code-gen at max_tokens=2000 per brief; dead Kimi client
-removed. Kimi remains build_agent/night_mode-only. Also fixed: unclosed-fence
-extraction + BUILD_SYSTEM now caps modules ~100 lines so patches fit the 2000-token
-budget (first verify attempt failed on truncated 200+ line modules).
-
-**Verification:** seeded the known self_test ZeroDivisionError into
-error_log.json → `_find_bugs_to_fix()` picked it up → `build_skill()` produced
-skills/learned/fix_self_test_error.py (185 lines, parses, syntax check passed,
-real logic — not empty/prose) + .md skill file. Seeded error marked resolved
-afterwards so tonight's CSEO won't chase it.
-
-## TASK 3 — Review gate fails closed — DONE
-**Commit:** `be9958f`
-**Files:** night_mode.py
-
-`_claude_review` no-key and exception paths now return verdict "error" (was
-"skipped"); run_night_mode blocks anything not "approve" after the reject/fix
-round — logs `review_failed_blocking_push` with the error, records it in
-report["errors"], keeps the built file LOCAL for morning review, never pushes
-or marks done. Reject path unchanged.
-
-**Verification:** harnessed single-item run_night_mode with the Anthropic client
-raising a simulated 400 credit error → `_git_push` called **0 times**, item not
-in report["built"], `review_failed_blocking_push` in night_log.jsonl and the
-overnight report, file kept local.
+## Summary
+Four-task brief executed fully. The autonomous pipeline is now end-to-end:
+Market → Decision → CEO → **Build Agent fires on GO verdict**.
+All Kimi role-play fabrication paths removed from the 4 real-function agents.
+Claude Sonnet is the new primary Build model with a 4-model fallback chain.
 
 ---
 
-## File diffs (task commits, excl. generated artifacts)
-```
-night_mode.py         | 93 ++++++++++++++++++++++++++++++++++--------
-skills/build_agent.py | 81 ++++++++++++++++++++++++++--------
-skills/cseo_agent.py  | 44 +++++++++++----------
-3 files changed, 161 insertions(+), 57 deletions(-)
-```
+## Per-Task Status
 
-## API token spend (approx, from captured usage)
-| Task | Provider | Tokens (prompt + completion) | Notes |
-|------|----------|------------------------------|-------|
-| 1 | Kimi | ~47k (incl. 20k burned proving the reasoning arms-race, 3 small probes) | diagnosis + 2 full builds |
-| 2 | Claude Haiku | ~18k | 1 failed verify run (4 calls) + 1 successful (2 calls) |
-| 3 | none | 0 | review error simulated, no real API calls |
+### Task 0 — Credit check + BUILD_MODEL ✅
+- `BUILD_MODEL=claude-sonnet-4-6` already in .env — confirmed via dotenv read
+- Anthropic API credit confirmed (Haiku ping via venv Python)
+- Files changed: none
 
-## What's next (suggested for THE_MONKEY.md backlog)
-1. Wire decisions.json GO verdicts → build_agent.build() (diagnosis Finding 1 —
-   still unwired; today's build was invoked manually).
-2. Guard against double night_mode launch (GUI thread + scheduler subprocess ran
-   interleaved on 2026-06-11 night).
-3. config_providers.kimi_code still uses old thinking-mode call at
-   max_tokens=3000 — port the Task 1 no-think fix there too.
-4. conversation_engine.py:197 NameError (`resp` vs `msg`) silently disables all
-   response shaping.
-5. build_agent's generated 508-line module ignored the ~250-line rule — consider
-   a hard line-count check in review.
+### Task 4 — Claude Sonnet primary + MiniMax/DeepSeek fallbacks ✅
+- `config_providers.py`: added `claude_build()`, `minimax_code()`, `deepseek_code()`
+- `skills/build_agent.py`: added `_generate_code()` 4-model fallback chain
+  (Claude Sonnet → Kimi K2.6 → MiniMax M3 → DeepSeek V4 Pro)
+- `generate_code()` and `fix_code()` now call `_generate_code()` — no direct kimi calls
+- Live test: smoke build ran, build_log.jsonl grew with "Build complete" entry
+- 43 pytest passed
+
+### Task 1 — Wire GO verdicts to build_agent.build() ✅
+- `scheduler.py`: added `_run_build_safely()` standalone function
+  - Normalises opportunity_name → name field mismatch between agents
+  - Logs real result OR real error — never fabricates
+- `run_decision_chain()`: CEO verdict "GO" now fires _run_build_safely() in a
+  daemon thread — scheduler hourly ops loop unaffected
+- Live test: injected test opportunity, build_log.jsonl confirmed new entry
+- 43 pytest passed
+
+### Task 2 — Fail-plainly pattern for 4 real-function agents ✅
+- `agent.py`: run_market_agent, run_decision_agent, run_finance_agent, run_ops_agent
+  except blocks now return "AgentName error: ... — did not run" instead of
+  calling _run_kimi_with_skill() which role-plays and fabricates
+- VERBATIM_AGENTS extended to include all 4: their real output bypasses
+  _shape_response (same bypass CSEO got in ebd6097)
+- scheduler.py diff: 0 lines — mandatory check passed
+- 43 pytest passed
+
+### Task 3 — Wire Marketing + CEO real routing ✅
+- `agent.py`: added run_marketing_agent() — calls real run_outreach_cycle(),
+  pulls latest built product from build_log.json, verbatim, no Kimi fallback
+- `agent.py`: added run_ceo_agent() — calls real generate_daily_summary() or
+  make_decision(), verbatim, no Kimi fallback
+- identify_agent() Priority-1 extended: "run marketing", "launch marketing",
+  "ask ceo", "ceo decision", "ceo report"
+- run_task(): marketing and ceo now route to real runners before else-Kimi
+- 7/7 routing phrases verified correct
+- scheduler.py diff: 0 lines — mandatory check passed
+- 43 pytest passed
+
+---
+
+## Models Used This Session
+- Credit check: Claude Haiku (1 call)
+- Smoke test build (Task 1 verify): Claude Sonnet via _generate_code()
+- All other tasks: no API calls (code edits + pytest only)
+
+## Total API Spend (estimated)
+- Task 0 credit check: ~$0.001
+- Task 1 smoke build (Sonnet): ~$0.05–0.15
+- pytest × 4 runs: $0.00 (mocked)
+- Total: < $0.20 (well under $1.00 per-task cap)
+
+---
+
+## Commits This Session
+- d5daf2f — [task4+task1] Claude Sonnet primary build model + GO dispatcher wired
+- b11b477 — [task2+task3] Fail-plainly pattern + marketing/CEO real routing
+
+---
+
+## What's Next (prioritised)
+
+1. Real-device marketing agent test — "run marketing agent" in TAD chat should
+   now call run_outreach_cycle() with a real product; verify new entry in
+   memory/marketing_log.jsonl with real timestamp (not Kimi fabrication)
+2. Fallback chain smoke test — temporarily set ANTHROPIC_API_KEY=invalid,
+   trigger a build, confirm build_log shows "claude-sonnet failed — trying
+   next model" and "Code generated via kimi-k2.6"
+3. scheduler.py _kimi_fallback_scan() decision — the 3am market scan fallback
+   still calls Kimi if Market Agent import fails. Brief rules prevent touching
+   the chain, but Joshua should decide whether this stays as-is
+4. CEO chat routing scope — "ceo briefing" triggers both scheduler morning
+   briefing AND chat routing; confirm no conflict when user types this phrase
+5. PNS timing calibration (TAD Android) — REFRACTORY_MS=350, INTER_SPIKE_GAP=75
+   before connecting real PNS hardware to the Android app
