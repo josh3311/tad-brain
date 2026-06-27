@@ -99,12 +99,31 @@ def _load_approved_opportunities() -> tuple[list, list]:
     try:
         data    = json.loads(DECISIONS_PATH.read_text(encoding="utf-8"))
         history = data.get("history", [])
-        approved = [
+# CEO GO entries: {"decision": "GO", "assigned_to": "CTO Agent"}
+        # Decision Agent entries: {"decision": "APPROVE", "opportunity_name": ...}
+        # Build on CEO GO entries first — they are the final strategic approval.
+        # Fall back to Decision APPROVE if no CEO GO entries exist.
+        ceo_go = [
+            h for h in history
+            if h.get("decision") == "GO"
+            and not h.get("built", False)
+            and h.get("reasoning")
+        ]
+        decision_approve = [
             h for h in history
             if h.get("decision") in ("APPROVE", "STRONGLY APPROVE")
-            and not h.get("built")
+            and not h.get("built", False)
             and h.get("opportunity_name")
         ]
+        # Normalize CEO GO entries to have opportunity_name field
+        for h in ceo_go:
+            if not h.get("opportunity_name"):
+                # Extract name from reasoning (first sentence before period/comma)
+                reasoning = h.get("reasoning", "")
+                # Try to get name from reasoning first line
+                first_line = reasoning.split(".")[0][:60].strip()
+                h["opportunity_name"] = first_line if first_line else "CEO-approved opportunity"
+        approved = ceo_go if ceo_go else decision_approve
         return approved, history
     except Exception as e:
         _log(f"decisions.json load error: {e}")
