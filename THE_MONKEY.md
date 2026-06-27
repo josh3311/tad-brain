@@ -6,6 +6,7 @@
 ---
 
 ## RECENT FIXES
+- 2026-06-26: tad_command_center.py — full visual command center with 8 animated agent faces, pipeline bar, comms feed, product queue, error interpreter panel (⬡ Dashboard button in tad_gui.py sidebar)
 - 2026-06-26: night_mode.py uses _generate_code() fallback chain — Kimi outages no longer block overnight builds
 
 ## WHAT IS TAD AI
@@ -243,7 +244,9 @@ This loop runs forever. ♾️
 ## CURRENT SYSTEM STATUS
 
 ### ✅ BUILT AND WORKING
-- [x] tad_gui.py — dark GUI, animated face, chat, night mode button, mic button
+- [x] tad_gui.py — dark GUI, animated face, chat, night mode button, mic button, ⬡ Dashboard button
+- [x] tad_command_center.py — visual command center: 8 agent cards with animated faces, pipeline bar, comms feed, product queue, error interpreter
+- [x] skills/tad_error_interpreter.py — plain-English error explanations via Claude Haiku
 - [x] voice_input.py — faster-whisper local STT, mic → transcript → auto-send
 - [x] agent.py — routes tasks to Kimi, calls tools, saves to memory
 - [x] scheduler.py — 11pm night mode launch, 3am deep scan, 7am briefing

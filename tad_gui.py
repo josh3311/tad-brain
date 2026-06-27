@@ -775,6 +775,20 @@ class TADApp(ctk.CTk):
 
         ctk.CTkFrame(p, fg_color=BORDER, height=1).pack(fill="x", padx=16, pady=14)
 
+        # Dashboard button — opens visual command center
+        self._dashboard_btn = ctk.CTkButton(
+            p, text="⬡  Dashboard",
+            font=("Segoe UI", 11, "bold"), height=36,
+            fg_color="#0a1a20",
+            hover_color="#112a30",
+            text_color="#1ecfaa",
+            border_color="#1ecfaa",
+            border_width=1,
+            corner_radius=8,
+            command=self._open_dashboard
+        )
+        self._dashboard_btn.pack(fill="x", padx=12, pady=(0, 4))
+
         # Night mode button
         # WHAT THIS DOES: starts autonomous build mode — TAD works all night
         self.night_btn = ctk.CTkButton(
@@ -1252,6 +1266,17 @@ class TADApp(ctk.CTk):
                 for key, dot in self.agent_dots.items():
                     dot.configure(text_color=NEON_GREEN if key == agent else TEXT_DIM)
                 break
+
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+
+    def _open_dashboard(self):
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(ROOT))
+            from tad_command_center import open_command_center
+            open_command_center(parent=self, root_path=ROOT)
+        except Exception as e:
+            self._append_chat("system", f"Dashboard error: {e}")
 
     # ── Night mode ────────────────────────────────────────────────────────────
 
