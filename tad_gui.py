@@ -39,24 +39,24 @@ C_MODEL = "claude-haiku-4-5-20251001"
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
-# ── Color palette: Purple + Green (from abstract reference) ──────────────────
-BG_DEEP    = "#06030f"   # deepest space
-BG_BASE    = "#0a0618"   # main bg
-BG_SURFACE = "#110e22"   # panels
-BG_CARD    = "#160f2a"   # cards
-BG_HOVER   = "#1e1640"   # hover
-NEON_GREEN = "#00e87a"   # bright neon green
-NEON_PURP  = "#9d4edd"   # vivid purple
-MID_GREEN  = "#00b35c"   # mid green
-MID_PURP   = "#6a0dad"   # mid purple
-GLOW_GREEN = "#00ff88"   # glow green
-GLOW_PURP  = "#bf5fff"   # glow purple
-TEXT_PRI   = "#f0eeff"   # primary text
-TEXT_SEC   = "#8b80aa"   # secondary
-TEXT_DIM   = "#3d3558"   # dimmed
-BORDER     = "#1e1640"   # borders
-ORANGE     = "#ff9f43"   # thinking
-RED        = "#ff4757"   # error
+# ── Color palette: Deep navy glassmorphism ────────────────────────────────────
+BG_DEEP    = "#010c18"   # deepest ocean floor — window bg
+BG_BASE    = "#041422"   # main content surface
+BG_SURFACE = "#071c2e"   # sidebar / panels — glass over ocean
+BG_CARD    = "#0a2238"   # elevated card surfaces
+BG_HOVER   = "#0e2e4e"   # hover state
+NEON_GREEN = "#00ccbb"   # liquid teal — primary brand / TAD accent
+NEON_PURP  = "#5848d0"   # deep indigo — secondary accent
+MID_GREEN  = "#009488"   # mid teal
+MID_PURP   = "#3428a8"   # mid indigo
+GLOW_GREEN = "#00eedd"   # glow teal (brightest)
+GLOW_PURP  = "#7060e8"   # glow indigo
+TEXT_PRI   = "#d4eef8"   # cold white — primary text
+TEXT_SEC   = "#4a7a98"   # muted navy blue — secondary text
+TEXT_DIM   = "#1a3a52"   # very muted — dimmed labels
+BORDER     = "#0d2e48"   # subtle navy borders
+ORANGE     = "#f08a30"   # amber — thinking / warning
+RED        = "#e83550"   # crimson — error
 WHITE      = "#ffffff"
 
 
@@ -289,7 +289,7 @@ class TADFace(tk.Canvas):
 
         # ── Main ring ─────────────────────────────────────────────────────
         self.create_oval(cx-r, cy-r, cx+r, cy+r,
-                        outline=color, width=3, fill="#0e0a1e")
+                        outline=color, width=3, fill="#050e1a")
 
         # Spinning arc (always, speed varies by state)
         arc_speed = 8 if self.state == "thinking" else 3
@@ -516,7 +516,7 @@ class ChatMessage(ctk.CTkFrame):
             top_row,
             text="you" if is_user else "◈ TAD",
             font=("Segoe UI", 10, "bold"),
-            text_color=MID_GREEN if is_user else NEON_PURP,
+            text_color=TEXT_SEC if is_user else NEON_GREEN,
         ).pack(side="left")
 
         # Copy button
@@ -588,7 +588,7 @@ class WorkingIndicator(ctk.CTkFrame):
             fg_color=BG_CARD,
             corner_radius=12,
             border_width=1,
-            border_color=NEON_PURP,
+            border_color=NEON_GREEN,
         )
         self._frame.pack(anchor="w", padx=(8, 80), pady=3)
 
@@ -596,7 +596,7 @@ class WorkingIndicator(ctk.CTkFrame):
             self._frame,
             text=f"◈ TAD  ·  {text}",
             font=("Segoe UI", 12),
-            text_color=NEON_PURP,
+            text_color=NEON_GREEN,
         )
         self._label.pack(padx=14, pady=10)
         self._animate(text)
@@ -659,6 +659,8 @@ class TADApp(ctk.CTk):
                               corner_radius=0, height=50)
         topbar.pack(fill="x", side="top")
         topbar.pack_propagate(False)
+        # 1px glass edge under topbar
+        ctk.CTkFrame(self, fg_color=BORDER, height=1, corner_radius=0).pack(fill="x")
 
         ctk.CTkLabel(
             topbar, text="◈  TAD",
@@ -669,7 +671,7 @@ class TADApp(ctk.CTk):
         ctk.CTkLabel(
             topbar, text="sovereign agent  ·  claude haiku + kimi k2",
             font=("Segoe UI", 10),
-            text_color=TEXT_DIM
+            text_color=TEXT_SEC
         ).pack(side="left", padx=4)
 
         self.status_pill = ctk.CTkLabel(
@@ -689,6 +691,9 @@ class TADApp(ctk.CTk):
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
         self._build_sidebar(sidebar)
+
+        # 1px glass edge between sidebar and chat
+        ctk.CTkFrame(main, fg_color=BORDER, width=1, corner_radius=0).pack(side="left", fill="y")
 
         chat_col = ctk.CTkFrame(main, fg_color=BG_BASE, corner_radius=0)
         chat_col.pack(side="left", fill="both", expand=True)
@@ -794,9 +799,11 @@ class TADApp(ctk.CTk):
         self.night_btn = ctk.CTkButton(
             p, text="🌙  Night Mode",
             font=("Segoe UI", 12, "bold"), height=40,
-            fg_color=MID_PURP,
-            hover_color=NEON_PURP,
-            text_color=WHITE,
+            fg_color="#032824",
+            hover_color="#054840",
+            text_color=GLOW_GREEN,
+            border_color=NEON_GREEN,
+            border_width=1,
             corner_radius=10,
             command=self._start_night_mode
         )
@@ -840,7 +847,7 @@ class TADApp(ctk.CTk):
 
         # ── Input panel ───────────────────────────────────────────────────
         # WHAT THIS DOES: everything below the chat — input, transcription, buttons
-        input_panel = ctk.CTkFrame(p, fg_color=BG_SURFACE,
+        input_panel = ctk.CTkFrame(p, fg_color=BG_CARD,
                                    corner_radius=14,
                                    border_width=1, border_color=BORDER)
         input_panel.pack(fill="x", padx=14, pady=12)
@@ -1284,7 +1291,7 @@ class TADApp(ctk.CTk):
         if night_is_running():
             self._append_chat("tad", "Night mode already running — TAD is building.")
             return
-        self.night_btn.configure(text="🌙  Building...", fg_color=GLOW_PURP)
+        self.night_btn.configure(text="🌙  Building...", fg_color=MID_GREEN)
         self._set_status("night")
         self._append_chat("tad",
             "Night mode on. Building everything on the priority list. "
@@ -1315,7 +1322,7 @@ class TADApp(ctk.CTk):
             self._append_chat("tad",
                 f"Overnight: {report.get('total_built',0)} items built. "
                 f"{report.get('exec_summary','')}")
-        self.night_btn.configure(text="🌙  Night Mode", fg_color=MID_PURP)
+        self.night_btn.configure(text="🌙  Night Mode", fg_color="#032824")
 
     def _show_briefing(self, briefing: dict):
         try:

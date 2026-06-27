@@ -13,17 +13,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 
-# ── Design tokens ──────────────────────────────────────────────────────────────
-BG        = "#080810"
-CARD_BG   = "#0d0d1a"
-CARD_BG2  = "#0a0a14"
-MUTED     = "#252440"
-DIM       = "#4a4870"
-MID       = "#7070a0"
-BRIGHT    = "#d0d0f0"
-ERR_RED   = "#e24b4a"
-TEAL      = "#1ecfaa"
-PURPLE    = "#7c5cfc"
+# ── Design tokens — deep navy glassmorphism ────────────────────────────────────
+BG        = "#010c18"   # deepest ocean floor
+CARD_BG   = "#071c2e"   # glass panel surface
+CARD_BG2  = "#041422"   # deeper glass (inset)
+MUTED     = "#0d2e48"   # very muted navy
+DIM       = "#2a5070"   # dim text
+MID       = "#4a7a98"   # mid navy text
+BRIGHT    = "#d4eef8"   # cold white — primary text
+ERR_RED   = "#e83a50"   # crimson
+TEAL      = "#00ccbb"   # liquid teal — primary brand (matches tad_gui)
+PURPLE    = "#4a3acc"   # deep blue-violet — secondary
 
 AGENTS = [
     ("market",    "#38bdf8", "Market Scout",    "LOOPHOLE DISCOVERY"),
@@ -189,13 +189,21 @@ class CommandCenter:
             self.win, bg=BG, highlightthickness=0, bd=0, width=920, height=780
         )
         self._bg_canvas.place(x=0, y=0)
-        grid_color = "#0d0d18"
-        for x in range(0, 920, 32):
+        grid_color = "#08182e"
+        for x in range(0, 920, 40):
             self._bg_canvas.create_line(x, 0, x, 780, fill=grid_color, width=1)
-        for y in range(0, 780, 32):
+        for y in range(0, 780, 40):
             self._bg_canvas.create_line(0, y, 920, y, fill=grid_color, width=1)
+        # Ambient depth orbs — simulate light refraction in deep ocean
+        for (ox, oy, radius, orb_color) in [
+            (160, 650, 190, "#002a48"), (780, 180, 150, "#00302a"), (460, 760, 130, "#001e38"),
+        ]:
+            self._bg_canvas.create_oval(
+                ox - radius, oy - radius, ox + radius, oy + radius,
+                fill=orb_color, outline="", stipple="gray25"
+            )
         self._scanline_id = self._bg_canvas.create_line(
-            0, 0, 920, 0, fill="#7c5cfc", width=1, stipple="gray12"
+            0, 0, 920, 0, fill=TEAL, width=1, stipple="gray12"
         )
 
         # Content frame (sits above the background canvas)
@@ -210,40 +218,40 @@ class CommandCenter:
         self._create_error_panel()
 
     def _create_top_bar(self):
-        bar = tk.Frame(self._main, bg="#0a0a1c", height=52)
+        bar = tk.Frame(self._main, bg="#050f1c", height=52)
         bar.pack(fill=tk.X, padx=0)
         bar.pack_propagate(False)
 
         # Left: logo mark + title
-        left = tk.Frame(bar, bg="#0a0a1c")
+        left = tk.Frame(bar, bg="#050f1c")
         left.pack(side=tk.LEFT, padx=14, pady=8)
 
-        logo_c = tk.Canvas(left, width=30, height=30, bg="#0a0a1c",
+        logo_c = tk.Canvas(left, width=30, height=30, bg="#050f1c",
                             highlightthickness=0, bd=0)
         logo_c.pack(side=tk.LEFT, padx=(0, 10))
-        logo_c.create_rectangle(2, 2, 28, 28, fill="#110a30", outline=PURPLE, width=1)
+        logo_c.create_rectangle(2, 2, 28, 28, fill="#041a2a", outline=TEAL, width=1)
         logo_c.create_text(15, 15, text="T", fill=TEAL, font=("Helvetica", 16, "bold"))
 
-        tk.Label(left, text="TAD — COMMAND CENTER", bg="#0a0a1c",
+        tk.Label(left, text="TAD — COMMAND CENTER", bg="#050f1c",
                   fg=BRIGHT, font=("Helvetica", 12, "bold")).pack(side=tk.LEFT)
 
         # Right: night badge + live dot + clock
-        right = tk.Frame(bar, bg="#0a0a1c")
+        right = tk.Frame(bar, bg="#050f1c")
         right.pack(side=tk.RIGHT, padx=14)
 
-        tk.Label(right, text="◉ NIGHT MODE", bg="#1a0535",
+        tk.Label(right, text="◉ NIGHT MODE", bg="#041018",
                   fg=PURPLE, font=("Helvetica", 8, "bold"),
                   padx=8, pady=3).pack(side=tk.LEFT, padx=(0, 8))
 
-        live_f = tk.Frame(right, bg="#061a14", padx=8, pady=3)
+        live_f = tk.Frame(right, bg="#031818", padx=8, pady=3)
         live_f.pack(side=tk.LEFT, padx=(0, 12))
-        self._live_dot = tk.Label(live_f, text="●", bg="#061a14",
+        self._live_dot = tk.Label(live_f, text="●", bg="#031818",
                                    fg=TEAL, font=("Helvetica", 9))
         self._live_dot.pack(side=tk.LEFT)
-        tk.Label(live_f, text=" LIVE", bg="#061a14",
+        tk.Label(live_f, text=" LIVE", bg="#031818",
                   fg=TEAL, font=("Helvetica", 8, "bold")).pack(side=tk.LEFT)
 
-        self._clock_label = tk.Label(right, bg="#0a0a1c", fg=MID,
+        self._clock_label = tk.Label(right, bg="#050f1c", fg=MID,
                                       font=("Courier", 11))
         self._clock_label.pack(side=tk.LEFT)
         self._tick_clock()
@@ -396,28 +404,28 @@ class CommandCenter:
         return items
 
     def _create_pipeline_bar(self):
-        bar = tk.Frame(self._main, bg="#09091a", height=52)
+        bar = tk.Frame(self._main, bg="#040f1e", height=52)
         bar.pack(fill=tk.X, padx=12, pady=(4, 0))
         bar.pack_propagate(False)
 
-        inner = tk.Frame(bar, bg="#09091a")
+        inner = tk.Frame(bar, bg="#040f1e")
         inner.pack(expand=True)
 
         color_map = {a[0]: a[1] for a in AGENTS}
         for i, (label, agent) in enumerate(PIPELINE):
             color = color_map.get(agent, PURPLE)
 
-            circ = tk.Canvas(inner, width=40, height=40, bg="#09091a",
+            circ = tk.Canvas(inner, width=40, height=40, bg="#040f1e",
                               highlightthickness=0, bd=0)
             circ.pack(side=tk.LEFT)
-            dot_id = circ.create_oval(3, 3, 37, 37, fill="#12122a",
+            dot_id = circ.create_oval(3, 3, 37, 37, fill="#081828",
                                        outline=MUTED, width=2)
             txt_id = circ.create_text(20, 20, text=label[:3].upper(),
                                        fill=DIM, font=("Helvetica", 7, "bold"))
             self._pipeline_info[label] = (circ, dot_id, txt_id, color)
 
             if i < len(PIPELINE) - 1:
-                arrow = tk.Canvas(inner, width=26, height=40, bg="#09091a",
+                arrow = tk.Canvas(inner, width=26, height=40, bg="#040f1e",
                                    highlightthickness=0, bd=0)
                 arrow.pack(side=tk.LEFT)
                 arrow.create_line(4, 20, 20, 20, fill=MUTED, width=1.5,
@@ -433,7 +441,7 @@ class CommandCenter:
         metrics_f = tk.Frame(row, bg=CARD_BG, padx=12, pady=10)
         metrics_f.grid(row=0, column=0, padx=(0, 3), sticky="nsew")
 
-        tk.Label(metrics_f, text="METRICS", bg=CARD_BG, fg=PURPLE,
+        tk.Label(metrics_f, text="METRICS", bg=CARD_BG, fg=TEAL,
                   font=("Helvetica", 8, "bold")).grid(
             row=0, column=0, columnspan=2, sticky="w", pady=(0, 5)
         )
@@ -460,11 +468,11 @@ class CommandCenter:
         comms_f = tk.Frame(row, bg=CARD_BG, pady=8)
         comms_f.grid(row=0, column=1, padx=(3, 0), sticky="nsew")
 
-        tk.Label(comms_f, text="AGENT COMMS", bg=CARD_BG, fg=PURPLE,
+        tk.Label(comms_f, text="AGENT COMMS", bg=CARD_BG, fg=TEAL,
                   font=("Helvetica", 8, "bold"), padx=10).pack(anchor="w", pady=(0, 3))
 
         self._comms_text = tk.Text(
-            comms_f, bg="#090912", fg=MID,
+            comms_f, bg="#04111e", fg=MID,
             font=("Courier", 7), height=8, wrap=tk.WORD,
             relief=tk.FLAT, bd=0, state=tk.DISABLED, padx=6, pady=4,
         )
@@ -479,24 +487,24 @@ class CommandCenter:
         frame = tk.Frame(self._main, bg=BG)
         frame.pack(fill=tk.X, padx=12, pady=(5, 4))
 
-        tk.Label(frame, text="PRODUCT QUEUE", bg=BG, fg=PURPLE,
+        tk.Label(frame, text="PRODUCT QUEUE", bg=BG, fg=TEAL,
                   font=("Helvetica", 8, "bold")).pack(anchor="w", pady=(0, 3))
 
         self._queue_frame = tk.Frame(frame, bg=BG)
         self._queue_frame.pack(fill=tk.X)
 
     def _create_error_panel(self):
-        self._error_frame = tk.Frame(self._main, bg="#1a060e", padx=12, pady=8)
+        self._error_frame = tk.Frame(self._main, bg="#0a0f1e", padx=12, pady=8)
         # Not packed — shown on demand via pack(fill=X)
 
-        tk.Label(self._error_frame, text="⚠ SYSTEM ALERT", bg="#1a060e",
+        tk.Label(self._error_frame, text="⚠ SYSTEM ALERT", bg="#0a0f1e",
                   fg=ERR_RED, font=("Helvetica", 9, "bold")).pack(anchor="w")
         self._error_label = tk.Label(
-            self._error_frame, text="", bg="#1a060e", fg="#f0d0d0",
+            self._error_frame, text="", bg="#0a0f1e", fg="#e0d0d8",
             font=("Helvetica", 8), wraplength=880, justify=tk.LEFT
         )
         self._error_label.pack(anchor="w", pady=(3, 5))
-        tk.Button(self._error_frame, text="Dismiss", bg="#380816",
+        tk.Button(self._error_frame, text="Dismiss", bg="#180a14",
                    fg=ERR_RED, relief=tk.FLAT, font=("Helvetica", 8),
                    padx=10, pady=2,
                    command=self._dismiss_error).pack(anchor="e")
@@ -825,11 +833,11 @@ class CommandCenter:
             else:
                 s_txt, s_col, pill_bg = "QUEUED", PURPLE, "#100828"
 
-            card = tk.Frame(self._queue_frame, bg="#0b0b1e", padx=8, pady=5)
+            card = tk.Frame(self._queue_frame, bg="#071520", padx=8, pady=5)
             card.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 3), expand=True)
 
             # Score ring
-            ring_c = tk.Canvas(card, width=36, height=36, bg="#0b0b1e",
+            ring_c = tk.Canvas(card, width=36, height=36, bg="#071520",
                                 highlightthickness=0)
             ring_c.pack(side=tk.LEFT, padx=(0, 7))
             ring_color = TEAL if score >= 30 else "#f59e0b"
@@ -838,10 +846,10 @@ class CommandCenter:
             ring_c.create_text(18, 18, text=str(score), fill=ring_color,
                                 font=("Helvetica", 11, "bold"))
 
-            info_f = tk.Frame(card, bg="#0b0b1e")
+            info_f = tk.Frame(card, bg="#071520")
             info_f.pack(side=tk.LEFT, fill=tk.X, expand=True)
             short = (name[:34] + "…") if len(name) > 34 else name
-            tk.Label(info_f, text=short, bg="#0b0b1e", fg=BRIGHT,
+            tk.Label(info_f, text=short, bg="#071520", fg=BRIGHT,
                       font=("Helvetica", 8, "bold")).pack(anchor="w")
             tk.Label(info_f, text=s_txt, bg=pill_bg, fg=s_col,
                       font=("Helvetica", 7, "bold"), padx=5, pady=1
@@ -927,7 +935,7 @@ class CommandCenter:
         tk.Label(popup, text=name.upper(), bg=BG, fg=color,
                   font=("Helvetica", 11, "bold")).pack(pady=(14, 4))
 
-        txt = tk.Text(popup, bg="#090912", fg=BRIGHT, font=("Courier", 8),
+        txt = tk.Text(popup, bg="#040e1a", fg=BRIGHT, font=("Courier", 8),
                       relief=tk.FLAT, bd=0, padx=10, pady=6)
         txt.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
         txt.tag_config("ts", foreground=DIM)
@@ -940,7 +948,7 @@ class CommandCenter:
             txt.insert(tk.END, msg + "\n")
         txt.config(state=tk.DISABLED)
 
-        tk.Button(popup, text="Close", bg="#14142a", fg=MID, relief=tk.FLAT,
+        tk.Button(popup, text="Close", bg="#061020", fg=MID, relief=tk.FLAT,
                    font=("Helvetica", 8), padx=14, pady=3,
                    command=popup.destroy).pack(pady=(0, 10))
 
