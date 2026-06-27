@@ -337,12 +337,18 @@ Return ONLY JSON:
 Only mark is_game_changing true if ALL scores are 8 or above."""
 
     try:
-        resp = claude.messages.create(model=MODEL, max_tokens=300, system=skill, messages=[{"role": "user", "content": prompt}])
-        raw    = resp.content[0].text or "{}"
-        clean  = re.sub(r"```json|```", "", raw).strip()
-        result = json.loads(clean)
+        resp  = claude.messages.create(model=MODEL, max_tokens=300, system=skill,
+                                        messages=[{"role": "user", "content": prompt}])
+        raw   = resp.content[0].text or "{}"
+        clean = re.sub(r"```(?:json)?", "", raw).strip().lstrip("`").strip()
+        # raw_decode stops at the first complete JSON object — immune to
+        # "Extra data" errors caused by trailing sentences after the closing }
+        result, _ = json.JSONDecoder().raw_decode(clean)
         return result.get("is_game_changing", False)
 
+    except json.JSONDecodeError as e:
+        _log(f"Game-changer JSON error ({e.msg} at {e.lineno}:{e.colno}): {raw[:200]}")
+        return False
     except Exception as e:
         _log(f"Game-changer check error: {e}")
         return False

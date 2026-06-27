@@ -135,7 +135,7 @@ def minimax_code(prompt: str, max_tokens: int = 8000) -> str:
         "https://api.minimax.io/v1/chat/completions",
         headers={"Authorization": f"Bearer {api_key}",
                  "Content-Type": "application/json"},
-        json={"model": "MiniMax-Text-01",
+        json={"model": "MiniMax-M3",
               "messages": [{"role": "user", "content": prompt}],
               "max_tokens": max_tokens,
               "temperature": 0.6},

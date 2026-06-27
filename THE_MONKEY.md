@@ -475,6 +475,31 @@ No CRUD action happens without being logged.
 
 ## SESSION LOG
 
+### 2026-06-26 — Pipeline fix: night_mode now builds CEO-approved opportunities
+
+**Root cause:** memory/products/ was empty after every overnight run because night_mode
+never read decisions.json. It invented generic tasks from THE_MONKEY.md while 4 real
+CEO-approved opportunities (HVAC receptionist, LLM dashboard, etc.) sat unbuilt.
+
+**Fixes applied (commit pushed):**
+1. night_mode.py — Phase 0 before build loop: loads APPROVE/STRONGLY APPROVE entries
+   from decisions.json, calls build_agent.build(opp, output_dir=memory/products/),
+   marks built=True in decisions.json after success. CSEO/internal tasks only run
+   if no approved queue.
+2. build_agent.py — logs exact resolved path after every file write
+   (`[BUILD] Output written to: <path>`) so products/ location is always visible.
+3. cseo_agent.py — check_for_game_changer() uses json.JSONDecoder().raw_decode()
+   instead of json.loads(); immune to "Extra data" error from trailing text after JSON.
+4. config_providers.py — MiniMax reverted to MiniMax-M3 (plan-available model;
+   MiniMax-Text-01 caused 500 "plan not support model"). DeepSeek endpoint already
+   correct; both now raise clean RuntimeError on billing failure.
+
+**Approved queue (4 items, will build tonight):**
+- AI Receptionist for HVAC companies (31/40)
+- LLM Token Cost Attribution & Real-Time Spend Dashboard (32/40)
+- AI invoice-chaser for trade contractors (29/40)
+- AI Output Bias Detection for Sensitive Domains (28/40)
+
 ### CSEO Auto-build 2026-06-26
 - [x] CSEO built: autonomous_revenue_validation___deal_closure_loop ✓ 2026-06-26
 - [x] CSEO built: real_time_market_opportunity_tracking___early_detection ✓ 2026-06-26

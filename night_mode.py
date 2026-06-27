@@ -59,9 +59,11 @@ try:
 except Exception:
     _claude = None
 
-MONKEY_PATH = ROOT / "THE_MONKEY.md"
-REPORT_PATH = ROOT / "memory" / "overnight_report.json"
-LOG_PATH    = ROOT / "memory" / "night_log.jsonl"
+MONKEY_PATH  = ROOT / "THE_MONKEY.md"
+REPORT_PATH  = ROOT / "memory" / "overnight_report.json"
+LOG_PATH     = ROOT / "memory" / "night_log.jsonl"
+PRODUCTS_DIR = ROOT / "memory" / "products"
+DECISIONS_PATH = ROOT / "memory" / "decisions.json"
 
 STOP_HOUR   = 6
 _manual_mode = False
@@ -83,6 +85,64 @@ def _past_stop_time() -> bool:
     if _manual_mode:
         return False
     return datetime.now().time() >= dtime(STOP_HOUR, 0)
+
+
+# ── Approved opportunity queue ────────────────────────────────────────────────
+
+def _load_approved_opportunities() -> tuple[list, list]:
+    """Return (approved_unbuilt, full_history) from decisions.json.
+    Approved = APPROVE or STRONGLY APPROVE, not yet built.
+    Uses opportunity_name (decision_agent format), not 'name'.
+    """
+    if not DECISIONS_PATH.exists():
+        return [], []
+    try:
+        data    = json.loads(DECISIONS_PATH.read_text(encoding="utf-8"))
+        history = data.get("history", [])
+        approved = [
+            h for h in history
+            if h.get("decision") in ("APPROVE", "STRONGLY APPROVE")
+            and not h.get("built")
+            and h.get("opportunity_name")
+        ]
+        return approved, history
+    except Exception as e:
+        _log(f"decisions.json load error: {e}")
+        return [], []
+
+
+def _save_decisions(history: list):
+    try:
+        DECISIONS_PATH.write_text(
+            json.dumps({"history": history}, indent=2), encoding="utf-8"
+        )
+    except Exception as e:
+        _log(f"decisions.json save error: {e}")
+
+
+def _build_approved_opportunity(opp: dict) -> dict:
+    """Call build_agent.build() for one CEO-approved opportunity.
+    Output goes to PRODUCTS_DIR so memory/products/ fills up, not ROOT."""
+    PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+    name = opp.get("opportunity_name", "unnamed")
+    _log(f"[NIGHT] Building CEO-approved: {name} (score {opp.get('total_score', '?')}/40)")
+    try:
+        from skills.build_agent import build as ba_build
+        result = ba_build(
+            {
+                "name":        name,
+                "problem":     opp.get("reasoning", ""),
+                "total_score": opp.get("total_score", 0),
+                "scores":      opp.get("scores", {}),
+                "risk_flags":  opp.get("risk_flags", []),
+                "market_size": opp.get("market_size", ""),
+            },
+            output_dir=PRODUCTS_DIR,
+        )
+        return result
+    except Exception as e:
+        _log(f"[NIGHT] build_agent error for {name}: {e}")
+        return {"status": "failed", "reason": str(e)}
 
 
 def _read_monkey() -> str:
@@ -661,6 +721,45 @@ def run_night_mode():
     if not _past_stop_time():
         market_report = _run_market_scan()
         report["market_scan"] = market_report
+
+    # ── PHASE: Build CEO-approved opportunities → memory/products/ ────────────
+    # These are real market-validated ideas (APPROVE/STRONGLY APPROVE from
+    # decision_agent). They must be built before any internal TAD tasks.
+    # build_agent.build() handles code-gen, syntax check, and git push.
+    # Output goes to PRODUCTS_DIR so products/ fills up, not ROOT.
+    if not _past_stop_time():
+        approved_opps, full_history = _load_approved_opportunities()
+        if approved_opps:
+            _log(f"[NIGHT] {len(approved_opps)} CEO-approved opportunities queued for build")
+            for opp in approved_opps:
+                if _past_stop_time():
+                    break
+                result = _build_approved_opportunity(opp)
+                opp_name = opp.get("opportunity_name", "unknown")
+                if result.get("status") == "success":
+                    # Mark built so it won't be rebuilt next night
+                    for h in full_history:
+                        if h.get("opportunity_name") == opp_name:
+                            h["built"]        = True
+                            h["built_at"]     = datetime.now().isoformat()
+                            h["build_file"]   = result.get("filename", "")
+                    _save_decisions(full_history)
+                    report["built"].append({
+                        "item":   opp_name,
+                        "file":   result.get("file", ""),
+                        "source": "decisions_approved",
+                        "ts":     datetime.now().isoformat(),
+                    })
+                    _log(f"[NIGHT] Built approved: {opp_name} → {result.get('filename')}")
+                else:
+                    report["errors"].append({
+                        "item":   opp_name,
+                        "reason": result.get("reason", "build_failed"),
+                        "source": "decisions_approved",
+                    })
+                    _log(f"[NIGHT] Build failed for approved: {opp_name} — {result.get('reason')}")
+        else:
+            _log("[NIGHT] No unbuilt approved opportunities — continuing to CSEO build loop")
 
     item_attempts: dict[str, int] = {}
 

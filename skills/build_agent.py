@@ -343,6 +343,7 @@ def build(opportunity: dict, output_dir: Path = None) -> dict:
 
     # Write file
     filepath.write_text(code, encoding="utf-8")
+    _log(f"[BUILD] Output written to: {filepath.resolve()}")
 
     # Test and fix loop
     for fix_round in range(1, 4):
