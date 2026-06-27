@@ -37,7 +37,7 @@ AGENT_WINDOWS = {
     "build_agent":     {"check_hour": 6,  "window_hours": 26},
     "finance_agent":   {"check_hour": 8,  "window_hours": 170},
     "cseo_agent":      {"check_hour": 6,  "window_hours": 26},
-    "decision_agent":  {"check_hour": 6,  "window_hours": 48},
+    "decision_agent":  {"check_hour": 6,  "window_hours": 168},
     "marketing_agent": {"check_hour": 9,  "window_hours": 48},
     "ceo_agent":       {"check_hour": 7,  "window_hours": 26},
 }

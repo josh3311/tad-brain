@@ -54,6 +54,13 @@ def _log(msg: str):
         print(f"[DECISION] {msg}".encode("ascii", "replace").decode())
 
 
+# Startup heartbeat — ops health check reads decision_log.jsonl; the agent
+# only logs when scoring runs, but scoring only happens when the market scan
+# finds opportunities. Without this ping, ops flags the agent as silent even
+# though it's loaded and ready.
+_log("Decision Agent loaded — ready to score")
+
+
 # ── Core scoring engine ───────────────────────────────────────────────────────
 
 def score_opportunity(opportunity: dict) -> dict:

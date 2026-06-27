@@ -135,13 +135,16 @@ def minimax_code(prompt: str, max_tokens: int = 8000) -> str:
         "https://api.minimax.io/v1/chat/completions",
         headers={"Authorization": f"Bearer {api_key}",
                  "Content-Type": "application/json"},
-        json={"model": "MiniMax-M3",
+        json={"model": "MiniMax-Text-01",
               "messages": [{"role": "user", "content": prompt}],
               "max_tokens": max_tokens,
               "temperature": 0.6},
         timeout=120
     )
     data = response.json()
+    if "choices" not in data:
+        err = data.get("error", data.get("type", data))
+        raise RuntimeError(f"MiniMax API error: {err}")
     return data["choices"][0]["message"]["content"]
 
 
@@ -157,16 +160,19 @@ def deepseek_code(prompt: str, max_tokens: int = 8000) -> str:
     if not api_key:
         raise ValueError("DEEPSEEK_API_KEY not set in .env")
     response = requests.post(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.deepseek.com/chat/completions",
         headers={"Authorization": f"Bearer {api_key}",
                  "Content-Type": "application/json"},
-        json={"model": "deepseek-coder",
+        json={"model": "deepseek-chat",
               "messages": [{"role": "user", "content": prompt}],
               "max_tokens": max_tokens,
               "temperature": 0.6},
         timeout=120
     )
     data = response.json()
+    if "choices" not in data:
+        err = data.get("error", data.get("type", data))
+        raise RuntimeError(f"DeepSeek API error: {err}")
     return data["choices"][0]["message"]["content"]
 
 
