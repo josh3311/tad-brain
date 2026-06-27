@@ -20,6 +20,15 @@ SKILL_PATH   = Path(__file__).parent / "ceo_agent.md"
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
 MODEL  = "claude-haiku-4-5-20251001"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+
 
 # ── Load skill prompt ─────────────────────────────────────────────────────────
 
@@ -89,10 +98,12 @@ Return ONLY a JSON object with these exact keys:
 }}"""
 
     try:
+        _ctx = _get_agent_context("ceo")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill + "\n\nAlways respond with valid JSON only."
         msg = claude.messages.create(
             model=MODEL,
             max_tokens=500,
-            system=skill + "\n\nAlways respond with valid JSON only.",
+            system=_sys_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text or "{}"
@@ -102,6 +113,13 @@ Return ONLY a JSON object with these exact keys:
 
         # Log the decision
         _log(f"Decision: {result.get('decision')} → {result.get('assigned_to')} | {result.get('reasoning')}")
+        _log_history("ceo", {
+            "action":   "verdict",
+            "opportunity": report.get("opportunity_name") or report.get("name") or report_type,
+            "verdict":  result.get("decision"),
+            "score":    report.get("total_score"),
+            "reasoning_summary": (result.get("reasoning") or "")[:60],
+        })
 
         # Save to decisions log
         decisions = _read("decisions.json")

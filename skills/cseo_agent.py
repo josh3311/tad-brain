@@ -24,6 +24,12 @@ SKILL_PATH  = Path(__file__).parent / "cseo_agent.md"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+try:
+    from skills.agent_soul import _get_agent_context, _log_history
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+
 # 2026-06-12 fix brief Task 2: ALL CSEO generation (diagnosis, skill files,
 # patch code) goes through claude_chat (Haiku via config_providers) — the
 # unused Kimi client is removed. Kimi stays build_agent-only.
@@ -156,10 +162,14 @@ Return ONLY a JSON array:
 Return JSON array only. Top 3 gaps maximum."""
 
     try:
-        resp = claude.messages.create(model=MODEL, max_tokens=800, system=skill, messages=[{"role": "user", "content": prompt}])
+        _ctx = _get_agent_context("cseo")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill
+        resp = claude.messages.create(model=MODEL, max_tokens=800, system=_sys_prompt, messages=[{"role": "user", "content": prompt}])
         raw   = resp.content[0].text or "[]"
-        clean = re.sub(r"```json|```", "", raw).strip()
-        gaps  = json.loads(clean)
+        clean = re.sub(r"```(?:json)?\n?", "", raw).strip().lstrip("`").strip()
+        start = clean.find("[")
+        end   = clean.rfind("]")
+        gaps  = json.loads(clean[start:end+1]) if start != -1 and end > start else []
         _log(f"Identified {len(gaps)} capability gaps")
         return gaps
 
@@ -286,6 +296,12 @@ Output Python code only."""
                 except Exception:
                     _log("Git push failed — skill saved locally")
 
+                _log_history("cseo", {
+                    "action":     "skill_built",
+                    "skill_name": skill_name,
+                    "success":    True,
+                    "attempts":   attempt,
+                })
                 return {
                     "status":     "success",
                     "skill_name": skill_name,

@@ -19,6 +19,15 @@ ROOT       = Path(__file__).parent.parent
 MEMORY     = ROOT / "memory"
 SKILL_PATH = Path(__file__).parent / "marketing_agent.md"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+
 # Kimi for code generation
 kimi = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
@@ -98,8 +107,10 @@ Only include leads with fit_score >= 7.
 Real leads only — no made up contacts."""
 
     try:
-        resp = claude.messages.create(model=MODEL, max_tokens=2000, system=skill, messages=[{"role": "user", "content": prompt}])
-        raw   = msg.content[0].text or "[]"
+        _ctx = _get_agent_context("marketing")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill
+        resp = claude.messages.create(model=MODEL, max_tokens=2000, system=_sys_prompt, messages=[{"role": "user", "content": prompt}])
+        raw   = resp.content[0].text or "[]"
         clean = re.sub(r"```json|```", "", raw).strip()
         leads = json.loads(clean)
 
@@ -113,6 +124,11 @@ Real leads only — no made up contacts."""
             lead["messages"]      = []
 
         _log(f"Found {len(leads)} qualified leads for {product.get('name')}")
+        _log_history("marketing", {
+            "action":  "find_leads",
+            "product": product.get("name"),
+            "leads_found": len(leads),
+        })
         return leads
 
     except Exception as e:

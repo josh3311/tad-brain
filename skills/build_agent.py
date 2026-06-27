@@ -26,6 +26,15 @@ client = OpenAI(
 )
 MODEL = "kimi-k2.6"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+
 # Core TAD files that can never be deleted or overwritten
 PROTECTED_FILES = [
     "tad_gui.py", "agent.py", "scheduler.py",
@@ -221,7 +230,8 @@ def generate_code(opportunity: dict, filename: str) -> str | None:
     monkey = (ROOT / "THE_MONKEY.md").read_text(encoding="utf-8")[:1500] \
              if (ROOT / "THE_MONKEY.md").exists() else ""
 
-    prompt = f"""TAD PROJECT CONTEXT:
+    _ctx = _get_agent_context("build")
+    prompt = f"""{(_ctx + chr(10) + chr(10)) if _ctx else ""}TAD PROJECT CONTEXT:
 {monkey}
 
 APPROVED OPPORTUNITY TO BUILD:
@@ -396,6 +406,12 @@ def build(opportunity: dict, output_dir: Path = None) -> dict:
         "timestamp":   datetime.now().isoformat(),
     }
     _save_build_result(result)
+    _log_history("build", {
+        "action":  "build_complete",
+        "product": name,
+        "file":    filename,
+        "pushed":  pushed,
+    })
     _log(f"=== Build complete: {filename} ===")
     return result
 

@@ -19,6 +19,15 @@ ROOT       = Path(__file__).parent.parent
 MEMORY     = ROOT / "memory"
 SKILL_PATH = Path(__file__).parent / "finance_agent.md"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+
 # Kimi for code generation
 kimi = OpenAI(
     api_key=os.getenv("KIMI_API_KEY", ""),
@@ -93,10 +102,12 @@ Return ONLY a JSON object:
 }}"""
 
     try:
-        resp = claude.messages.create(model=MODEL, max_tokens=600, system=skill, messages=[{"role": "user", "content": prompt}])
-        raw    = msg.content[0].text or "{}"
-        clean  = re.sub(r"```json|```", "", raw).strip()
-        invoice = json.loads(clean)
+        _ctx = _get_agent_context("finance")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill
+        resp = claude.messages.create(model=MODEL, max_tokens=600, system=_sys_prompt, messages=[{"role": "user", "content": prompt}])
+        raw    = resp.content[0].text or "{}"
+        clean  = re.sub(r"```(?:json)?\n?", "", raw).strip().lstrip("`").strip()
+        invoice, _ = json.JSONDecoder().raw_decode(clean)
         invoice["status"]     = "sent"
         invoice["created_at"] = datetime.now().isoformat()
 
@@ -108,6 +119,12 @@ Return ONLY a JSON object:
         _write("invoice_log.json", invoice_log)
 
         _log(f"Invoice generated: {invoice_number} — ${invoice.get('amount')}")
+        _log_history("finance", {
+            "action":  "invoice",
+            "client":  deal.get("client_name") or deal.get("client", ""),
+            "amount":  invoice.get("amount"),
+            "invoice": invoice_number,
+        })
         return invoice
 
     except Exception as e:

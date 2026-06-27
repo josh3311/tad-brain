@@ -22,6 +22,16 @@ SKILL_PATH = Path(__file__).parent / "market_agent.md"
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
 MODEL  = "claude-haiku-4-5-20251001"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history, _check_learned_skills
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+    def _check_learned_skills(kws): return []
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -205,10 +215,12 @@ Score them honestly but always return at least 3 opportunities.
 Return JSON array only. No explanation."""
 
     try:
+        _ctx = _get_agent_context("market")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + "You are a market research assistant. Always respond with valid JSON only. No markdown."
         msg = claude.messages.create(
             model=MODEL,
             max_tokens=2000,
-            system="You are a market research assistant. Always respond with valid JSON only. No markdown.",
+            system=_sys_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text or "[]"
@@ -232,6 +244,15 @@ Return JSON array only. No explanation."""
 
         top3 = sorted(filtered, key=lambda x: x.get("total_score", 0), reverse=True)[:3]
         _log(f"Found {len(filtered)} qualifying opportunities. Top 3 selected.")
+        relevant_skills = _check_learned_skills(["market", "opportunity", "scan"])
+        if relevant_skills:
+            _log(f"Learned skills available: {relevant_skills}")
+        _log_history("market", {
+            "action": "scan",
+            "found": len(filtered),
+            "top_3": [o.get("name") for o in top3],
+            "top_score": top3[0].get("total_score") if top3 else 0,
+        })
         return top3
 
     except Exception as e:

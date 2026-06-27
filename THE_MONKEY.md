@@ -6,6 +6,7 @@
 ---
 
 ## RECENT FIXES
+- 2026-06-27: Agent soul architecture — each of the 8 agents now has persistent identity (memory/agents/{name}/identity.json), decision rules, and history log (memory/agents/{name}/history.jsonl). Identity context prepended to every Claude system prompt via skills/agent_soul.py. Also fixed raw_decode in decision_agent and finance_agent.
 - 2026-06-27: ceo_agent.py — replaced json.loads with raw_decode; CEO now produces GO verdicts even when Claude appends trailing text after JSON
 - 2026-06-26: tad_command_center.py — full visual command center with 8 animated agent faces, pipeline bar, comms feed, product queue, error interpreter panel (⬡ Dashboard button in tad_gui.py sidebar)
 - 2026-06-26: night_mode.py uses _generate_code() fallback chain — Kimi outages no longer block overnight builds

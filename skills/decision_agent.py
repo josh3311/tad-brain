@@ -21,6 +21,16 @@ SKILL_PATH = Path(__file__).parent / "decision_agent.md"
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
 MODEL  = "claude-haiku-4-5-20251001"
 
+import sys as _sys
+if str(ROOT) not in _sys.path:
+    _sys.path.insert(0, str(ROOT))
+try:
+    from skills.agent_soul import _get_agent_context, _log_history, _check_learned_skills
+except ImportError:
+    def _get_agent_context(n): return ""
+    def _log_history(n, e): pass
+    def _check_learned_skills(kws): return []
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -102,15 +112,20 @@ Remember:
 Return JSON only."""
 
     try:
+        _ctx = _get_agent_context("decision")
+        _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill + "\n\nAlways respond with valid JSON only."
+        relevant = _check_learned_skills(["decision", "score", "opportunity"])
+        if relevant:
+            _log(f"Learned skills available: {relevant}")
         msg = claude.messages.create(
             model=MODEL,
             max_tokens=600,
-            system=skill + "\n\nAlways respond with valid JSON only.",
+            system=_sys_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
         raw   = msg.content[0].text or "{}"
-        clean = re.sub(r"```json|```", "", raw).strip()
-        result = json.loads(clean)
+        clean = re.sub(r"```(?:json)?\n?", "", raw).strip().lstrip("`").strip()
+        result, _ = json.JSONDecoder().raw_decode(clean)
 
         # Add timestamp
         result["scored_at"] = datetime.now().isoformat()
@@ -138,6 +153,12 @@ Return JSON only."""
         else:
             _log(f"{result.get('decision')}: {result.get('opportunity_name')} — Score: {result.get('total_score')}/40")
 
+        _log_history("decision", {
+            "action":      "score",
+            "opportunity": result.get("opportunity_name"),
+            "decision":    result.get("decision"),
+            "score":       result.get("total_score"),
+        })
         return result
 
     except Exception as e:
