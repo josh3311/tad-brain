@@ -217,6 +217,59 @@ def identify_agent(user_input: str) -> str:
     return "general"
 
 
+# ── Action command detection ──────────────────────────────────────────────────
+
+def _is_action_command(user_input: str) -> str:
+    """
+    Detect imperative "change the codebase" commands before identify_agent() runs.
+    Returns "cseo" to route to the real CSEO executor, or "" to fall through.
+
+    Root cause of fabrication: "implement that skill", "fix the routing",
+    "apply the new routing" hit Priority-3 conversational_signals → Kimi/Haiku
+    role-plays the agent and invents fake execution logs / fake commits.
+    Catching them here prevents identify_agent() from seeing them at all.
+    """
+    text = user_input.lower().strip()
+
+    # Pure question starters are conversational — never action commands
+    QUESTION_STARTS = (
+        "how ", "what ", "why ", "when ", "where ", "which ", "who ",
+        "is there", "are there", "do you", "does ",
+        "can you explain", "could you explain",
+        "explain ", "tell me about", "tell me what",
+        "show me what", "what do you think",
+    )
+    if any(text.startswith(q) for q in QUESTION_STARTS):
+        return ""
+
+    # Imperative verbs that mean "execute a code/system change"
+    CSEO_PHRASES = [
+        "implement that", "implement this", "implement the ", "implement it",
+        "implement a ",   "implement now",
+        "wire up",        "wire the ",      "wire in ",       "wire it",
+        "apply the",      "apply that",     "apply this",     "apply it",
+        "refactor the",   "refactor this",  "refactor that",
+        "rebuild the",    "rebuild this",
+        "rewrite the",    "rewrite this",
+        "patch the",      "patch this",     "patch it",
+    ]
+    if any(p in text for p in CSEO_PHRASES):
+        return "cseo"
+
+    # "fix the <code artifact>" — caught before Priority-3 strips it
+    if re.search(r"\bfix the\b", text):
+        CODE_TARGETS = [
+            "agent", "routing", "bug", "code", "module", "skill",
+            "script", "function", "error", "crash",
+            "marketing", "build", "finance", "market", "decision",
+            "ops", "ceo", "cseo", "loop", "pipeline",
+        ]
+        if any(t in text for t in CODE_TARGETS):
+            return "cseo"
+
+    return ""
+
+
 def load_agent_skill(agent_type: str) -> str:
     """Load the skill file for the identified agent."""
     skill_file = AGENT_SKILLS.get(agent_type, "ceo_agent.md")
@@ -569,8 +622,18 @@ def run_task(user_input: str, status_callback=None) -> str:
         matching_skill = None
         auto_learn_from_task = None
 
-    agent_type = identify_agent(user_input)
-    _status(status_callback, f"{agent_type} agent activated...")
+    # Priority -1: action commands bypass identify_agent() entirely.
+    # "implement that skill", "fix the routing", "apply the new routing" all
+    # hit Priority-3 conversational_signals without this check and get
+    # role-played by Kimi/Haiku as fake execution logs.
+    _action = _is_action_command(user_input)
+    if _action:
+        agent_type = _action
+        _status(status_callback, f"action command detected → {_action} agent (bypassing router)...")
+        print(f"[router] _is_action_command → {_action} (action command bypassed identify_agent)")
+    else:
+        agent_type = identify_agent(user_input)
+        _status(status_callback, f"{agent_type} agent activated...")
 
     # Route to the correct agent — every call goes through the
     # observability wrapper so memory/metrics.json tracks all agents
