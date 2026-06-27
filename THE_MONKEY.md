@@ -1,11 +1,12 @@
 # THE_MONKEY.md — TAD Master Build File
-# Last updated: 2026-06-26
+# Last updated: 2026-06-27
 # CEO: Joshua Abraham
 # Agent: TAD (Total Autonomous Director)
 
 ---
 
 ## RECENT FIXES
+- 2026-06-27: ceo_agent.py — replaced json.loads with raw_decode; CEO now produces GO verdicts even when Claude appends trailing text after JSON
 - 2026-06-26: tad_command_center.py — full visual command center with 8 animated agent faces, pipeline bar, comms feed, product queue, error interpreter panel (⬡ Dashboard button in tad_gui.py sidebar)
 - 2026-06-26: night_mode.py uses _generate_code() fallback chain — Kimi outages no longer block overnight builds
 
@@ -477,6 +478,14 @@ The Ops Agent logs every CRUD action to memory/crud_log.json.
 No CRUD action happens without being logged.
 
 ## SESSION LOG
+
+### CSEO Auto-build 2026-06-26
+- [x] CSEO built: error_pattern_recognition_and_autonomous_skill_repair ✓ 2026-06-26
+
+
+### CSEO Auto-build 2026-06-26
+- [x] CSEO built: competitive_win_loss_analysis_engine ✓ 2026-06-26
+
 
 ### 2026-06-26 — Pipeline fix: night_mode now builds CEO-approved opportunities
 

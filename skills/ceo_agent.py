@@ -97,8 +97,8 @@ Return ONLY a JSON object with these exact keys:
         )
         raw = msg.content[0].text or "{}"
         import re
-        clean = re.sub(r"```json|```", "", raw).strip()
-        result = json.loads(clean)
+        clean = re.sub(r"```(?:json)?\n?", "", raw).strip().lstrip("`").strip()
+        result, _ = json.JSONDecoder().raw_decode(clean)
 
         # Log the decision
         _log(f"Decision: {result.get('decision')} → {result.get('assigned_to')} | {result.get('reasoning')}")
