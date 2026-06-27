@@ -33,6 +33,7 @@ from tad_encoding import force_utf8
 force_utf8()
 
 from skills.build_agent import _generate_code
+from config_providers import claude_chat
 
 load_dotenv()
 
@@ -279,17 +280,20 @@ in under ~80 lines of code.
 Return ONLY a JSON array of short feature description strings:
 ["feature one", "feature two"]"""
 
+    # Feature planning is reasoning, not code — use Haiku.
+    # _generate_code() would inject BUILD_SYSTEM into fallback models, breaking JSON.
     try:
-        raw   = _generate_code(prompt)
+        raw   = claude_chat(
+            "You are a project planning assistant. Always respond with valid JSON only.",
+            prompt,
+            max_tokens=2000,
+        )
         clean = re.sub(r"```json|```", "", raw).strip()
         features = json.loads(clean)
         if isinstance(features, list) and features:
             return [str(f) for f in features[:MAX_FEATURES]]
     except Exception as e:
-        if "Connection error" in str(e) or "connection" in str(e).lower():
-            _log(f"[NIGHT] All models unreachable: {str(e)} — using fallback plan")
-            return list(_GENERIC_FEATURE_PLAN)
-        _log(f"  Feature planning error: {e}")
+        _log(f"feature_planning_failed: {str(e)}")
 
     _log("  Using generic fallback feature plan (small steps)")
     return list(_GENERIC_FEATURE_PLAN)
@@ -584,22 +588,20 @@ Return ONLY a JSON array of task name strings.
 
 JSON array only."""
 
+    # Task generation is reasoning, not code — use Haiku (fast, cheap, JSON-reliable).
+    # _generate_code() carries BUILD_SYSTEM ("output ONLY Python code") which breaks
+    # JSON responses in fallback models. claude_chat uses Haiku with correct framing.
     try:
-        raw   = _generate_code(prompt)
+        raw   = claude_chat(
+            "You are a project planning assistant. Always respond with valid JSON only.",
+            prompt,
+            max_tokens=1000,
+        )
         clean = re.sub(r"```json|```", "", raw).strip()
         return json.loads(clean)
     except Exception as e:
-        if "Connection error" in str(e) or "connection" in str(e).lower():
-            _log(f"[NIGHT] All models unreachable: {str(e)} — using fallback task list")
-        else:
-            _log(f"Task generation error: {e}")
-        return [
-            "tad_opportunity_scorer",
-            "tad_lead_finder",
-            "tad_client_outreach",
-            "tad_revenue_tracker",
-            "tad_skill_gap_analyzer",
-        ]
+        _log(f"task_generation_failed: {str(e)}")
+        return []
 
 
 def _mark_done(item_name: str):
@@ -628,6 +630,16 @@ def _mark_blocked(item_name: str, reason: str):
 
 def run_night_mode():
     _log("=== Night mode v0.6.1 started (iterate-and-test) ===")
+
+    # Quick health check — surface model availability at start rather than
+    # discovering failures 30 minutes into builds.
+    try:
+        claude_chat("respond with ok", "ok", max_tokens=5)
+        _log("[NIGHT] Primary model (Haiku/Sonnet) reachable — proceeding")
+    except Exception as e:
+        _log(f"[NIGHT] WARNING: Primary model unreachable: {str(e)}")
+        _log("[NIGHT] Will attempt builds with fallback models")
+        # Do NOT stop night mode — fallback chain handles this
 
     report = {
         "started":          datetime.now().isoformat(),
