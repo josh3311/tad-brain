@@ -1,0 +1,354 @@
+{
+  "skills": [
+    {
+      "name": "competitive_win_loss_analysis_engine",
+      "file": "skills/learned/competitive_win_loss_analysis_engine.py",
+      "entry_function": "main",
+      "description": "Analyzes deal outcomes, competitor messaging, and competitive win/loss patterns",
+      "relevant_agents": [
+        "market",
+        "decision"
+      ],
+      "triggers": [
+        "competition",
+        "competitor",
+        "win rate",
+        "win loss",
+        "competitive",
+        "analysis"
+      ],
+      "last_used": "2026-06-27T09:15:04.020803",
+      "use_count": 1
+    },
+    {
+      "name": "real_time_market_opportunity_tracking___early_detection",
+      "file": "skills/learned/real_time_market_opportunity_tracking___early_detection.py",
+      "entry_function": "main",
+      "description": "Monitors GitHub, Reddit, HN for emerging AI loopholes and pain points in real time",
+      "relevant_agents": [
+        "market"
+      ],
+      "triggers": [
+        "market",
+        "opportunity",
+        "trending",
+        "tracking",
+        "detection",
+        "early",
+        "loophole"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "autonomous_loophole_monetization_pipeline",
+      "file": "skills/learned/autonomous_loophole_monetization_pipeline.py",
+      "entry_function": "main",
+      "description": "End-to-end pipeline from loophole discovery to first monetization action",
+      "relevant_agents": [
+        "cseo",
+        "market"
+      ],
+      "triggers": [
+        "monetization",
+        "loophole",
+        "pipeline",
+        "revenue"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "autonomous_prospect_qualification___lead_scoring_pre_outreach",
+      "file": "skills/learned/autonomous_prospect_qualification___lead_scoring_pre_outreach.py",
+      "entry_function": "main",
+      "description": "Scores and qualifies prospects before outreach to maximize conversion rates",
+      "relevant_agents": [
+        "marketing",
+        "decision"
+      ],
+      "triggers": [
+        "prospect",
+        "qualification",
+        "lead scoring",
+        "pre-outreach",
+        "qualify"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "autonomous_revenue_testing___proof_of_concept_builder",
+      "file": "skills/learned/autonomous_revenue_testing___proof_of_concept_builder.py",
+      "entry_function": "main",
+      "description": "Builds minimal proof-of-concept products to test revenue before full build",
+      "relevant_agents": [
+        "cseo",
+        "build"
+      ],
+      "triggers": [
+        "proof of concept",
+        "poc",
+        "revenue testing",
+        "prototype"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "autonomous_revenue_validation___deal_closure_loop",
+      "file": "skills/learned/autonomous_revenue_validation___deal_closure_loop.py",
+      "entry_function": "main",
+      "description": "Validates revenue potential and closes deals autonomously in a loop",
+      "relevant_agents": [
+        "marketing",
+        "finance"
+      ],
+      "triggers": [
+        "revenue validation",
+        "deal closure",
+        "close deal",
+        "revenue"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "error_pattern_recognition_and_autonomous_skill_repair",
+      "file": "skills/learned/error_pattern_recognition_and_autonomous_skill_repair.py",
+      "entry_function": "main",
+      "description": "Recognizes error patterns in TAD skills and autonomously generates fixes",
+      "relevant_agents": [
+        "ops",
+        "cseo"
+      ],
+      "triggers": [
+        "error",
+        "pattern",
+        "repair",
+        "fix",
+        "skill repair",
+        "self-healing"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "fix_self_test_error",
+      "file": "skills/learned/fix_self_test_error.py",
+      "entry_function": "main",
+      "description": "Detects and fixes errors in TAD's self-test suite",
+      "relevant_agents": [
+        "ops",
+        "cseo"
+      ],
+      "triggers": [
+        "test error",
+        "self test",
+        "unit test",
+        "test fix"
+      ],
+      "last_used": null,
+      "use_count": 0
+    },
+    {
+      "name": "multi_channel_outreach_orchestration",
+      "file": "skills/learned/multi_channel_outreach_orchestration.py",
+      "entry_function": "main",
+      "description": "Orchestrates outreach across email, LinkedIn, and other channels simultaneously",
+      "relevant_agents": [
+        "marketing"
+      ],
+      "triggers": [
+        "outreach",
+        "multi-channel",
+        "email",
+        "linkedin",
+        "campaign"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "autonomous_deal_pipeline_visibility___forecasting",
+      "file": "skills/learned/autonomous_deal_pipeline_visibility___forecasting.py",
+      "entry_function": "main",
+      "description": "Provides real-time deal pipeline visibility and revenue forecasting",
+      "relevant_agents": [
+        "marketing",
+        "finance"
+      ],
+      "triggers": [
+        "pipeline",
+        "forecast",
+        "deal visibility",
+        "revenue forecast"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "autonomous_revenue_validation___deal_closure",
+      "file": "skills/learned/autonomous_revenue_validation___deal_closure.py",
+      "entry_function": "validate_loophole_autonomously",
+      "description": "Validates loopholes for real revenue potential and guides to first deal closure",
+      "relevant_agents": [
+        "marketing",
+        "finance"
+      ],
+      "triggers": [
+        "validation",
+        "loophole validation",
+        "deal closure",
+        "revenue"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "autonomous_deal_pipeline_intelligence",
+      "file": "skills/learned/autonomous_deal_pipeline_intelligence.py",
+      "entry_function": "generate_pipeline_health_report",
+      "description": "Tracks deal stages, calculates win probability, and generates pipeline health reports",
+      "relevant_agents": [
+        "marketing",
+        "finance"
+      ],
+      "triggers": [
+        "pipeline intelligence",
+        "deal tracking",
+        "win probability",
+        "pipeline health"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "market_validation___pricing_intelligence",
+      "file": "skills/learned/market_validation___pricing_intelligence.py",
+      "entry_function": "unknown",
+      "description": "Validates market demand and assesses pricing elasticity \u2014 no single entry point",
+      "relevant_agents": [
+        "market",
+        "decision"
+      ],
+      "triggers": [
+        "pricing",
+        "market validation",
+        "willingness to pay",
+        "price"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "competitive_intelligence___market_saturation_detector",
+      "file": "skills/learned/competitive_intelligence___market_saturation_detector.py",
+      "entry_function": "unknown",
+      "description": "Broken \u2014 file starts with markdown fence, no executable code",
+      "relevant_agents": [
+        "market"
+      ],
+      "triggers": [
+        "saturation",
+        "competitive intelligence"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "loophole_discovery_engine",
+      "file": "skills/learned/loophole_discovery_engine.py",
+      "entry_function": "unknown",
+      "description": "Broken \u2014 file starts with markdown fence, no executable code",
+      "relevant_agents": [
+        "market"
+      ],
+      "triggers": [
+        "loophole discovery"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "customer_acquisition___outreach_automation__b2b_sales_intelligence_",
+      "file": "skills/learned/customer_acquisition___outreach_automation__b2b_sales_intelligence_.py",
+      "entry_function": "unknown",
+      "description": "Empty stub \u2014 only docstring, no functions implemented",
+      "relevant_agents": [
+        "marketing"
+      ],
+      "triggers": [
+        "customer acquisition",
+        "outreach automation",
+        "b2b"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "loophole_validation___market_sizing_engine",
+      "file": "skills/learned/loophole_validation___market_sizing_engine.py",
+      "entry_function": "unknown",
+      "description": "Empty stub \u2014 only docstring, no functions implemented",
+      "relevant_agents": [
+        "market",
+        "decision"
+      ],
+      "triggers": [
+        "market sizing",
+        "loophole validation",
+        "tam",
+        "sam"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "self_healing_observability___error_recovery_system",
+      "file": "skills/learned/self_healing_observability___error_recovery_system.py",
+      "entry_function": "unknown",
+      "description": "Empty stub \u2014 only docstring, no functions implemented",
+      "relevant_agents": [
+        "ops",
+        "cseo"
+      ],
+      "triggers": [
+        "self-healing",
+        "observability",
+        "error recovery",
+        "uptime"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    },
+    {
+      "name": "autonomous_go_to_market___sales_pipeline_execution",
+      "file": "skills/learned/autonomous_go_to_market___sales_pipeline_execution.py",
+      "entry_function": "unknown",
+      "description": "Empty stub \u2014 only docstring, no functions implemented",
+      "relevant_agents": [
+        "marketing"
+      ],
+      "triggers": [
+        "go to market",
+        "gtm",
+        "sales pipeline"
+      ],
+      "last_used": null,
+      "use_count": 0,
+      "broken": true
+    }
+  ]
+}

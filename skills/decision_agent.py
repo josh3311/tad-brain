@@ -114,9 +114,29 @@ Return JSON only."""
     try:
         _ctx = _get_agent_context("decision")
         _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + skill + "\n\nAlways respond with valid JSON only."
-        relevant = _check_learned_skills(["decision", "score", "opportunity"])
-        if relevant:
-            _log(f"Learned skills available: {relevant}")
+        # Run competitive/analysis learned skills before scoring
+        try:
+            from skills.agent_soul import execute_learned_skill
+            relevant = _check_learned_skills([
+                "competitive", "analysis", "win", "loss", "scoring", "intelligence",
+            ])
+            competitive_insight = ""
+            if relevant:
+                _log(f"Running learned skill: {relevant[0]}")
+                result = execute_learned_skill(
+                    relevant[0],
+                    {"opportunity": opportunity.get("name", "unknown"), "task": "competitive_analysis"},
+                )
+                if result and result.strip() not in ("None", "") \
+                        and "failed" not in result.lower() and "not found" not in result.lower() \
+                        and "no known entry" not in result.lower():
+                    competitive_insight = f"\n\nCompetitive analysis from learned skill:\n{result[:300]}"
+                    _log(f"Competitive insight added from {relevant[0]}")
+            if competitive_insight:
+                prompt += competitive_insight
+        except Exception as _e:
+            _log(f"Competitive skill skipped: {_e}")
+
         msg = claude.messages.create(
             model=MODEL,
             max_tokens=600,

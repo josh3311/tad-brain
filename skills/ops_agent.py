@@ -179,7 +179,52 @@ def run_full_health_check() -> dict:
     if issues:
         _log(f"Issues: {[i.get('agent', i.get('file', 'unknown')) for i in issues]}")
 
+    # Scan skills/learned/ for syntax errors and flag broken ones for CSEO
+    _check_learned_skills_health()
+
     return health_report
+
+
+def _check_learned_skills_health():
+    """Syntax-check all .py files in skills/learned/ and flag broken ones."""
+    import ast
+    learned_dir = ROOT / "skills" / "learned"
+    if not learned_dir.exists():
+        return
+    broken = []
+    for skill_file in learned_dir.glob("*.py"):
+        try:
+            ast.parse(skill_file.read_text(encoding="utf-8"))
+        except SyntaxError as e:
+            broken.append(f"{skill_file.name}: {e}")
+    total = len(list(learned_dir.glob("*.py")))
+    if broken:
+        _log(f"skills/learned/: {total} skills, {len(broken)} broken — {broken}")
+        _flag_broken_skills(broken)
+    else:
+        _log(f"skills/learned/: {total} skills, all syntax-valid")
+
+
+def _flag_broken_skills(broken_list: list):
+    """Write broken skill entries to error_log.json for CSEO to fix."""
+    error_log_path = MEMORY / "error_log.json"
+    try:
+        existing = []
+        if error_log_path.exists():
+            raw = error_log_path.read_text(encoding="utf-8").strip()
+            if raw:
+                parsed = json.loads(raw)
+                existing = parsed if isinstance(parsed, list) else [parsed]
+        for broken in broken_list:
+            existing.append({
+                "ts":       datetime.now().isoformat(),
+                "error":    f"Syntax error in learned skill: {broken}",
+                "source":   "ops_agent",
+                "resolved": False,
+            })
+        error_log_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    except Exception as e:
+        _log(f"Could not write error_log.json: {e}")
 
 
 # ── Error logging ─────────────────────────────────────────────────────────────

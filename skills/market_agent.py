@@ -217,6 +217,30 @@ Return JSON array only. No explanation."""
     try:
         _ctx = _get_agent_context("market")
         _sys_prompt = ((_ctx + "\n\n") if _ctx else "") + "You are a market research assistant. Always respond with valid JSON only. No markdown."
+
+        # Run relevant learned skills to enhance the scan before calling Claude
+        try:
+            from skills.agent_soul import execute_learned_skill
+            relevant = _check_learned_skills([
+                "market", "opportunity", "tracking", "loophole", "detection",
+                "competitive", "analysis", "early",
+            ])
+            skill_insights = []
+            for skill_name in relevant[:2]:  # max 2 skills — avoid token bloat
+                _log(f"Running learned skill: {skill_name}")
+                result = execute_learned_skill(
+                    skill_name, {"task": "market_scan", "focus": focus_area}
+                )
+                if result and result.strip() not in ("None", "") \
+                        and "failed" not in result.lower() and "not found" not in result.lower() \
+                        and "no known entry" not in result.lower():
+                    skill_insights.append(f"Learned skill '{skill_name}': {result[:200]}")
+            if skill_insights:
+                prompt += "\n\nInsights from TAD's learned skills:\n" + "\n".join(skill_insights)
+                _log(f"{len(skill_insights)} learned skill(s) contributed to this scan")
+        except Exception as _e:
+            _log(f"Skill execution skipped: {_e}")
+
         msg = claude.messages.create(
             model=MODEL,
             max_tokens=2000,

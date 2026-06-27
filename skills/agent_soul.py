@@ -97,15 +97,77 @@ def _log_history(agent_name: str, entry: dict):
 
 def _check_learned_skills(task_keywords: list) -> list:
     """
-    Find skill files in skills/learned/ whose names match any task keyword.
-    Returns list of matching stem names.
+    Find .py skill files in skills/learned/ whose names match any task keyword.
+    Returns list of matching stem names (excludes broken skills).
     """
     learned = ROOT / "skills" / "learned"
     if not learned.exists():
         return []
+    # Load registry to filter out broken skills
+    registry_path = ROOT / "memory" / "skill_registry.json"
+    broken = set()
+    try:
+        reg = json.loads(registry_path.read_text(encoding="utf-8"))
+        broken = {s["name"] for s in reg.get("skills", []) if s.get("broken")}
+    except Exception:
+        pass
     results = []
-    for skill_file in learned.glob("*.md"):
+    for skill_file in learned.glob("*.py"):   # was *.md — skills are .py files
         name = skill_file.stem.replace("_", " ").lower()
+        if skill_file.stem in broken:
+            continue
         if any(kw.lower() in name for kw in task_keywords):
             results.append(skill_file.stem)
     return results
+
+
+def execute_learned_skill(skill_name: str, context: dict = None) -> str:
+    """
+    Import and run a learned skill by name.
+    Tries entry points in priority order: run → execute → analyze → main → generate.
+    Returns skill output as string, or an error message — never raises.
+    """
+    import importlib.util
+    import sys as _sys
+
+    learned = ROOT / "skills" / "learned"
+    skill_path = learned / f"{skill_name}.py"
+    if not skill_path.exists():
+        return f"Skill {skill_name} not found"
+
+    try:
+        spec   = importlib.util.spec_from_file_location(skill_name, skill_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        for fn_name in ["run", "execute", "analyze", "main", "generate"]:
+            if hasattr(module, fn_name):
+                fn = getattr(module, fn_name)
+                try:
+                    result = fn(context) if context else fn()
+                except TypeError:
+                    result = fn()
+                _update_skill_usage(skill_name)
+                return str(result)[:500]
+
+        return f"Skill {skill_name} has no known entry point (run/execute/analyze/main/generate)"
+
+    except Exception as e:
+        return f"Skill {skill_name} failed: {str(e)[:120]}"
+
+
+def _update_skill_usage(skill_name: str):
+    """Increment use_count and set last_used in skill_registry.json."""
+    registry_path = ROOT / "memory" / "skill_registry.json"
+    if not registry_path.exists():
+        return
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        for skill in registry.get("skills", []):
+            if skill["name"] == skill_name:
+                skill["use_count"] = skill.get("use_count", 0) + 1
+                skill["last_used"] = datetime.now().isoformat()
+                break
+        registry_path.write_text(json.dumps(registry, indent=2), encoding="utf-8")
+    except Exception:
+        pass  # registry update is non-critical
