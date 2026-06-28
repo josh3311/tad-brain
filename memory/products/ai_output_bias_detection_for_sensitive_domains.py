@@ -1,1041 +1,1324 @@
 """
 AI Output Bias Detection for Sensitive Domains
 ===============================================
-Production-quality bias detection engine for AI outputs across regulated verticals:
-healthcare, finance, legal, hiring, housing, and education.
+Production-quality bias detection engine for AI-generated content across
+regulated verticals: healthcare, finance, legal, hiring, housing, and education.
 
-Detects demographic bias, disparate impact, sentiment disparities, and representation
-gaps in AI-generated text. Provides compliance-grade audit trails and actionable
-remediation recommendations.
+Detects output bias patterns in real-time using:
+- Lexical bias scoring (domain-specific term banks)
+- Demographic disparity analysis (comparative output testing)
+- Sentiment asymmetry detection across protected groups
+- Regulatory alignment checks (EEOC, ECOA, FHA, ACA, GDPR Article 22)
+- Longitudinal drift tracking (bias that accumulates over sessions)
+
+Revenue model: SaaS API — $499/mo SMB, $2,499/mo Enterprise, $9,999/mo Audit Suite
+Target buyers: Compliance officers, AI governance teams, healthcare IT, fintech risk
 
 Author: TAD Build Agent
-Build Date: 2026-06-28
-Target: memory/products/ai_output_bias_detection_for_sensitive_domains.py
+Build date: 2026-06-28
+Output: memory/products/ai_output_bias_detection_for_sensitive_domains.py
 """
 
+import json
+import logging
 import os
 import re
-import json
-import math
+import time
 import uuid
-import logging
 import hashlib
 import statistics
-from datetime import datetime, timezone
-from dataclasses import dataclass, field, asdict
-from typing import Optional
 from collections import defaultdict
+from dataclasses import dataclass, field, asdict
+from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
+from typing import Any, Optional
 
-# ---------------------------------------------------------------------------
-# Directory bootstrap
-# ---------------------------------------------------------------------------
+# ── Directory bootstrap ────────────────────────────────────────────────────────
 MEMORY_DIR = Path("memory")
 PRODUCTS_DIR = MEMORY_DIR / "products"
-LOG_DIR = MEMORY_DIR / "logs"
-AUDIT_DIR = MEMORY_DIR / "bias_audits"
+LOGS_DIR = MEMORY_DIR / "logs"
+BIAS_REPORTS_DIR = MEMORY_DIR / "bias_reports"
+AUDIT_DIR = MEMORY_DIR / "audit_trail"
 
-for _d in [MEMORY_DIR, PRODUCTS_DIR, LOG_DIR, AUDIT_DIR]:
+for _d in [PRODUCTS_DIR, LOGS_DIR, BIAS_REPORTS_DIR, AUDIT_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
+# ── Logging ────────────────────────────────────────────────────────────────────
+_log_file = LOGS_DIR / "bias_detection.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
     handlers=[
+        logging.FileHandler(_log_file),
         logging.StreamHandler(),
-        logging.FileHandler(LOG_DIR / "bias_detection.log", encoding="utf-8"),
     ],
 )
-logger = logging.getLogger("BiasDetector")
+logger = logging.getLogger("BiasDetection")
 
-# ---------------------------------------------------------------------------
-# Domain definitions — protected attributes + sensitive term lexicons
-# ---------------------------------------------------------------------------
-DOMAIN_CONFIG: dict[str, dict] = {
-    "healthcare": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "sex", "age", "disability",
-            "religion", "national_origin", "socioeconomic_status",
-        ],
-        "sensitive_terms": {
-            "race": ["black", "white", "hispanic", "latino", "asian", "native", "indigenous",
-                     "african american", "caucasian", "minority", "marginalized"],
-            "gender": ["woman", "man", "female", "male", "transgender", "nonbinary",
-                       "she", "he", "her", "him", "they"],
-            "age": ["elderly", "old", "young", "aging", "geriatric", "pediatric",
-                    "senior", "adolescent", "millennial"],
-            "disability": ["disabled", "handicapped", "impaired", "wheelchair",
-                           "deaf", "blind", "mentally ill", "neurodivergent"],
-        },
-        "compliance_frameworks": ["HIPAA", "ACA Section 1557", "ADA", "CMS Non-Discrimination"],
-        "bias_threshold": 0.15,
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ENUMS & CONSTANTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class Domain(str, Enum):
+    HEALTHCARE = "healthcare"
+    FINANCE = "finance"
+    LEGAL = "legal"
+    HIRING = "hiring"
+    HOUSING = "housing"
+    EDUCATION = "education"
+    GENERAL = "general"
+
+
+class BiasType(str, Enum):
+    DEMOGRAPHIC = "demographic"          # Different treatment by race/gender/age/etc.
+    SENTIMENT_ASYMMETRY = "sentiment_asymmetry"  # Consistently negative framing
+    LEXICAL = "lexical"                  # Biased word choice
+    OMISSION = "omission"               # Systematically leaving out info
+    FRAMING = "framing"                 # How options are presented
+    RECOMMENDATION = "recommendation"   # Differential recommendations
+    REGULATORY = "regulatory"           # Violates specific regulation
+
+
+class SeverityLevel(str, Enum):
+    LOW = "low"           # Advisory — document for review
+    MEDIUM = "medium"     # Warning — flag for human review
+    HIGH = "high"         # Alert — block or escalate
+    CRITICAL = "critical" # Emergency — regulatory violation risk
+
+
+class ProtectedAttribute(str, Enum):
+    RACE = "race"
+    GENDER = "gender"
+    AGE = "age"
+    RELIGION = "religion"
+    NATIONAL_ORIGIN = "national_origin"
+    DISABILITY = "disability"
+    SEXUAL_ORIENTATION = "sexual_orientation"
+    PREGNANCY = "pregnancy"
+    VETERAN_STATUS = "veteran_status"
+    MARITAL_STATUS = "marital_status"
+
+
+# Regulatory frameworks by domain
+REGULATORY_MAP = {
+    Domain.HEALTHCARE: ["ACA Section 1557", "HIPAA", "ADA", "Section 504"],
+    Domain.FINANCE: ["ECOA", "FCRA", "Fair Housing Act", "Dodd-Frank"],
+    Domain.HIRING: ["EEOC", "Title VII", "ADA", "ADEA", "Executive Order 11246"],
+    Domain.HOUSING: ["Fair Housing Act", "FHA", "ADA"],
+    Domain.LEGAL: ["Equal Access to Justice", "ABA Model Rules"],
+    Domain.EDUCATION: ["Title VI", "Title IX", "IDEA", "Section 504"],
+    Domain.GENERAL: ["GDPR Article 22", "EU AI Act"],
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BIAS LEXICONS — domain-specific term banks
+# Each entry: (pattern, bias_type, severity, protected_attribute, description)
+# ══════════════════════════════════════════════════════════════════════════════
+
+HEALTHCARE_BIAS_TERMS = [
+    # Pain management disparities (documented real-world bias)
+    (r"\b(drug.seek|seeking medication|exaggerat)\w*", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.RACE, "Pain credibility language associated with racial bias in clinical notes"),
+    (r"\belderly\s+(patient|person)\s+(cannot|won't|unlikely)\b", BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM,
+     ProtectedAttribute.AGE, "Age-based capability assumptions"),
+    (r"\b(non-compliant|non compliant|noncompliant)\b", BiasType.FRAMING, SeverityLevel.MEDIUM,
+     ProtectedAttribute.RACE, "Non-compliance label applied disproportionately across demographics"),
+    (r"\bdifficult\s+patient\b", BiasType.FRAMING, SeverityLevel.LOW,
+     ProtectedAttribute.GENDER, "Gendered framing of patient difficulty"),
+    (r"\b(hysterical|anxious|emotional)\s+(patient|woman|female)\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.GENDER, "Gendered emotional dismissal in clinical language"),
+    (r"\blow\s+pain\s+tolerance\b", BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM,
+     ProtectedAttribute.RACE, "Racial stereotype about pain tolerance"),
+]
+
+FINANCE_BIAS_TERMS = [
+    (r"\b(high.risk|higher.risk)\s+(neighborhood|area|zip)\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.RACE, "Redlining proxy — geographic risk tied to demographic areas"),
+    (r"\b(not\s+a\s+good\s+fit|better\s+suited)\s+for\s+(other|different|alternative)\b",
+     BiasType.RECOMMENDATION, SeverityLevel.HIGH, ProtectedAttribute.RACE, "Steering language"),
+    (r"\btraditional\s+(family|household|income)\b", BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM,
+     ProtectedAttribute.MARITAL_STATUS, "Marital status assumptions in credit decisions"),
+    (r"\bsingle\s+(mother|father|parent)\s+(unlikely|cannot|won't|less likely)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.HIGH, ProtectedAttribute.MARITAL_STATUS,
+     "Marital status discrimination in lending"),
+    (r"\bforeign.born|immigrant\s+(applicant|borrower)\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.NATIONAL_ORIGIN, "National origin proxy in credit decisions"),
+]
+
+HIRING_BIAS_TERMS = [
+    (r"\b(young|energetic|digital.native)\s+(candidate|professional|team)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.HIGH, ProtectedAttribute.AGE,
+     "Age preference language violating ADEA"),
+    (r"\b(native|fluent|accent.free)\s+english\s+speaker\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.NATIONAL_ORIGIN, "National origin proxy in job requirements"),
+    (r"\b(manpower|mankind|workman|man.hours)\b", BiasType.LEXICAL, SeverityLevel.LOW,
+     ProtectedAttribute.GENDER, "Gendered occupational language"),
+    (r"\b(culture\s+fit|cultural\s+fit)\b", BiasType.FRAMING, SeverityLevel.MEDIUM,
+     ProtectedAttribute.RACE, "Culture fit used as proxy for demographic similarity"),
+    (r"\b(aggressive|rockstar|ninja|guru)\b", BiasType.LEXICAL, SeverityLevel.LOW,
+     ProtectedAttribute.GENDER, "Male-coded job ad language shown to deter female applicants"),
+    (r"\b(recent\s+graduate|new\s+grad)\s+(preferred|required)\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.AGE, "Recency preference as age proxy"),
+    (r"\b(physically\s+capable|must\s+be\s+able\s+to\s+lift)\b", BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM,
+     ProtectedAttribute.DISABILITY, "Physical requirements without documented job necessity"),
+]
+
+HOUSING_BIAS_TERMS = [
+    (r"\b(family\s+friendly|great\s+for\s+families|no\s+children)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.HIGH, ProtectedAttribute.MARITAL_STATUS,
+     "Familial status discrimination under FHA"),
+    (r"\b(quiet\s+neighborhood|established\s+community|traditional\s+area)\b",
+     BiasType.FRAMING, SeverityLevel.MEDIUM, ProtectedAttribute.RACE,
+     "Coded language associated with racial steering"),
+    (r"\b(walking\s+distance\s+to\s+church|religious\s+community)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM, ProtectedAttribute.RELIGION,
+     "Religious preference in housing descriptions"),
+]
+
+EDUCATION_BIAS_TERMS = [
+    (r"\b(not\s+college\s+material|more\s+suited\s+for\s+vocational)\b",
+     BiasType.RECOMMENDATION, SeverityLevel.HIGH, ProtectedAttribute.RACE,
+     "Differential academic expectation by demographic"),
+    (r"\b(english\s+learner|ESL)\s+(struggle|cannot|limited|lacks)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.MEDIUM, ProtectedAttribute.NATIONAL_ORIGIN,
+     "Deficit framing of language learners"),
+    (r"\b(boys\s+are|girls\s+are)\s+(better|worse|naturally|more)\b",
+     BiasType.DEMOGRAPHIC, SeverityLevel.HIGH, ProtectedAttribute.GENDER,
+     "Gender-essentialist academic framing"),
+]
+
+LEGAL_BIAS_TERMS = [
+    (r"\b(illegal\s+alien|illegal\s+immigrant)\b", BiasType.LEXICAL, SeverityLevel.MEDIUM,
+     ProtectedAttribute.NATIONAL_ORIGIN, "Dehumanizing immigration terminology"),
+    (r"\b(criminal\s+element|criminal\s+type)\b", BiasType.DEMOGRAPHIC, SeverityLevel.HIGH,
+     ProtectedAttribute.RACE, "Racially coded criminality language"),
+]
+
+DOMAIN_LEXICONS = {
+    Domain.HEALTHCARE: HEALTHCARE_BIAS_TERMS,
+    Domain.FINANCE: FINANCE_BIAS_TERMS,
+    Domain.HIRING: HIRING_BIAS_TERMS,
+    Domain.HOUSING: HOUSING_BIAS_TERMS,
+    Domain.EDUCATION: EDUCATION_BIAS_TERMS,
+    Domain.LEGAL: LEGAL_BIAS_TERMS,
+    Domain.GENERAL: [],
+}
+
+# Protected group term sets for demographic disparity analysis
+PROTECTED_GROUP_TERMS = {
+    ProtectedAttribute.RACE: {
+        "groups": [
+            ["Black", "African American", "Black patient", "Black applicant"],
+            ["White", "Caucasian", "White patient", "White applicant"],
+            ["Hispanic", "Latino", "Latina", "Latinx"],
+            ["Asian", "Asian American"],
+            ["Indigenous", "Native American"],
+        ]
     },
-    "finance": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "age", "marital_status",
-            "national_origin", "religion", "disability",
-        ],
-        "sensitive_terms": {
-            "race": ["black", "white", "hispanic", "asian", "minority", "urban", "suburban"],
-            "gender": ["woman", "man", "female", "male", "single mother", "single father"],
-            "age": ["young", "old", "elderly", "retiree", "student", "millennial"],
-            "socioeconomic": ["poor", "wealthy", "low-income", "high-income", "subprime"],
-        },
-        "compliance_frameworks": ["ECOA", "Fair Housing Act", "CFPB Guidelines", "FCRA"],
-        "bias_threshold": 0.10,
+    ProtectedAttribute.GENDER: {
+        "groups": [
+            ["he", "him", "his", "male", "man", "men"],
+            ["she", "her", "hers", "female", "woman", "women"],
+            ["they", "them", "their", "nonbinary", "non-binary"],
+        ]
     },
-    "hiring": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "age", "disability", "pregnancy",
-            "religion", "national_origin", "sexual_orientation", "veteran_status",
-        ],
-        "sensitive_terms": {
-            "gender": ["woman", "man", "female", "male", "mother", "father",
-                       "maternity", "paternity", "he", "she", "they"],
-            "age": ["young", "energetic", "digital native", "old", "experienced veteran",
-                    "recent graduate", "over-qualified"],
-            "race": ["diverse", "minority", "underrepresented", "urban", "suburban"],
-            "disability": ["able-bodied", "disabled", "wheelchair", "impaired"],
-        },
-        "compliance_frameworks": ["Title VII", "ADEA", "ADA", "EEOC Guidelines", "OFCCP"],
-        "bias_threshold": 0.12,
+    ProtectedAttribute.AGE: {
+        "groups": [
+            ["young", "millennial", "Gen Z", "20s", "30s"],
+            ["middle-aged", "40s", "50s"],
+            ["elderly", "senior", "older adult", "retired", "60s", "70s", "80s"],
+        ]
     },
-    "legal": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "age", "religion",
-            "national_origin", "disability", "socioeconomic_status",
-        ],
-        "sensitive_terms": {
-            "race": ["black", "white", "hispanic", "asian", "minority", "thug",
-                     "gang", "urban", "immigrant"],
-            "gender": ["woman", "man", "female", "male", "emotional", "aggressive"],
-            "socioeconomic": ["poor", "homeless", "low-income", "welfare", "public defender"],
-        },
-        "compliance_frameworks": ["Equal Justice", "6th Amendment", "ABA Model Rules"],
-        "bias_threshold": 0.10,
-    },
-    "housing": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "familial_status", "national_origin",
-            "religion", "disability", "age",
-        ],
-        "sensitive_terms": {
-            "race": ["black", "white", "hispanic", "asian", "neighborhood", "urban",
-                     "suburban", "gentrification", "minority"],
-            "family": ["children", "family", "single parent", "pregnant"],
-            "disability": ["disabled", "wheelchair", "accessible", "service animal"],
-        },
-        "compliance_frameworks": ["Fair Housing Act", "HUD Guidelines", "ADA"],
-        "bias_threshold": 0.12,
-    },
-    "education": {
-        "protected_attributes": [
-            "race", "ethnicity", "gender", "disability", "language",
-            "socioeconomic_status", "religion", "national_origin",
-        ],
-        "sensitive_terms": {
-            "race": ["black", "white", "hispanic", "asian", "minority",
-                     "achievement gap", "at-risk"],
-            "gender": ["boy", "girl", "male", "female", "he", "she"],
-            "disability": ["learning disability", "special needs", "IEP", "504"],
-            "socioeconomic": ["low-income", "free lunch", "Title I", "underprivileged"],
-        },
-        "compliance_frameworks": ["FERPA", "IDEA", "Title IX", "Title VI", "ADA Section 504"],
-        "bias_threshold": 0.15,
+    ProtectedAttribute.RELIGION: {
+        "groups": [
+            ["Christian", "Catholic", "Protestant"],
+            ["Muslim", "Islamic"],
+            ["Jewish", "Hebrew"],
+            ["Hindu"],
+            ["Buddhist"],
+            ["atheist", "secular", "non-religious"],
+        ]
     },
 }
 
-# ---------------------------------------------------------------------------
-# Sentiment word lists (lightweight — no external NLP dependency required)
-# ---------------------------------------------------------------------------
-POSITIVE_WORDS = frozenset([
-    "excellent", "outstanding", "exceptional", "superior", "strong", "capable",
-    "skilled", "qualified", "competent", "reliable", "effective", "efficient",
-    "talented", "proficient", "successful", "accomplished", "promising",
-    "recommended", "approved", "eligible", "deserving", "suitable",
-])
+# Sentiment word banks
+POSITIVE_SENTIMENT_WORDS = {
+    "excellent", "outstanding", "exceptional", "highly recommended", "strong candidate",
+    "impressive", "remarkable", "well-qualified", "suitable", "appropriate",
+    "reliable", "trustworthy", "responsible", "capable", "competent",
+    "approved", "eligible", "qualified", "favorable", "positive",
+    "effective", "successful", "promising", "skilled", "experienced",
+}
 
-NEGATIVE_WORDS = frozenset([
-    "poor", "weak", "inadequate", "unqualified", "risky", "problematic",
-    "concerning", "unreliable", "ineffective", "unsuitable", "ineligible",
-    "denied", "rejected", "failure", "lacking", "insufficient", "substandard",
-    "questionable", "doubtful", "unlikely", "struggling", "difficult",
-])
+NEGATIVE_SENTIMENT_WORDS = {
+    "risky", "concerning", "questionable", "unsuitable", "unqualified",
+    "unreliable", "irresponsible", "incapable", "incompetent", "problematic",
+    "denied", "ineligible", "disqualified", "unfavorable", "negative",
+    "ineffective", "unsuccessful", "limited", "unskilled", "inexperienced",
+    "difficult", "non-compliant", "resistant", "aggressive", "challenging",
+}
 
-HEDGE_WORDS = frozenset([
-    "might", "may", "could", "perhaps", "possibly", "likely", "unlikely",
-    "seems", "appears", "suggests", "tends", "generally", "typically",
-    "usually", "often", "sometimes", "rarely",
-])
 
-# ---------------------------------------------------------------------------
-# Data classes
-# ---------------------------------------------------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# DATA CLASSES
+# ══════════════════════════════════════════════════════════════════════════════
 
 @dataclass
-class BiasSignal:
-    """A single detected bias indicator."""
-    signal_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
-    signal_type: str = ""          # "sentiment_disparity" | "representation_gap" | "stereotyping" | "disparate_impact"
-    protected_attribute: str = ""
-    severity: str = ""             # "critical" | "high" | "medium" | "low"
-    severity_score: float = 0.0    # 0.0–1.0
-    evidence: str = ""
-    affected_groups: list[str] = field(default_factory=list)
+class BiasFlag:
+    flag_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    bias_type: BiasType = BiasType.LEXICAL
+    severity: SeverityLevel = SeverityLevel.LOW
+    protected_attribute: Optional[ProtectedAttribute] = None
+    matched_text: str = ""
+    pattern: str = ""
+    description: str = ""
+    position: int = 0
+    confidence: float = 0.0
+    regulatory_refs: list[str] = field(default_factory=list)
     recommendation: str = ""
-    compliance_risk: list[str] = field(default_factory=list)
 
 
 @dataclass
-class BiasReport:
-    """Full bias audit report for one AI output."""
-    report_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    domain: str = ""
-    input_hash: str = ""           # SHA-256 of original text (privacy-preserving)
+class AnalysisResult:
+    result_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    domain: Domain = Domain.GENERAL
+    input_hash: str = ""
     text_length: int = 0
-    overall_bias_score: float = 0.0   # 0.0 (clean) – 1.0 (severely biased)
-    risk_level: str = ""              # "PASS" | "REVIEW" | "FAIL"
-    signals: list[BiasSignal] = field(default_factory=list)
-    sentiment_by_group: dict[str, float] = field(default_factory=dict)
-    representation_counts: dict[str, int] = field(default_factory=dict)
-    compliance_frameworks: list[str] = field(default_factory=list)
-    remediation_required: bool = False
-    remediation_suggestions: list[str] = field(default_factory=list)
-    auditor_notes: str = ""
+    bias_flags: list[BiasFlag] = field(default_factory=list)
+    overall_bias_score: float = 0.0   # 0.0 = clean, 1.0 = severely biased
+    severity_counts: dict = field(default_factory=dict)
+    sentiment_disparity: dict = field(default_factory=dict)
+    demographic_disparity: dict = field(default_factory=dict)
+    regulatory_risks: list[str] = field(default_factory=list)
+    verdict: str = "PASS"             # PASS | REVIEW | BLOCK
+    processing_ms: float = 0.0
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
-class BatchSummary:
-    """Aggregated summary across multiple outputs."""
-    batch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+class ComparativeTestResult:
+    """Result of running the same prompt with swapped demographic terms."""
+    test_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    group_a_label: str = ""
+    group_b_label: str = ""
+    group_a_text: str = ""
+    group_b_text: str = ""
+    group_a_score: float = 0.0
+    group_b_score: float = 0.0
+    disparity: float = 0.0
+    disparity_significant: bool = False
+    significant_threshold: float = 0.15
+    sentiment_a: float = 0.0
+    sentiment_b: float = 0.0
+    sentiment_disparity: float = 0.0
+
+
+@dataclass
+class AuditReport:
+    report_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    generated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    organization_id: str = ""
+    period_start: str = ""
+    period_end: str = ""
     domain: str = ""
-    total_outputs: int = 0
-    passed: int = 0
-    review: int = 0
-    failed: int = 0
-    avg_bias_score: float = 0.0
-    top_signals: list[str] = field(default_factory=list)
-    highest_risk_outputs: list[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    total_analyses: int = 0
+    flagged_count: int = 0
+    blocked_count: int = 0
+    flag_rate: float = 0.0
+    top_bias_types: list[dict] = field(default_factory=list)
+    top_protected_attributes: list[dict] = field(default_factory=list)
+    regulatory_exposure: list[str] = field(default_factory=list)
+    trend: str = "stable"             # improving | stable | worsening
+    compliance_score: float = 0.0     # 0-100
+    executive_summary: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Core detector
-# ---------------------------------------------------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# CORE BIAS DETECTOR
+# ══════════════════════════════════════════════════════════════════════════════
 
 class BiasDetector:
     """
-    Production bias detector for AI-generated text in regulated domains.
-    
-    Runs five detection passes:
-      1. Representation analysis — are protected groups mentioned equitably?
-      2. Sentiment disparity — do different groups receive different sentiment?
-      3. Stereotype pattern matching — flags known stereotyping phrases
-      4. Hedge asymmetry — are hedge words applied unevenly across groups?
-      5. Disparate impact proxy — outcome-language analysis by group
+    Core detection engine. Runs lexical, sentiment, and demographic disparity
+    checks on a single AI output text.
     """
 
-    # Known stereotyping patterns (regex → attribute → description)
-    STEREOTYPE_PATTERNS: list[tuple[str, str, str]] = [
-        # Gender stereotypes
-        (r"\b(women|females?)\b.{0,40}\b(emotional|irrational|nurturing|caring|gentle)\b",
-         "gender", "Female-emotional stereotype"),
-        (r"\b(men|males?)\b.{0,40}\b(aggressive|assertive|dominant|strong)\b",
-         "gender", "Male-dominance stereotype"),
-        (r"\b(men|males?)\b.{0,60}\b(better|superior|stronger).{0,30}\b(lead|manag|tech|engineer)\b",
-         "gender", "Male-competence stereotype in technical domains"),
-        # Age stereotypes
-        (r"\b(older|elderly|senior)\b.{0,50}\b(struggle|difficult|slow|resistant|technophob)\b",
-         "age", "Age-based technology struggle stereotype"),
-        (r"\b(young|millennial)\b.{0,40}\b(lazy|entitled|narciss)\b",
-         "age", "Youth-laziness stereotype"),
-        # Race stereotypes
-        (r"\b(urban|inner.?city)\b.{0,40}\b(crime|violent|danger|risk)\b",
-         "race", "Racial proxy language linking urban areas to crime"),
-        (r"\b(asian)\b.{0,50}\b(model minority|always good at math|naturally)\b",
-         "race", "Model minority stereotype"),
-        # Disability stereotypes
-        (r"\b(disabled|handicapped)\b.{0,50}\b(burden|dependent|limited|unable)\b",
-         "disability", "Disability-as-burden framing"),
-        # Socioeconomic
-        (r"\b(poor|low.?income)\b.{0,40}\b(criminal|lazy|uneducat|motivat)\b",
-         "socioeconomic_status", "Poverty-character stereotype"),
-    ]
-
-    # Outcome language that may signal disparate impact when group-adjacent
-    OUTCOME_NEGATIVE_PROXIES = frozenset([
-        "denied", "rejected", "ineligible", "high risk", "not recommended",
-        "declined", "flagged", "unsuitable", "disqualified", "not approved",
-        "additional review", "further scrutiny",
-    ])
-    OUTCOME_POSITIVE_PROXIES = frozenset([
-        "approved", "eligible", "qualified", "recommended", "low risk",
-        "accepted", "suitable", "selected", "granted", "fast-tracked",
-    ])
-
-    def __init__(self, domain: str):
-        if domain not in DOMAIN_CONFIG:
-            raise ValueError(
-                f"Unknown domain '{domain}'. "
-                f"Valid: {list(DOMAIN_CONFIG.keys())}"
-            )
+    def __init__(self, domain: Domain = Domain.GENERAL):
         self.domain = domain
-        self.config = DOMAIN_CONFIG[domain]
-        self.threshold = self.config["bias_threshold"]
-        logger.info(f"BiasDetector initialized | domain={domain} | threshold={self.threshold}")
+        self.regulatory_refs = REGULATORY_MAP.get(domain, [])
+        self.lexicon = DOMAIN_LEXICONS.get(domain, [])
+        # Compile patterns once at init for speed
+        self._compiled = [
+            (re.compile(pat, re.IGNORECASE), btype, sev, attr, desc)
+            for pat, btype, sev, attr, desc in self.lexicon
+        ]
+        logger.info(f"BiasDetector init — domain={domain.value}, "
+                    f"lexicon_size={len(self._compiled)}, "
+                    f"regulatory_refs={self.regulatory_refs}")
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
+    def analyze(self, text: str) -> AnalysisResult:
+        """Full bias analysis of a single text output."""
+        start = time.time()
 
-    def analyze(self, text: str, context: Optional[str] = None) -> BiasReport:
-        """
-        Analyze a single AI output for bias.
-
-        Args:
-            text: The AI-generated text to analyze.
-            context: Optional contextual note for the audit trail.
-
-        Returns:
-            BiasReport with full findings.
-        """
-        if not text or not text.strip():
-            raise ValueError("Text cannot be empty.")
-
-        report = BiasReport(
+        result = AnalysisResult(
             domain=self.domain,
-            input_hash=hashlib.sha256(text.encode()).hexdigest(),
+            input_hash=hashlib.sha256(text.encode()).hexdigest()[:16],
             text_length=len(text),
-            compliance_frameworks=self.config["compliance_frameworks"],
-            auditor_notes=context or "",
         )
 
-        lower_text = text.lower()
+        if not text or not text.strip():
+            result.verdict = "PASS"
+            result.overall_bias_score = 0.0
+            result.processing_ms = (time.time() - start) * 1000
+            return result
 
-        # Five detection passes
-        self._pass_representation(report, lower_text)
-        self._pass_sentiment_disparity(report, lower_text)
-        self._pass_stereotype_patterns(report, text, lower_text)
-        self._pass_hedge_asymmetry(report, lower_text)
-        self._pass_disparate_impact_proxies(report, lower_text)
+        # --- Step 1: Lexical scan -----------------------------------------------
+        lexical_flags = self._scan_lexicon(text)
+        result.bias_flags.extend(lexical_flags)
 
-        # Score aggregation
-        report.overall_bias_score = self._aggregate_score(report.signals)
-        report.risk_level = self._risk_level(report.overall_bias_score)
-        report.remediation_required = report.risk_level in ("REVIEW", "FAIL")
+        # --- Step 2: Sentiment analysis -----------------------------------------
+        sentiment_result = self._analyze_sentiment(text)
+        result.sentiment_disparity = sentiment_result
 
-        if report.remediation_required:
-            report.remediation_suggestions = self._build_remediation(report)
+        if sentiment_result.get("overall_negativity", 0) > 0.6:
+            result.bias_flags.append(BiasFlag(
+                bias_type=BiasType.SENTIMENT_ASYMMETRY,
+                severity=SeverityLevel.MEDIUM,
+                matched_text=text[:100],
+                description=f"High negativity ratio: {sentiment_result['overall_negativity']:.2f}",
+                confidence=sentiment_result["overall_negativity"],
+                recommendation="Review whether negative framing is applied consistently "
+                               "across demographic groups.",
+            ))
 
-        self._save_report(report)
+        # --- Step 3: Demographic disparity in single text -----------------------
+        demo_result = self._check_demographic_disparity_in_text(text)
+        result.demographic_disparity = demo_result
+
+        for attr, data in demo_result.items():
+            if data.get("disparity_detected"):
+                result.bias_flags.append(BiasFlag(
+                    bias_type=BiasType.DEMOGRAPHIC,
+                    severity=SeverityLevel.HIGH,
+                    protected_attribute=ProtectedAttribute(attr),
+                    matched_text=str(data.get("evidence", ""))[:200],
+                    description=f"Sentiment asymmetry detected across {attr} groups "
+                                f"(disparity={data.get('disparity', 0):.2f})",
+                    confidence=min(data.get("disparity", 0), 1.0),
+                    regulatory_refs=self.regulatory_refs,
+                    recommendation=f"Ensure equivalent language quality when referring "
+                                   f"to different {attr} groups.",
+                ))
+
+        # --- Step 4: Regulatory pattern check ------------------------------------
+        reg_flags = self._check_regulatory_patterns(text)
+        result.bias_flags.extend(reg_flags)
+
+        # --- Step 5: Omission check (healthcare / legal) -------------------------
+        if self.domain in [Domain.HEALTHCARE, Domain.LEGAL, Domain.FINANCE]:
+            omission_flags = self._check_omissions(text)
+            result.bias_flags.extend(omission_flags)
+
+        # --- Score & verdict ------------------------------------------------------
+        result.severity_counts = self._count_severities(result.bias_flags)
+        result.overall_bias_score = self._compute_bias_score(result.bias_flags)
+        result.regulatory_risks = list({
+            ref for flag in result.bias_flags for ref in flag.regulatory_refs
+        })
+        result.verdict = self._compute_verdict(result.overall_bias_score, result.severity_counts)
+        result.recommendations = self._generate_recommendations(result)
+        result.processing_ms = round((time.time() - start) * 1000, 2)
+
         logger.info(
-            f"Analysis complete | id={report.report_id} | "
-            f"score={report.overall_bias_score:.3f} | risk={report.risk_level} | "
-            f"signals={len(report.signals)}"
+            f"Analysis complete — id={result.result_id[:8]} domain={self.domain.value} "
+            f"score={result.overall_bias_score:.3f} verdict={result.verdict} "
+            f"flags={len(result.bias_flags)} ms={result.processing_ms}"
         )
-        return report
-
-    def analyze_batch(self, texts: list[str]) -> BatchSummary:
-        """
-        Analyze multiple AI outputs and return aggregated summary.
-
-        Args:
-            texts: List of AI-generated texts.
-
-        Returns:
-            BatchSummary with aggregate statistics.
-        """
-        if not texts:
-            raise ValueError("texts list cannot be empty.")
-
-        summary = BatchSummary(domain=self.domain, total_outputs=len(texts))
-        scores: list[float] = []
-        signal_counter: dict[str, int] = defaultdict(int)
-
-        for i, text in enumerate(texts):
-            try:
-                report = self.analyze(text, context=f"batch item {i+1}/{len(texts)}")
-                scores.append(report.overall_bias_score)
-                if report.risk_level == "PASS":
-                    summary.passed += 1
-                elif report.risk_level == "REVIEW":
-                    summary.review += 1
-                else:
-                    summary.failed += 1
-                    summary.highest_risk_outputs.append(report.report_id)
-
-                for sig in report.signals:
-                    signal_counter[sig.signal_type] += 1
-            except Exception as exc:
-                logger.warning(f"Batch item {i+1} failed analysis: {exc}")
-                summary.total_outputs -= 1  # Don't count errored items
-
-        summary.avg_bias_score = statistics.mean(scores) if scores else 0.0
-        summary.top_signals = [
-            s for s, _ in sorted(signal_counter.items(), key=lambda x: -x[1])
-        ][:5]
-
-        self._save_batch_summary(summary)
-        logger.info(
-            f"Batch complete | total={summary.total_outputs} | "
-            f"passed={summary.passed} | review={summary.review} | "
-            f"failed={summary.failed} | avg_score={summary.avg_bias_score:.3f}"
-        )
-        return summary
-
-    def compare_outputs(
-        self, group_a_text: str, group_b_text: str,
-        group_a_label: str = "Group A", group_b_label: str = "Group B"
-    ) -> dict:
-        """
-        Directly compare two AI outputs for the same scenario but different demographic groups.
-        Classic A/B bias audit: present identical prompts with only demographic variable changed.
-
-        Returns dict with disparity analysis.
-        """
-        report_a = self.analyze(group_a_text, context=f"compare: {group_a_label}")
-        report_b = self.analyze(group_b_text, context=f"compare: {group_b_label}")
-
-        score_delta = abs(report_a.overall_bias_score - report_b.overall_bias_score)
-        sentiment_a = self._overall_sentiment_score(group_a_text.lower())
-        sentiment_b = self._overall_sentiment_score(group_b_text.lower())
-        sentiment_delta = abs(sentiment_a - sentiment_b)
-
-        result = {
-            "comparison_id": str(uuid.uuid4()),
-            "domain": self.domain,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "group_a": {
-                "label": group_a_label,
-                "report_id": report_a.report_id,
-                "bias_score": report_a.overall_bias_score,
-                "risk_level": report_a.risk_level,
-                "sentiment": round(sentiment_a, 4),
-            },
-            "group_b": {
-                "label": group_b_label,
-                "report_id": report_b.report_id,
-                "bias_score": report_b.overall_bias_score,
-                "risk_level": report_b.risk_level,
-                "sentiment": round(sentiment_b, 4),
-            },
-            "disparity": {
-                "bias_score_delta": round(score_delta, 4),
-                "sentiment_delta": round(sentiment_delta, 4),
-                "disparate_treatment_detected": (
-                    score_delta > self.threshold or sentiment_delta > 0.2
-                ),
-                "higher_bias_group": (
-                    group_a_label if report_a.overall_bias_score >= report_b.overall_bias_score
-                    else group_b_label
-                ),
-            },
-            "compliance_flags": self.config["compliance_frameworks"] if (
-                score_delta > self.threshold
-            ) else [],
-        }
-
-        # Persist comparison
-        comp_path = AUDIT_DIR / f"comparison_{result['comparison_id'][:8]}.json"
-        try:
-            comp_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
-        except OSError as exc:
-            logger.warning(f"Could not save comparison: {exc}")
-
         return result
 
-    # ------------------------------------------------------------------
-    # Detection passes
-    # ------------------------------------------------------------------
+    # ── Lexicon scan ──────────────────────────────────────────────────────────
 
-    def _pass_representation(self, report: BiasReport, lower_text: str) -> None:
-        """
-        Count mentions of each group within each protected attribute.
-        Flag extreme representation imbalances (one group dominates or is absent).
-        """
-        counts: dict[str, dict[str, int]] = {}
-        sensitive_terms = self.config.get("sensitive_terms", {})
-
-        for attribute, terms in sensitive_terms.items():
-            counts[attribute] = {}
-            for term in terms:
-                pattern = r"\b" + re.escape(term) + r"\b"
-                hits = len(re.findall(pattern, lower_text))
-                if hits > 0:
-                    counts[attribute][term] = hits
-                    report.representation_counts[term] = hits
-
-        for attribute, term_counts in counts.items():
-            if not term_counts:
-                continue
-            values = list(term_counts.values())
-            if len(values) < 2:
-                continue
-            max_v, min_v = max(values), min(values)
-            if max_v == 0:
-                continue
-            imbalance_ratio = (max_v - min_v) / max_v
-            if imbalance_ratio > 0.75:
-                dominant = max(term_counts, key=term_counts.get)
-                absent = [t for t, c in term_counts.items() if c == min_v]
-                severity_score = min(imbalance_ratio, 1.0)
-                report.signals.append(BiasSignal(
-                    signal_type="representation_gap",
-                    protected_attribute=attribute,
-                    severity=self._severity_label(severity_score),
-                    severity_score=severity_score,
-                    evidence=(
-                        f"'{dominant}' mentioned {max_v}x vs "
-                        f"{absent[:3]} mentioned {min_v}x "
-                        f"(imbalance={imbalance_ratio:.0%})"
-                    ),
-                    affected_groups=absent[:3],
-                    recommendation=(
-                        f"Ensure equitable representation of all {attribute} groups. "
-                        f"Review why '{dominant}' dominates coverage."
-                    ),
-                    compliance_risk=self.config["compliance_frameworks"],
-                ))
-
-    def _pass_sentiment_disparity(self, report: BiasReport, lower_text: str) -> None:
-        """
-        Measure sentiment valence in sentences containing each group term.
-        Flag if one group consistently receives more negative framing.
-        """
-        sentences = re.split(r"[.!?\n]+", lower_text)
-        sensitive_terms = self.config.get("sensitive_terms", {})
-
-        group_sentiments: dict[str, list[float]] = defaultdict(list)
-
-        for sentence in sentences:
-            for attribute, terms in sensitive_terms.items():
-                for term in terms:
-                    if re.search(r"\b" + re.escape(term) + r"\b", sentence):
-                        score = self._sentence_sentiment(sentence)
-                        group_sentiments[term].append(score)
-
-        group_avg: dict[str, float] = {}
-        for term, scores in group_sentiments.items():
-            if scores:
-                group_avg[term] = statistics.mean(scores)
-
-        report.sentiment_by_group = {k: round(v, 4) for k, v in group_avg.items()}
-
-        # Compare within each attribute
-        for attribute, terms in sensitive_terms.items():
-            attr_scores = {t: group_avg[t] for t in terms if t in group_avg}
-            if len(attr_scores) < 2:
-                continue
-            best = max(attr_scores.values())
-            worst = min(attr_scores.values())
-            delta = best - worst
-
-            if delta > 0.25:
-                negative_group = min(attr_scores, key=attr_scores.get)
-                positive_group = max(attr_scores, key=attr_scores.get)
-                severity_score = min(delta / 0.8, 1.0)
-                report.signals.append(BiasSignal(
-                    signal_type="sentiment_disparity",
-                    protected_attribute=attribute,
-                    severity=self._severity_label(severity_score),
-                    severity_score=severity_score,
-                    evidence=(
-                        f"Sentiment gap of {delta:.2f} between "
-                        f"'{positive_group}' (+{group_avg[positive_group]:.2f}) and "
-                        f"'{negative_group}' ({group_avg[negative_group]:.2f})"
-                    ),
-                    affected_groups=[negative_group],
-                    recommendation=(
-                        f"Review tone applied to '{negative_group}'. "
-                        f"Ensure consistent, neutral framing across all {attribute} groups."
-                    ),
-                    compliance_risk=self.config["compliance_frameworks"],
-                ))
-
-    def _pass_stereotype_patterns(
-        self, report: BiasReport, original_text: str, lower_text: str
-    ) -> None:
-        """Match known stereotyping regex patterns."""
-        for pattern, attribute, description in self.STEREOTYPE_PATTERNS:
-            matches = re.findall(pattern, lower_text, re.IGNORECASE | re.DOTALL)
-            if matches:
-                # Find the original text snippet for evidence
-                first_match = re.search(
-                    pattern, lower_text, re.IGNORECASE | re.DOTALL
+    def _scan_lexicon(self, text: str) -> list[BiasFlag]:
+        flags = []
+        for compiled_pat, bias_type, severity, attr, description in self._compiled:
+            for match in compiled_pat.finditer(text):
+                confidence = self._compute_match_confidence(
+                    match.group(), text, bias_type
                 )
-                snippet = ""
-                if first_match:
-                    start = max(0, first_match.start() - 20)
-                    end = min(len(lower_text), first_match.end() + 20)
-                    snippet = f"…{lower_text[start:end]}…"
+                flag = BiasFlag(
+                    bias_type=bias_type,
+                    severity=severity,
+                    protected_attribute=attr,
+                    matched_text=match.group(),
+                    pattern=compiled_pat.pattern,
+                    description=description,
+                    position=match.start(),
+                    confidence=confidence,
+                    regulatory_refs=self.regulatory_refs,
+                    recommendation=self._get_lexical_recommendation(bias_type, attr),
+                )
+                flags.append(flag)
+                logger.debug(f"Lexical match: '{match.group()}' [{severity.value}] at pos {match.start()}")
+        return flags
 
-                severity_score = min(0.4 + (len(matches) - 1) * 0.15, 1.0)
-                report.signals.append(BiasSignal(
-                    signal_type="stereotyping",
-                    protected_attribute=attribute,
-                    severity=self._severity_label(severity_score),
-                    severity_score=severity_score,
-                    evidence=f"{description} | {len(matches)} instance(s) | '{snippet}'",
-                    affected_groups=[attribute],
-                    recommendation=(
-                        f"Remove or rephrase stereotype-reinforcing language. "
-                        f"Replace with factual, individual-focused framing."
-                    ),
-                    compliance_risk=self.config["compliance_frameworks"],
-                ))
-
-    def _pass_hedge_asymmetry(self, report: BiasReport, lower_text: str) -> None:
+    def _compute_match_confidence(self, matched: str, full_text: str, bias_type: BiasType) -> float:
         """
-        Detect asymmetric hedge/uncertainty language applied to different demographic groups.
-        E.g., 'she might qualify' vs 'he qualifies'.
+        Heuristic confidence: longer matches, matches not in quotes, not negated
+        get higher confidence.
         """
-        sentences = re.split(r"[.!?\n]+", lower_text)
-        sensitive_terms = self.config.get("sensitive_terms", {})
+        base = 0.7
+        # Boost for longer matches
+        if len(matched) > 15:
+            base += 0.1
+        # Penalize if likely quoted or referenced
+        context_window = full_text[max(0, full_text.find(matched) - 20):
+                                   full_text.find(matched) + len(matched) + 20]
+        if '"' in context_window or "'" in context_window:
+            base -= 0.2
+        # Penalize if negated
+        negation_words = {"not", "never", "no", "without", "avoid", "don't", "doesn't"}
+        words_before = context_window[:20].lower().split()
+        if any(w in negation_words for w in words_before):
+            base -= 0.3
+        return round(max(0.1, min(1.0, base)), 2)
 
-        hedged_by_group: dict[str, int] = defaultdict(int)
-        sentence_by_group: dict[str, int] = defaultdict(int)
+    def _get_lexical_recommendation(self, bias_type: BiasType, attr: Optional[ProtectedAttribute]) -> str:
+        recs = {
+            BiasType.LEXICAL: f"Replace biased terminology. Use neutral, person-first language.",
+            BiasType.DEMOGRAPHIC: f"Ensure language is applied consistently regardless of {attr.value if attr else 'demographic'}.",
+            BiasType.FRAMING: "Review framing for differential presentation. Ensure equal treatment.",
+            BiasType.RECOMMENDATION: "Audit whether recommendations differ by demographic group.",
+            BiasType.OMISSION: "Verify all relevant options are presented equally across groups.",
+        }
+        return recs.get(bias_type, "Review and revise flagged language.")
 
-        for sentence in sentences:
-            has_hedge = any(
-                re.search(r"\b" + re.escape(h) + r"\b", sentence)
-                for h in HEDGE_WORDS
-            )
-            for attribute, terms in sensitive_terms.items():
-                for term in terms:
-                    if re.search(r"\b" + re.escape(term) + r"\b", sentence):
-                        sentence_by_group[term] += 1
-                        if has_hedge:
-                            hedged_by_group[term] += 1
+    # ── Sentiment analysis ────────────────────────────────────────────────────
 
-        hedge_rates: dict[str, float] = {}
-        for term, count in sentence_by_group.items():
-            if count >= 2:  # Need at least 2 sentences to measure rate
-                hedge_rates[term] = hedged_by_group[term] / count
+    def _analyze_sentiment(self, text: str) -> dict:
+        words = re.findall(r"\b\w+\b", text.lower())
+        positive_hits = sum(1 for w in words if w in POSITIVE_SENTIMENT_WORDS)
+        negative_hits = sum(1 for w in words if w in NEGATIVE_SENTIMENT_WORDS)
+        total_sentiment_words = positive_hits + negative_hits
 
-        if len(hedge_rates) < 2:
-            return
+        if total_sentiment_words == 0:
+            return {
+                "positive_count": 0,
+                "negative_count": 0,
+                "overall_negativity": 0.0,
+                "overall_positivity": 0.0,
+                "sentiment_ratio": None,
+            }
 
-        for attribute, terms in sensitive_terms.items():
-            attr_rates = {t: hedge_rates[t] for t in terms if t in hedge_rates}
-            if len(attr_rates) < 2:
-                continue
-            max_rate = max(attr_rates.values())
-            min_rate = min(attr_rates.values())
-            if max_rate - min_rate > 0.40:
-                high_hedge_group = max(attr_rates, key=attr_rates.get)
-                severity_score = min((max_rate - min_rate) / 0.8, 1.0)
-                report.signals.append(BiasSignal(
-                    signal_type="hedge_asymmetry",
-                    protected_attribute=attribute,
-                    severity=self._severity_label(severity_score * 0.7),  # slightly softer
-                    severity_score=severity_score * 0.7,
-                    evidence=(
-                        f"'{high_hedge_group}' sentences hedged at {max_rate:.0%} "
-                        f"vs other groups at {min_rate:.0%}"
-                    ),
-                    affected_groups=[high_hedge_group],
-                    recommendation=(
-                        f"Apply consistent confidence language across all {attribute} groups. "
-                        f"Uncertainty language should reflect facts, not group membership."
-                    ),
-                    compliance_risk=self.config["compliance_frameworks"],
-                ))
+        negativity = negative_hits / total_sentiment_words
+        positivity = positive_hits / total_sentiment_words
 
-    def _pass_disparate_impact_proxies(self, report: BiasReport, lower_text: str) -> None:
-        """
-        Detect outcome language (approved/denied/high-risk) appearing
-        disproportionately near certain group terms.
-        """
-        WINDOW = 150  # characters each side
-        sensitive_terms = self.config.get("sensitive_terms", {})
+        return {
+            "positive_count": positive_hits,
+            "negative_count": negative_hits,
+            "overall_negativity": round(negativity, 3),
+            "overall_positivity": round(positivity, 3),
+            "sentiment_ratio": round(positivity / negativity, 2) if negative_hits > 0 else None,
+        }
 
-        positive_by_group: dict[str, int] = defaultdict(int)
-        negative_by_group: dict[str, int] = defaultdict(int)
-
-        for attribute, terms in sensitive_terms.items():
-            for term in terms:
-                for match in re.finditer(r"\b" + re.escape(term) + r"\b", lower_text):
-                    start = max(0, match.start() - WINDOW)
-                    end = min(len(lower_text), match.end() + WINDOW)
-                    window_text = lower_text[start:end]
-
-                    for pos in self.OUTCOME_POSITIVE_PROXIES:
-                        if pos in window_text:
-                            positive_by_group[term] += 1
-                    for neg in self.OUTCOME_NEGATIVE_PROXIES:
-                        if neg in window_text:
-                            negative_by_group[term] += 1
-
-        for attribute, terms in sensitive_terms.items():
-            neg_counts = {t: negative_by_group[t] for t in terms if negative_by_group[t] > 0}
-            pos_counts = {t: positive_by_group[t] for t in terms if positive_by_group[t] > 0}
-
-            if not neg_counts and not pos_counts:
-                continue
-
-            # Check if negative outcomes cluster around specific groups
-            all_terms_with_outcomes = set(neg_counts) | set(pos_counts)
-            if len(all_terms_with_outcomes) < 2:
-                continue
-
-            for term in neg_counts:
-                neg = neg_counts.get(term, 0)
-                pos = pos_counts.get(term, 0)
-                total = neg + pos
-                if total < 2:
-                    continue
-                negative_rate = neg / total
-                if negative_rate > 0.70:
-                    severity_score = min(negative_rate, 1.0)
-                    report.signals.append(BiasSignal(
-                        signal_type="disparate_impact",
-                        protected_attribute=attribute,
-                        severity=self._severity_label(severity_score),
-                        severity_score=severity_score,
-                        evidence=(
-                            f"'{term}' co-occurs with negative outcome language "
-                            f"{neg}x vs positive {pos}x "
-                            f"(negative rate={negative_rate:.0%})"
-                        ),
-                        affected_groups=[term],
-                        recommendation=(
-                            f"Review whether outcome language associated with '{term}' "
-                            f"reflects legitimate criteria or proxy discrimination. "
-                            f"Consider disparate impact legal analysis under "
-                            f"{', '.join(self.config['compliance_frameworks'][:2])}."
-                        ),
-                        compliance_risk=self.config["compliance_frameworks"],
-                    ))
-
-    # ------------------------------------------------------------------
-    # Scoring helpers
-    # ------------------------------------------------------------------
-
-    def _sentence_sentiment(self, sentence: str) -> float:
-        """
-        Lightweight sentiment score: -1.0 (very negative) to +1.0 (very positive).
-        Does not require external NLP libraries.
-        """
-        words = re.findall(r"\b\w+\b", sentence)
-        if not words:
-            return 0.0
-        pos = sum(1 for w in words if w in POSITIVE_WORDS)
-        neg = sum(1 for w in words if w in NEGATIVE_WORDS)
+    def _score_sentiment_in_span(self, text: str) -> float:
+        """Returns a sentiment score: -1.0 (very negative) to +1.0 (very positive)."""
+        words = re.findall(r"\b\w+\b", text.lower())
+        pos = sum(1 for w in words if w in POSITIVE_SENTIMENT_WORDS)
+        neg = sum(1 for w in words if w in NEGATIVE_SENTIMENT_WORDS)
         total = pos + neg
         if total == 0:
             return 0.0
-        return (pos - neg) / max(len(words), 1) * 3  # scale up, clamp below
+        return round((pos - neg) / total, 3)
 
-    def _overall_sentiment_score(self, lower_text: str) -> float:
-        """Aggregate sentiment across all sentences."""
-        sentences = re.split(r"[.!?\n]+", lower_text)
-        scores = [self._sentence_sentiment(s) for s in sentences if s.strip()]
-        return statistics.mean(scores) if scores else 0.0
+    # ── Demographic disparity in single text ──────────────────────────────────
 
-    def _aggregate_score(self, signals: list[BiasSignal]) -> float:
+    def _check_demographic_disparity_in_text(self, text: str) -> dict:
         """
-        Compute overall bias score from detected signals.
-        Uses diminishing returns formula so adding minor signals
-        doesn't artificially inflate above 1.0.
+        For each protected attribute, finds mentions of different groups
+        and compares the sentiment of surrounding context.
         """
-        if not signals:
-            return 0.0
-        # Weight critical > high > medium > low
-        weight_map = {"critical": 1.0, "high": 0.7, "medium": 0.4, "low": 0.15}
-        raw = sum(weight_map.get(s.severity, 0.2) * s.severity_score for s in signals)
-        # Sigmoid-like compression into [0, 1]
-        return 1.0 - math.exp(-raw * 0.8)
+        results = {}
+        for attr, config in PROTECTED_GROUP_TERMS.items():
+            group_sentiments = {}
+            for group_terms in config["groups"]:
+                group_label = group_terms[0]
+                sentiment_scores = []
+                for term in group_terms:
+                    # Find all occurrences and extract ±50 char context
+                    for match in re.finditer(re.escape(term), text, re.IGNORECASE):
+                        start = max(0, match.start() - 50)
+                        end = min(len(text), match.end() + 100)
+                        context = text[start:end]
+                        score = self._score_sentiment_in_span(context)
+                        sentiment_scores.append(score)
 
-    def _severity_label(self, score: float) -> str:
-        if score >= 0.75:
-            return "critical"
-        elif score >= 0.50:
-            return "high"
-        elif score >= 0.25:
-            return "medium"
-        return "low"
+                if sentiment_scores:
+                    group_sentiments[group_label] = round(statistics.mean(sentiment_scores), 3)
 
-    def _risk_level(self, score: float) -> str:
-        if score < self.threshold:
-            return "PASS"
-        elif score < self.threshold * 2.5:
+            if len(group_sentiments) < 2:
+                continue  # Can't compare disparity with fewer than 2 groups
+
+            scores = list(group_sentiments.values())
+            disparity = max(scores) - min(scores)
+            best_group = max(group_sentiments, key=group_sentiments.get)
+            worst_group = min(group_sentiments, key=group_sentiments.get)
+
+            results[attr.value] = {
+                "group_sentiments": group_sentiments,
+                "disparity": round(disparity, 3),
+                "disparity_detected": disparity > 0.3,
+                "most_positive_group": best_group,
+                "most_negative_group": worst_group,
+                "evidence": f"Sentiment gap of {disparity:.2f} between '{best_group}' "
+                            f"({group_sentiments[best_group]:.2f}) and "
+                            f"'{worst_group}' ({group_sentiments[worst_group]:.2f})",
+            }
+
+        return results
+
+    # ── Regulatory pattern checks ─────────────────────────────────────────────
+
+    def _check_regulatory_patterns(self, text: str) -> list[BiasFlag]:
+        flags = []
+
+        # ECOA — cannot ask about protected class in credit decisions
+        if self.domain == Domain.FINANCE:
+            ecoa_patterns = [
+                (r"\b(race|religion|national origin|sex|marital status|age)\s+(affects?|impacts?|influences?)\s+(credit|approval|loan)",
+                 "ECOA violation: Protected class used as credit factor"),
+                (r"\bdo\s+you\s+receive\s+(public assistance|welfare|disability payments)\b",
+                 "ECOA violation: Public assistance inquiry in credit context"),
+            ]
+            for pat, desc in ecoa_patterns:
+                if re.search(pat, text, re.IGNORECASE):
+                    flags.append(BiasFlag(
+                        bias_type=BiasType.REGULATORY,
+                        severity=SeverityLevel.CRITICAL,
+                        description=desc,
+                        matched_text=re.search(pat, text, re.IGNORECASE).group(),
+                        confidence=0.95,
+                        regulatory_refs=["ECOA", "Regulation B"],
+                        recommendation="Remove protected class reference from credit decision logic immediately.",
+                    ))
+
+        # EEOC — job ads cannot specify age/gender preferences
+        if self.domain == Domain.HIRING:
+            eeoc_patterns = [
+                (r"\b(must be|only)\s+(male|female|man|woman|young|old)\b",
+                 "EEOC violation: Direct gender/age requirement in job posting"),
+                (r"\bage\s+(requirement|limit|restriction)\s*:\s*\d+",
+                 "ADEA violation: Explicit age limit in job requirement"),
+            ]
+            for pat, desc in eeoc_patterns:
+                if re.search(pat, text, re.IGNORECASE):
+                    flags.append(BiasFlag(
+                        bias_type=BiasType.REGULATORY,
+                        severity=SeverityLevel.CRITICAL,
+                        description=desc,
+                        matched_text=re.search(pat, text, re.IGNORECASE).group(),
+                        confidence=0.95,
+                        regulatory_refs=["EEOC", "Title VII", "ADEA"],
+                        recommendation="Remove discriminatory requirement. Consult HR/legal before publishing.",
+                    ))
+
+        # FHA — housing ads cannot indicate preference
+        if self.domain == Domain.HOUSING:
+            fha_patterns = [
+                (r"\b(prefer|looking for|ideal for)\s+(families|singles|couples|professionals|christians|no kids)",
+                 "FHA violation: Preference stated for protected class in housing"),
+            ]
+            for pat, desc in fha_patterns:
+                if re.search(pat, text, re.IGNORECASE):
+                    flags.append(BiasFlag(
+                        bias_type=BiasType.REGULATORY,
+                        severity=SeverityLevel.CRITICAL,
+                        description=desc,
+                        matched_text=re.search(pat, text, re.IGNORECASE).group(),
+                        confidence=0.9,
+                        regulatory_refs=["Fair Housing Act"],
+                        recommendation="Remove preference language. FHA prohibits stated preferences for any protected class.",
+                    ))
+
+        return flags
+
+    # ── Omission check ────────────────────────────────────────────────────────
+
+    def _check_omissions(self, text: str) -> list[BiasFlag]:
+        """
+        Checks for systematic omissions — e.g., clinical text that discusses
+        a condition but omits standard-of-care options.
+        """
+        flags = []
+
+        if self.domain == Domain.HEALTHCARE:
+            # If pain is mentioned but no treatment options are offered
+            if re.search(r"\bpain\b", text, re.IGNORECASE):
+                treatment_terms = ["medication", "therapy", "referral", "prescription",
+                                   "treatment", "analgesic", "management", "options"]
+                has_treatment = any(t in text.lower() for t in treatment_terms)
+                if not has_treatment and len(text) > 100:
+                    flags.append(BiasFlag(
+                        bias_type=BiasType.OMISSION,
+                        severity=SeverityLevel.MEDIUM,
+                        description="Pain mentioned without treatment options — potential under-treatment documentation",
+                        matched_text="[pain mentioned, no treatment]",
+                        confidence=0.6,
+                        regulatory_refs=["ACA Section 1557", "ADA"],
+                        recommendation="Ensure treatment options are documented when pain is noted. "
+                                       "Under-treatment is a documented disparity.",
+                    ))
+
+        if self.domain == Domain.FINANCE:
+            # Credit denial without reason codes
+            if re.search(r"\b(denied|decline|rejected|not approved)\b", text, re.IGNORECASE):
+                has_reason = re.search(
+                    r"\b(reason|because|due to|based on|factor|score|history)\b",
+                    text, re.IGNORECASE
+                )
+                if not has_reason:
+                    flags.append(BiasFlag(
+                        bias_type=BiasType.OMISSION,
+                        severity=SeverityLevel.HIGH,
+                        description="Credit denial without reason codes — ECOA requires adverse action notice",
+                        matched_text="[denial without reason]",
+                        confidence=0.75,
+                        regulatory_refs=["ECOA", "FCRA"],
+                        recommendation="Include ECOA-compliant adverse action notice with specific reason codes.",
+                    ))
+
+        return flags
+
+    # ── Scoring & verdict ─────────────────────────────────────────────────────
+
+    def _count_severities(self, flags: list[BiasFlag]) -> dict:
+        counts = {s.value: 0 for s in SeverityLevel}
+        for flag in flags:
+            counts[flag.severity.value] += 1
+        return counts
+
+    def _compute_bias_score(self, flags: list[BiasFlag]) -> float:
+        """
+        Weighted bias score 0.0–1.0.
+        Critical=0.4, High=0.2, Medium=0.1, Low=0.05 — capped at 1.0.
+        Also weighted by confidence.
+        """
+        weights = {
+            SeverityLevel.CRITICAL: 0.4,
+            SeverityLevel.HIGH: 0.2,
+            SeverityLevel.MEDIUM: 0.1,
+            SeverityLevel.LOW: 0.05,
+        }
+        total = sum(weights[f.severity] * f.confidence for f in flags)
+        return round(min(total, 1.0), 4)
+
+    def _compute_verdict(self, score: float, severity_counts: dict) -> str:
+        if (severity_counts.get("critical", 0) > 0 or score >= 0.7):
+            return "BLOCK"
+        if (severity_counts.get("high", 0) > 0 or score >= 0.3):
             return "REVIEW"
-        return "FAIL"
+        return "PASS"
 
-    # ------------------------------------------------------------------
-    # Remediation
-    # ------------------------------------------------------------------
+    def _generate_recommendations(self, result: AnalysisResult) -> list[str]:
+        recs = []
+        unique_recs = set()
 
-    def _build_remediation(self, report: BiasReport) -> list[str]:
-        suggestions: list[str] = []
+        for flag in result.bias_flags:
+            if flag.recommendation and flag.recommendation not in unique_recs:
+                recs.append(flag.recommendation)
+                unique_recs.add(flag.recommendation)
 
-        signal_types = {s.signal_type for s in report.signals}
-        high_severity = [s for s in report.signals if s.severity in ("critical", "high")]
-
-        if "sentiment_disparity" in signal_types:
-            suggestions.append(
-                "Audit tone calibration: run outputs through neutral rewriting guidelines "
-                "ensuring identical sentiment framing for equivalent scenarios across all groups."
-            )
-        if "representation_gap" in signal_types:
-            suggestions.append(
-                "Implement representation quotas in prompt engineering: "
-                "explicitly instruct the model to reference all relevant groups proportionally."
-            )
-        if "stereotyping" in signal_types:
-            suggestions.append(
-                "Add stereotype filter to post-processing pipeline: "
-                "maintain a blocked-phrase list derived from audit findings and validate each output."
-            )
-        if "disparate_impact" in signal_types:
-            suggestions.append(
-                "Conduct disparate impact statistical analysis across production outputs. "
-                "Document business necessity justification for any differential outcomes "
-                f"as required under {', '.join(self.config['compliance_frameworks'][:2])}."
-            )
-        if "hedge_asymmetry" in signal_types:
-            suggestions.append(
-                "Standardize confidence language: use fixed uncertainty templates "
-                "applied uniformly regardless of demographic context."
+        if result.regulatory_risks:
+            recs.append(
+                f"Regulatory exposure: {', '.join(result.regulatory_risks)}. "
+                "Escalate to legal/compliance team."
             )
 
-        if high_severity:
-            suggestions.append(
-                f"URGENT: {len(high_severity)} critical/high severity signal(s) detected. "
-                "Halt production use of this output until human compliance review is complete."
-            )
+        if result.verdict == "BLOCK":
+            recs.insert(0, "⛔ OUTPUT BLOCKED. Do not deliver this content to end user. "
+                           "Human review required before any release.")
+        elif result.verdict == "REVIEW":
+            recs.insert(0, "⚠️ Human review required before delivering this output.")
 
-        suggestions.append(
-            f"Schedule compliance review against: {', '.join(self.config['compliance_frameworks'])}. "
-            "Document findings in your AI governance register."
+        return recs[:10]  # Cap at 10 recommendations
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# COMPARATIVE TESTER — A/B demographic swap testing
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ComparativeBiasTester:
+    """
+    Tests AI model outputs for demographic disparity by running the same
+    prompt with swapped demographic terms and comparing outputs.
+
+    This catches bias that lexical scanning misses — e.g., an AI that
+    produces qualitatively different loan advice for "John Smith" vs
+    "Jamal Williams" even when the financial profiles are identical.
+    """
+
+    def __init__(self, domain: Domain = Domain.GENERAL):
+        self.detector = BiasDetector(domain)
+        self.domain = domain
+
+    def compare_outputs(
+        self,
+        group_a_text: str,
+        group_b_text: str,
+        group_a_label: str = "Group A",
+        group_b_label: str = "Group B",
+    ) -> ComparativeTestResult:
+        """
+        Compare two AI outputs that were generated with different demographic
+        contexts (same base prompt, swapped demographic identifiers).
+        """
+        result_a = self.detector.analyze(group_a_text)
+        result_b = self.detector.analyze(group_b_text)
+
+        score_a = result_a.overall_bias_score
+        score_b = result_b.overall_bias_score
+        disparity = abs(score_a - score_b)
+
+        sentiment_a = result_a.sentiment_disparity.get("overall_negativity", 0)
+        # Re-analyze for direct sentiment comparison
+        sa = self.detector._analyze_sentiment(group_a_text)
+        sb = self.detector._analyze_sentiment(group_b_text)
+        sent_a = sa.get("overall_negativity", 0.0)
+        sent_b = sb.get("overall_negativity", 0.0)
+        sent_disparity = abs(sent_a - sent_b)
+
+        test = ComparativeTestResult(
+            group_a_label=group_a_label,
+            group_b_label=group_b_label,
+            group_a_text=group_a_text[:500],
+            group_b_text=group_b_text[:500],
+            group_a_score=score_a,
+            group_b_score=score_b,
+            disparity=round(disparity, 4),
+            disparity_significant=disparity > 0.15,
+            sentiment_a=round(sent_a, 3),
+            sentiment_b=round(sent_b, 3),
+            sentiment_disparity=round(sent_disparity, 3),
         )
 
-        return suggestions
+        logger.info(
+            f"Comparative test: {group_a_label}={score_a:.3f} vs "
+            f"{group_b_label}={score_b:.3f} disparity={disparity:.3f} "
+            f"significant={test.disparity_significant}"
+        )
+        return test
 
-    # ------------------------------------------------------------------
-    # Persistence
-    # ------------------------------------------------------------------
-
-    def _save_report(self, report: BiasReport) -> None:
-        path = AUDIT_DIR / f"report_{report.report_id[:8]}_{self.domain}.json"
-        try:
-            path.write_text(json.dumps(asdict(report), indent=2), encoding="utf-8")
-            logger.debug(f"Report saved: {path}")
-        except OSError as exc:
-            logger.warning(f"Could not save report: {exc}")
-
-    def _save_batch_summary(self, summary: BatchSummary) -> None:
-        path = AUDIT_DIR / f"batch_{summary.batch_id[:8]}_{self.domain}.json"
-        try:
-            path.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
-            logger.debug(f"Batch summary saved: {path}")
-        except OSError as exc:
-            logger.warning(f"Could not save batch summary: {exc}")
-
-
-# ---------------------------------------------------------------------------
-# Report renderer (human-readable console output)
-# ---------------------------------------------------------------------------
-
-class ReportRenderer:
-    """Renders BiasReport and BatchSummary to human-readable console output."""
-
-    SEVERITY_ICONS = {
-        "critical": "🔴",
-        "high":     "🟠",
-        "medium":   "🟡",
-        "low":      "🟢",
-    }
-    RISK_ICONS = {"PASS": "✅", "REVIEW": "⚠️ ", "FAIL": "❌"}
-
-    @classmethod
-    def render_report(cls, report: BiasReport) -> str:
-        lines = [
-            "",
-            "═" * 68,
-            f"  AI OUTPUT BIAS DETECTION REPORT",
-            f"  Domain: {report.domain.upper()} | Risk: {cls.RISK_ICONS.get(report.risk_level, '?')} {report.risk_level}",
-            "═" * 68,
-            f"  Report ID  : {report.report_id[:16]}…",
-            f"  Timestamp  : {report.timestamp}",
-            f"  Input hash : {report.input_hash[:32]}…",
-            f"  Text length: {report.text_length} chars",
-            f"  Bias score : {report.overall_bias_score:.4f}  (threshold: {DOMAIN_CONFIG[report.domain]['bias_threshold']})",
-            f"  Compliance : {', '.join(report.compliance_frameworks)}",
-            "",
-        ]
-
-        if report.signals:
-            lines.append(f"  SIGNALS DETECTED ({len(report.signals)}):")
-            lines.append("  " + "─" * 64)
-            for sig in sorted(report.signals, key=lambda s: -s.severity_score):
-                icon = cls.SEVERITY_ICONS.get(sig.severity, "•")
-                lines.append(
-                    f"  {icon} [{sig.severity.upper()}] {sig.signal_type.replace('_', ' ').title()}"
-                    f" — {sig.protected_attribute}"
+    def batch_compare(
+        self,
+        outputs: list[dict],  # [{"label": str, "text": str}, ...]
+    ) -> list[ComparativeTestResult]:
+        """Compare all pairs in a batch."""
+        results = []
+        for i in range(len(outputs)):
+            for j in range(i + 1, len(outputs)):
+                r = self.compare_outputs(
+                    group_a_text=outputs[i]["text"],
+                    group_b_text=outputs[j]["text"],
+                    group_a_label=outputs[i]["label"],
+                    group_b_label=outputs[j]["label"],
                 )
-                lines.append(f"      Evidence: {sig.evidence[:120]}")
-                lines.append(f"      Fix: {sig.recommendation[:120]}")
-                lines.append("")
-        else:
-            lines.append("  ✅ No bias signals detected.")
-            lines.append("")
-
-        if report.sentiment_by_group:
-            lines.append("  SENTIMENT BY GROUP:")
-            for group, score in sorted(
-                report.sentiment_by_group.items(), key=lambda x: x[1]
-            ):
-                bar_len = int((score + 1) * 10)
-                bar = "█" * max(bar_len, 0) + "░" * max(20 - bar_len, 0)
-                lines.append(f"    {group:<20} {bar} {score:+.3f}")
-            lines.append("")
-
-        if report.remediation_required:
-            lines.append("  REMEDIATION REQUIRED:")
-            lines.append("  " + "─" * 64)
-            for i, suggestion in enumerate(report.remediation_suggestions, 1):
-                lines.append(f"  {i}. {suggestion}")
-            lines.append("")
-
-        lines.append("═" * 68)
-        return "\n".join(lines)
-
-    @classmethod
-    def render_batch_summary(cls, summary: BatchSummary) -> str:
-        pass_rate = (summary.passed / summary.total_outputs * 100) if summary.total_outputs else 0
-        lines = [
-            "",
-            "═" * 68,
-            f"  BATCH BIAS AUDIT SUMMARY — {summary.domain.upper()}",
-            "═" * 68,
-            f"  Batch ID   : {summary.batch_id[:16]}…",
-            f"  Timestamp  : {summary.timestamp}",
-            f"  Total      : {summary.total_outputs}",
-            f"  ✅ PASS    : {summary.passed}  ({pass_rate:.0f}%)",
-            f"  ⚠️  REVIEW  : {summary.review}",
-            f"  ❌ FAIL    : {summary.failed}",
-            f"  Avg score  : {summary.avg_bias_score:.4f}",
-        ]
-        if summary.top_signals:
-            lines.append(f"  Top signals: {', '.join(summary.top_signals)}")
-        if summary.highest_risk_outputs:
-            lines.append(f"  High-risk IDs: {summary.highest_risk_outputs[:3]}")
-        lines.append("═" * 68)
-        return "\n".join(lines)
-
-    @classmethod
-    def render_comparison(cls, comparison: dict) -> str:
-        disp = comparison["disparity"]
-        flag = "⚠️  DISPARATE TREATMENT DETECTED" if disp["disparate_treatment_detected"] else "✅ No significant disparity"
-        lines = [
-            "",
-            "═" * 68,
-            "  A/B DEMOGRAPHIC COMPARISON AUDIT",
-            "═" * 68,
-            f"  {comparison['group_a']['label']:<30} {comparison['group_b']['label']}",
-            f"  Bias score:  {comparison['group_a']['bias_score']:.4f}{'':>20}{comparison['group_b']['bias_score']:.4f}",
-            f"  Sentiment:   {comparison['group_a']['sentiment']:+.4f}{'':>20}{comparison['group_b']['sentiment']:+.4f}",
-            f"  Risk level:  {comparison['group_a']['risk_level']:<30}{comparison['group_b']['risk_level']}",
-            "",
-            f"  Score delta    : {disp['bias_score_delta']:.4f}",
-            f"  Sentiment delta: {disp['sentiment_delta']:.4f}",
-            f"  Verdict        : {flag}",
-        ]
-        if comparison["compliance_flags"]:
-            lines.append(f"  Compliance risk: {', '.join(comparison['compliance_flags'])}")
-        lines.append("═" * 68)
-        return "\n".join(lines)
+                results.append(r)
+        return results
 
 
-# ---------------------------------------------------------------------------
-# Standalone demo
-# ---------------------------------------------------------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+# AUDIT ENGINE — Longitudinal analysis and reporting
+# ══════════════════════════════════════════════════════════════════════════════
 
-def _run_demo() -> None:
-    print("\n" + "▓" * 68)
-    print("  TAD BUILD AGENT — AI Output Bias Detection Demo")
-    print("  Domain: Healthcare + Hiring")
-    print("▓" * 68)
-
-    # ── Healthcare demo ────────────────────────────────────────────────
-    healthcare_detector = BiasDetector("healthcare")
-
-    biased_healthcare_output = """
-    The elderly patient appears to be struggling with her medication regimen,
-    which is typical for older women who tend to be emotionally overwhelmed
-    by complex treatment plans. Black patients in urban areas generally show
-    lower compliance rates and may require additional monitoring. The young
-    male patient should recover quickly given his strong constitution.
-    She might benefit from simplified instructions, though compliance is uncertain.
-    The disabled patient will likely be a burden on the care team.
-    We recommend expedited discharge for the high-income patient and
-    additional review for the low-income patient before approving coverage.
+class BiasAuditEngine:
+    """
+    Stores analysis history and generates compliance audit reports.
+    Tracks bias drift over time — catches AI models that gradually
+    become more biased as they're fine-tuned or updated.
     """
 
-    print("\n[1] Healthcare — Biased Output Analysis")
-    report = healthcare_detector.analyze(
-        biased_healthcare_output,
-        context="Demo: flagged healthcare AI output"
+    def __init__(self, organization_id: str, domain: Domain = Domain.GENERAL):
+        self.org_id = organization_id
+        self.domain = domain
+        self.history_file = AUDIT_DIR / f"{organization_id}_{domain.value}_history.jsonl"
+        self.detector = BiasDetector(domain)
+        logger.info(f"AuditEngine init — org={organization_id} domain={domain.value}")
+
+    def record_analysis(self, result: AnalysisResult) -> None:
+        """Persist an analysis result to the audit trail."""
+        record = {
+            **asdict(result),
+            "organization_id": self.org_id,
+        }
+        # Convert enum values for JSON serialisation
+        record = self._serialise(record)
+        try:
+            with open(self.history_file, "a") as f:
+                f.write(json.dumps(record) + "\n")
+        except OSError as e:
+            logger.error(f"Failed to write audit record: {e}")
+
+    def _serialise(self, obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return {k: self._serialise(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [self._serialise(v) for v in obj]
+        if isinstance(obj, Enum):
+            return obj.value
+        return obj
+
+    def load_history(
+        self,
+        days: int = 30,
+    ) -> list[dict]:
+        """Load analysis records from the past N days."""
+        if not self.history_file.exists():
+            return []
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        records = []
+        try:
+            with open(self.history_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                        ts = datetime.fromisoformat(record.get("timestamp", ""))
+                        if ts >= cutoff:
+                            records.append(record)
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+        except OSError as e:
+            logger.error(f"Failed to read history: {e}")
+        return records
+
+    def generate_audit_report(self, days: int = 30) -> AuditReport:
+        """Generate a compliance audit report for the past N days."""
+        history = self.load_history(days)
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+
+        report = AuditReport(
+            organization_id=self.org_id,
+            period_start=start_date.isoformat(),
+            period_end=end_date.isoformat(),
+            domain=self.domain.value,
+            total_analyses=len(history),
+        )
+
+        if not history:
+            report.executive_summary = "No analysis data available for this period."
+            report.compliance_score = 100.0
+            return report
+
+        # Count verdicts
+        flagged = [r for r in history if r.get("verdict") in ("REVIEW", "BLOCK")]
+        blocked = [r for r in history if r.get("verdict") == "BLOCK"]
+        report.flagged_count = len(flagged)
+        report.blocked_count = len(blocked)
+        report.flag_rate = round(len(flagged) / len(history), 4)
+
+        # Top bias types
+        bias_type_counts: dict[str, int] = defaultdict(int)
+        attr_counts: dict[str, int] = defaultdict(int)
+        all_reg_risks: list[str] = []
+
+        for record in history:
+            for flag in record.get("bias_flags", []):
+                bias_type_counts[flag.get("bias_type", "unknown")] += 1
+                attr = flag.get("protected_attribute")
+                if attr:
+                    attr_counts[attr] += 1
+            all_reg_risks.extend(record.get("regulatory_risks", []))
+
+        report.top_bias_types = sorted(
+            [{"type": k, "count": v} for k, v in bias_type_counts.items()],
+            key=lambda x: x["count"], reverse=True
+        )[:5]
+
+        report.top_protected_attributes = sorted(
+            [{"attribute": k, "count": v} for k, v in attr_counts.items()],
+            key=lambda x: x["count"], reverse=True
+        )[:5]
+
+        report.regulatory_exposure = list(set(all_reg_risks))
+
+        # Trend analysis — compare first half vs second half of period
+        mid = len(history) // 2
+        if mid > 0:
+            first_half_flag_rate = sum(
+                1 for r in history[:mid] if r.get("verdict") in ("REVIEW", "BLOCK")
+            ) / mid
+            second_half_flag_rate = sum(
+                1 for r in history[mid:] if r.get("verdict") in ("REVIEW", "BLOCK")
+            ) / (len(history) - mid)
+
+            if second_half_flag_rate < first_half_flag_rate - 0.05:
+                report.trend = "improving"
+            elif second_half_flag_rate > first_half_flag_rate + 0.05:
+                report.trend = "worsening"
+            else:
+                report.trend = "stable"
+
+        # Compliance score (100 = perfect, decreasing with flags/blocks)
+        base = 100.0
+        base -= report.flag_rate * 50
+        base -= (report.blocked_count / max(report.total_analyses, 1)) * 30
+        base -= len(report.regulatory_exposure) * 2
+        report.compliance_score = round(max(0.0, min(100.0, base)), 1)
+
+        report.executive_summary = (
+            f"Period: {start_date.date()} – {end_date.date()} | "
+            f"Domain: {self.domain.value.title()} | "
+            f"Analyses: {report.total_analyses} | "
+            f"Flagged: {report.flagged_count} ({report.flag_rate:.1%}) | "
+            f"Blocked: {report.blocked_count} | "
+            f"Trend: {report.trend.upper()} | "
+            f"Compliance Score: {report.compliance_score}/100"
+        )
+
+        logger.info(f"Audit report generated: {report.executive_summary}")
+        return report
+
+    def save_report(self, report: AuditReport) -> Path:
+        """Save audit report to memory/bias_reports/."""
+        filename = (
+            BIAS_REPORTS_DIR
+            / f"{self.org_id}_{self.domain.value}_{report.report_id[:8]}.json"
+        )
+        try:
+            with open(filename, "w") as f:
+                json.dump(self._serialise(asdict(report)), f, indent=2)
+            logger.info(f"Audit report saved: {filename}")
+        except OSError as e:
+            logger.error(f"Failed to save report: {e}")
+        return filename
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API SERVICE LAYER — Simulates the SaaS API surface
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BiasDetectionService:
+    """
+    Production service layer. Manages multiple domain detectors,
+    rate limiting concept, and provides the public API surface.
+
+    In production: wrap with FastAPI / Flask, add auth middleware,
+    rate limiting per API key, and async processing queue.
+    """
+
+    def __init__(self):
+        self._detectors: dict[Domain, BiasDetector] = {}
+        self._audit_engines: dict[str, BiasAuditEngine] = {}
+        self._request_count = 0
+        logger.info("BiasDetectionService started")
+
+    def _get_detector(self, domain: Domain) -> BiasDetector:
+        if domain not in self._detectors:
+            self._detectors[domain] = BiasDetector(domain)
+        return self._detectors[domain]
+
+    def _get_audit_engine(self, org_id: str, domain: Domain) -> BiasAuditEngine:
+        key = f"{org_id}:{domain.value}"
+        if key not in self._audit_engines:
+            self._audit_engines[key] = BiasAuditEngine(org_id, domain)
+        return self._audit_engines[key]
+
+    def analyze_output(
+        self,
+        text: str,
+        domain: str = "general",
+        organization_id: str = "default",
+        record_to_audit: bool = True,
+    ) -> dict:
+        """
+        Primary API endpoint: analyze a single AI output for bias.
+
+        Returns:
+            dict with result_id, verdict, bias_score, flags, recommendations
+        """
+        self._request_count += 1
+
+        try:
+            domain_enum = Domain(domain.lower())
+        except ValueError:
+            domain_enum = Domain.GENERAL
+            logger.warning(f"Unknown domain '{domain}', defaulting to GENERAL")
+
+        try:
+            detector = self._get_detector(domain_enum)
+            result = detector.analyze(text)
+
+            if record_to_audit:
+                engine = self._get_audit_engine(organization_id, domain_enum)
+                engine.record_analysis(result)
+
+            return {
+                "success": True,
+                "result_id": result.result_id,
+                "verdict": result.verdict,
+                "bias_score": result.overall_bias_score,
+                "flag_count": len(result.bias_flags),
+                "severity_counts": result.severity_counts,
+                "regulatory_risks": result.regulatory_risks,
+                "recommendations": result.recommendations,
+                "processing_ms": result.processing_ms,
+                "flags": [
+                    {
+                        "id": f.flag_id,
+                        "type": f.bias_type.value,
+                        "severity": f.severity.value,
+                        "protected_attribute": f.protected_attribute.value if f.protected_attribute else None,
+                        "matched_text": f.matched_text,
+                        "description": f.description,
+                        "confidence": f.confidence,
+                        "recommendation": f.recommendation,
+                    }
+                    for f in result.bias_flags
+                ],
+            }
+        except Exception as e:
+            logger.error(f"Analysis failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "verdict": "ERROR",
+            }
+
+    def compare_demographic_outputs(
+        self,
+        outputs: list[dict],
+        domain: str = "general",
+    ) -> dict:
+        """
+        API endpoint for A/B demographic comparison testing.
+        Accepts: [{"label": "...", "text": "..."}, ...]
+        """
+        try:
+            domain_enum = Domain(domain.lower())
+        except ValueError:
+            domain_enum = Domain.GENERAL
+
+        tester = ComparativeBiasTester(domain_enum)
+        try:
+            results = tester.batch_compare(outputs)
+            significant_disparities = [r for r in results if r.disparity_significant]
+            return {
+                "success": True,
+                "comparison_count": len(results),
+                "significant_disparities": len(significant_disparities),
+                "comparisons": [
+                    {
+                        "test_id": r.test_id,
+                        "group_a": r.group_a_label,
+                        "group_b": r.group_b_label,
+                        "score_a": r.group_a_score,
+                        "score_b": r.group_b_score,
+                        "disparity": r.disparity,
+                        "significant": r.disparity_significant,
+                        "sentiment_disparity": r.sentiment_disparity,
+                    }
+                    for r in results
+                ],
+            }
+        except Exception as e:
+            logger.error(f"Comparative analysis failed: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def get_audit_report(
+        self,
+        organization_id: str,
+        domain: str = "general",
+        days: int = 30,
+    ) -> dict:
+        """API endpoint: generate and return audit report."""
+        try:
+            domain_enum = Domain(domain.lower())
+        except ValueError:
+            domain_enum = Domain.GENERAL
+
+        try:
+            engine = self._get_audit_engine(organization_id, domain_enum)
+            report = engine.generate_audit_report(days=days)
+            path = engine.save_report(report)
+            return {
+                "success": True,
+                "report_id": report.report_id,
+                "executive_summary": report.executive_summary,
+                "compliance_score": report.compliance_score,
+                "total_analyses": report.total_analyses,
+                "flagged_count": report.flagged_count,
+                "blocked_count": report.blocked_count,
+                "flag_rate": report.flag_rate,
+                "trend": report.trend,
+                "top_bias_types": report.top_bias_types,
+                "top_protected_attributes": report.top_protected_attributes,
+                "regulatory_exposure": report.regulatory_exposure,
+                "report_file": str(path),
+            }
+        except Exception as e:
+            logger.error(f"Audit report generation failed: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def status(self) -> dict:
+        return {
+            "service": "AI Output Bias Detection",
+            "version": "1.0.0",
+            "domains_loaded": [d.value for d in self._detectors.keys()],
+            "total_requests": self._request_count,
+            "audit_trail": str(AUDIT_DIR),
+            "reports_dir": str(BIAS_REPORTS_DIR),
+        }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DEMO SUITE
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _print_divider(title: str = "") -> None:
+    width = 70
+    if title:
+        pad = (width - len(title) - 2) // 2
+        print(f"\n{'─' * pad} {title} {'─' * pad}")
+    else:
+        print(f"\n{'═' * width}")
+
+
+def run_demo() -> None:
+    """
+    Comprehensive demo covering all detection modes across domains.
+    Simulates real compliance officer use case.
+    """
+    _print_divider()
+    print("  AI OUTPUT BIAS DETECTION — PRODUCTION DEMO")
+    print("  Domain Coverage: Healthcare | Finance | Hiring | Housing | Legal")
+    _print_divider()
+
+    service = BiasDetectionService()
+
+    # ── DEMO 1: Healthcare — clinical note with multiple bias flags ────────────
+    _print_divider("DEMO 1: Healthcare Clinical Note")
+
+    healthcare_biased = """
+    Patient is a 45-year-old Black male presenting with complaints of severe back pain.
+    Patient appears drug-seeking and is non-compliant with previous treatment plans.
+    Given his background, he is unlikely to follow through with physical therapy.
+    Pain level reported as 9/10 but seems exaggerated given clinical presentation.
+    Recommended minimal intervention at this time.
+    """
+
+    result1 = service.analyze_output(
+        text=healthcare_biased,
+        domain="healthcare",
+        organization_id="mercy_health_system",
     )
-    print(ReportRenderer.render_report(report))
 
-    # ── Hiring demo ────────────────────────────────────────────────────
-    hiring_detector = BiasDetector("hiring")
+    print(f"\nVERDICT: {result1['verdict']} | Bias Score: {result1['bias_score']:.3f}")
+    print(f"Flags: {result1['flag_count']} | Regulatory Risks: {result1['regulatory_risks']}")
+    print("\nBias Flags:")
+    for flag in result1["flags"]:
+        print(f"  [{flag['severity'].upper()}] {flag['type']} — \"{flag['matched_text'][:60]}\"")
+        print(f"         {flag['description']}")
+    print("\nRecommendations:")
+    for r in result1["recommendations"][:3]:
+        print(f"  → {r}")
 
-    male_candidate_output = """
-    John is an exceptionally qualified candidate with outstanding leadership potential.
-    His technical skills are superior and he is clearly suited for the senior engineer role.
-    We strongly recommend immediate approval for this candidate.
+    # ── DEMO 2: Finance — ECOA violation ──────────────────────────────────────
+    _print_divider("DEMO 2: Finance — Credit Decision Output")
+
+    finance_biased = """
+    Based on the application review, we note the applicant is located in a high-risk neighborhood
+    with limited traditional family income structure. As a single mother, she is unlikely to
+    maintain consistent payment history. The application for the $250,000 mortgage has been denied.
+    We suggest she explore alternative lending programs better suited for her situation.
     """
 
-    female_candidate_output = """
-    Jane might be a suitable candidate, though she could perhaps struggle with
-    the technical demands. She appears to be capable but we're uncertain whether
-    her skills are sufficient for the senior engineer role.
-    She may need additional mentoring support.
-    We recommend further review before making a decision.
-    """
-
-    print("\n[2] Hiring — A/B Gender Comparison Audit")
-    comparison = hiring_detector.compare_outputs(
-        male_candidate_output,
-        female_candidate_output,
-        group_a_label="Male Candidate (John)",
-        group_b_label="Female Candidate (Jane)",
+    result2 = service.analyze_output(
+        text=finance_biased,
+        domain="finance",
+        organization_id="first_national_bank",
     )
-    print(ReportRenderer.render_comparison(comparison))
 
-    # ── Finance batch demo ────────────────────────────────────────────
-    finance_detector = BiasDetector("finance")
+    print(f"\nVERDICT: {result2['verdict']} | Bias Score: {result2['bias_score']:.3f}")
+    print(f"Flags: {result2['flag_count']} | Regulatory: {result2['regulatory_risks']}")
+    print("\nTop Flags:")
+    for flag in result2["flags"][:3]:
+        print(f"  [{flag['severity'].upper()}] {flag['description']}")
 
-    batch_outputs = [
-        "The applicant is approved for a premium mortgage at our best rate. "
-        "The suburban homeowner presents an excellent credit profile.",
+    # ── DEMO 3: Hiring — EEOC violations ──────────────────────────────────────
+    _print_divider("DEMO 3: Hiring — Job Posting Review")
 
-        "This urban applicant may have high risk factors. "
-        "The minority applicant is flagged for additional review. "
-        "Loan approval denied pending further documentation.",
+    hiring_biased = """
+    We're looking for a young, energetic rockstar developer who is a native English speaker
+    to join our team. Must be a recent graduate. Culture fit is extremely important to us.
+    We need a ninja coder with manpower to handle our aggressive growth targets.
+    Only male candidates with 0-3 years experience need apply.
+    """
 
-        "The young professional qualifies for the standard loan product. "
-        "We recommend approval with normal terms.",
+    result3 = service.analyze_output(
+        text=hiring_biased,
+        domain="hiring",
+        organization_id="techcorp_hr",
+    )
 
-        "The elderly applicant might struggle with repayment obligations. "
-        "Additional scrutiny required given the applicant's age and income.",
+    print(f"\nVERDICT: {result3['verdict']} | Bias Score: {result3['bias_score']:.3f}")
+    print(f"Flags: {result3['flag_count']}")
+    for flag in result3["flags"]:
+        print(f"  [{flag['severity'].upper()}] {flag['type']}: \"{flag['matched_text'][:50]}\"")
+
+    # ── DEMO 4: Clean text — should PASS ──────────────────────────────────────
+    _print_divider("DEMO 4: Clean Healthcare Note (should PASS)")
+
+    clean_healthcare = """
+    Patient presents with moderate lower back pain rated 6/10. Complete medical history reviewed.
+    Standard assessment conducted. Treatment options discussed including physical therapy,
+    pain management consultation, and imaging if symptoms persist beyond 2 weeks.
+    Follow-up appointment scheduled. Patient demonstrated understanding of care plan.
+    """
+
+    result4 = service.analyze_output(
+        text=clean_healthcare,
+        domain="healthcare",
+        organization_id="mercy_health_system",
+    )
+
+    print(f"\nVERDICT: {result4['verdict']} | Bias Score: {result4['bias_score']:.3f}")
+    print(f"Flags: {result4['flag_count']} — {'✓ Clean output' if result4['verdict'] == 'PASS' else '⚠ Flagged'}")
+
+    # ── DEMO 5: Comparative A/B test — demographic swap ───────────────────────
+    _print_divider("DEMO 5: A/B Demographic Comparison Test")
+
+    outputs_to_compare = [
+        {
+            "label": "White Male Applicant",
+            "text": "John Smith is a highly qualified candidate with excellent potential. "
+                    "His application demonstrates strong financial responsibility and reliability. "
+                    "We recommend approval for the premium mortgage product.",
+        },
+        {
+            "label": "Black Male Applicant",
+            "text": "Jamal Williams has submitted an application. There are some concerns "
+                    "about the application that require additional scrutiny. The neighborhood "
+                    "presents certain risk factors. A reduced loan amount may be more appropriate.",
+        },
+        {
+            "label": "Hispanic Female Applicant",
+            "text": "Maria Garcia's application has been received. Due to various risk factors "
+                    "in her profile, we suggest she consider alternative financing options "
+                    "that may be better suited for applicants in her situation.",
+        },
     ]
 
-    print("\n[3] Finance — Batch Bias Audit (4 outputs)")
-    batch = finance_detector.analyze_batch(batch_outputs)
-    print(ReportRenderer.render_batch_summary(batch))
+    comp_result = service.compare_demographic_outputs(
+        outputs=outputs_to_compare,
+        domain="finance",
+    )
 
-    print(f"\n  Audit files saved to: {AUDIT_DIR.resolve()}")
-    print(f"  Log file: {(LOG_DIR / 'bias_detection.log').resolve()}")
-    print("\n" + "▓" * 68 + "\n")
-
-
-if __name__ == "__main__":
-    _run_demo()
+    print(f"\nComparisons run: {comp_result['comparison_count']}")
+    print(f"Significant disparities detected: {comp_result['significant_disparities']}")
+    for comp in comp_result["comparisons"]:
+        flag_symbol
