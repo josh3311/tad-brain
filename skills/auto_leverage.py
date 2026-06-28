@@ -104,32 +104,115 @@ def build_clarifying_question(prompt: str, flagged: list) -> str:
         result = {}
     return result.get("question", f"Can you clarify what you mean by: {flagged[0]}?")
 
+PRODUCT_TRIGGERS = [
+    "build", "create", "develop", "ship", "market", "pitch",
+    "score", "assess", "decide", "approve", "opportunity"
+]
+
+COMPLAINT_SKIP_TRIGGERS = [
+    "health check", "ops check", "briefing", "p&l",
+    "git push", "run test", "pytest"
+]
+
+
+def extract_complaint_intelligence(prompt: str, context: str = "") -> dict:
+    """
+    Before any agent builds or assesses, extract the real human pain
+    behind the prompt. Answers 4 questions every agent needs to know:
+    1. WHO has this problem (specific persona, not generic "developers")
+    2. WHAT have they already tried and why it failed
+    3. WHAT does a solution that actually resonates look like to them
+    4. WHAT language do they use when describing this pain
+
+    Called automatically when task involves: build, assess, pitch, market,
+    score, decide. Skipped for: ops check, health check, briefing, scan.
+
+    Returns dict:
+    {
+        "who": str,               # specific persona suffering this pain
+        "tried_and_failed": str,  # what they've already tried
+        "resonant_solution": str, # what would actually feel like relief
+        "their_language": str,    # exact words they use about this pain
+        "confidence": int,        # 0-100, how well we understood the pain
+        "needs_research": bool    # True = market agent should search first
+    }
+    """
+    if any(t in prompt.lower() for t in COMPLAINT_SKIP_TRIGGERS):
+        return {
+            "who": "", "tried_and_failed": "", "resonant_solution": "",
+            "their_language": "", "confidence": 100, "needs_research": False
+        }
+
+    raw = claude_json(
+        system=(
+            "You are TAD's complaint intelligence engine. Given a product "
+            "idea or task prompt, extract the real human pain behind it. "
+            "Think like a user researcher who has read 1000 Reddit complaints "
+            "about this problem. Return JSON only: "
+            "{ \"who\": \"specific persona\", "
+            "\"tried_and_failed\": \"what they tried\", "
+            "\"resonant_solution\": \"what would feel like relief\", "
+            "\"their_language\": \"exact words they use\", "
+            "\"confidence\": <int 0-100>, "
+            "\"needs_research\": <bool> }"
+        ),
+        user=(
+            f"Task/prompt: {prompt}\n"
+            f"Additional context: {context[:500] if context else 'none'}\n"
+            f"Extract the real human pain behind this. Be specific about WHO "
+            f"suffers, not generic. Return JSON only."
+        )
+    )
+    try:
+        result = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        result = {}
+    return {
+        "who":                result.get("who", ""),
+        "tried_and_failed":   result.get("tried_and_failed", ""),
+        "resonant_solution":  result.get("resonant_solution", ""),
+        "their_language":     result.get("their_language", ""),
+        "confidence":         result.get("confidence", 70),
+        "needs_research":     result.get("needs_research", False),
+    }
+
+
 def resolve_intent(prompt: str, task_type: str = "interactive") -> dict:
     """
     Main entry point for Auto-Leverage.
 
     Returns dict:
     {
-        "resolved_prompt": str,       # prompt with intent locked in
-        "mode": str,                  # "threshold" or "deep_clarity"
-        "flagged": list,              # words that were ambiguous
-        "confidence": int or None,    # threshold mode only
-        "question": str or None,      # deep clarity mode only
-        "needs_user_input": bool      # True = caller must ask user before proceeding
+        "resolved_prompt": str,           # prompt with intent locked in
+        "mode": str,                      # "threshold", "deep_clarity", or "passthrough"
+        "flagged": list,                  # words that were ambiguous
+        "confidence": int or None,        # threshold mode only
+        "question": str or None,          # deep clarity mode only
+        "needs_user_input": bool,         # True = caller must ask user before proceeding
+        "complaint_intelligence": dict    # real human pain behind product tasks
     }
     """
     flagged = detect_ambiguous_terms(prompt)
+
+    # Extract complaint intelligence for product/build tasks
+    needs_complaint_intel = any(t in prompt.lower() for t in PRODUCT_TRIGGERS)
+    complaint_intel = {}
+    if needs_complaint_intel:
+        complaint_intel = extract_complaint_intelligence(prompt, context="")
+        if complaint_intel.get("who"):
+            log.info(f"[AUTO-LEVERAGE] Complaint intel — WHO: {complaint_intel['who'][:60]}")
 
     # No ambiguity detected — pass through clean
     if not flagged:
         log.info(f"[AUTO-LEVERAGE] Clean prompt — no ambiguity detected.")
         return {
-            "resolved_prompt": prompt,
-            "mode": "passthrough",
-            "flagged": [],
-            "confidence": 100,
-            "question": None,
-            "needs_user_input": False
+            "resolved_prompt":       prompt,
+            "mode":                  "passthrough",
+            "flagged":               [],
+            "confidence":            100,
+            "question":              None,
+            "needs_user_input":      False,
+            "complaint_intelligence": complaint_intel,
         }
 
     log.info(f"[AUTO-LEVERAGE] Flagged terms: {flagged} | mode: {task_type}")
@@ -139,12 +222,13 @@ def resolve_intent(prompt: str, task_type: str = "interactive") -> dict:
         resolved, confidence = score_interpretations(prompt, flagged)
         log.info(f"[AUTO-LEVERAGE] THRESHOLD — resolved as: '{resolved}' ({confidence}%)")
         return {
-            "resolved_prompt": resolved,
-            "mode": "threshold",
-            "flagged": flagged,
-            "confidence": confidence,
-            "question": None,
-            "needs_user_input": False
+            "resolved_prompt":       resolved,
+            "mode":                  "threshold",
+            "flagged":               flagged,
+            "confidence":            confidence,
+            "question":              None,
+            "needs_user_input":      False,
+            "complaint_intelligence": complaint_intel,
         }
 
     # DEEP CLARITY MODE — interactive tasks ask user
@@ -152,10 +236,11 @@ def resolve_intent(prompt: str, task_type: str = "interactive") -> dict:
         question = build_clarifying_question(prompt, flagged)
         log.info(f"[AUTO-LEVERAGE] DEEP CLARITY — asking user: '{question}'")
         return {
-            "resolved_prompt": None,
-            "mode": "deep_clarity",
-            "flagged": flagged,
-            "confidence": None,
-            "question": question,
-            "needs_user_input": True
+            "resolved_prompt":       None,
+            "mode":                  "deep_clarity",
+            "flagged":               flagged,
+            "confidence":            None,
+            "question":              question,
+            "needs_user_input":      True,
+            "complaint_intelligence": complaint_intel,
         }

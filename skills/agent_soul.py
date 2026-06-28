@@ -23,10 +23,11 @@ def _load_identity(agent_name: str) -> dict:
         return {}
 
 
-def _get_agent_context(agent_name: str) -> str:
+def _get_agent_context(agent_name: str, complaint_intel: dict = None) -> str:
     """
     Build a concise identity context string for prepending to Claude system prompts.
     Returns empty string if identity not found — agent works exactly as before.
+    Includes complaint intelligence when provided (product/build/market tasks).
     """
     identity = _load_identity(agent_name)
     if not identity:
@@ -44,6 +45,16 @@ def _get_agent_context(agent_name: str) -> str:
         parts.append("Decision rules: " + " | ".join(rules[:3]))
     if recent and recent != "No history yet.":
         parts.append(f"Recent actions:\n{recent}")
+
+    if complaint_intel and complaint_intel.get("who"):
+        parts.append(
+            "\n=== COMPLAINT INTELLIGENCE ===\n"
+            f"WHO suffers this: {complaint_intel.get('who')}\n"
+            f"What they tried: {complaint_intel.get('tried_and_failed')}\n"
+            f"What relief looks like: {complaint_intel.get('resonant_solution')}\n"
+            f"Their exact language: {complaint_intel.get('their_language')}\n"
+            "=== END COMPLAINT INTELLIGENCE ==="
+        )
 
     return "\n".join(parts)
 
