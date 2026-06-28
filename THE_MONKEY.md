@@ -529,6 +529,22 @@ Build: Python script that reads unpaid invoices from a CSV, generates personaliz
 
 ## SESSION LOG
 
+### 2026-06-28 — Major Architecture Session (01:35-01:50 AM)
+**New architecture built:**
+- [x] orchestrator.py — full autonomous pipeline: market→score→CEO→build→list→outreach→finance→CSEO ✓
+- [x] tad_gui.py — complete visual redesign: void black + electric cyan + violet + emerald revenue strip ✓
+- [x] tad_live_dashboard.py — real-time revenue/pipeline dashboard with live logs ✓
+- [x] night_mode.py — wired post-build pipeline: every successful build auto-triggers listing + outreach ✓
+- [x] scheduler.py — orchestrator starts on launch, runs every 90min ✓
+- [x] agent.py — "run pipeline" / "run orchestrator" → full pipeline trigger from chat ✓
+
+**How the autonomous loop works now:**
+1. Orchestrator wakes every 90min → runs full pipeline or builds backlog
+2. Night mode builds products → immediately auto-generates listing + outreach
+3. Scheduler 7am → saves morning report + listings + outreach
+4. Say "run pipeline" in TAD chat → triggers full autonomous cycle
+5. Dashboard button → TAD Live Dashboard with live metrics
+
 ### 2026-06-28 — Overnight Build Session (01:00-01:35 AM)
 **Products built by night mode:**
 - [x] ai_receptionist_for_hvac_companies.py — AI phone receptionist for HVAC, auto-books appointments ✓

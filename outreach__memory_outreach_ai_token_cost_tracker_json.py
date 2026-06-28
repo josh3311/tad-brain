@@ -1,726 +1,439 @@
 #!/usr/bin/env python3
 """
-ai_token_cost_tracker.py — TAD Module
-Parses and stores LLM API call logs into memory/outreach/ai_token_cost_tracker.json
-Run with --test for self-check mode.
+token_cost_parser.py — TAD AI
+Parse and normalize token cost data from memory/outreach/ai_token_cost_tracker.json
+into a unified schema (input/output tokens, model, cost per 1K tokens).
+
+Usage:
+    python token_cost_parser.py              # normal run
+    python token_cost_parser.py --test       # self-check mode
 """
 
 import json
 import os
 import sys
-import time
-import uuid
-from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
-# Config
+# Schema target
 # ---------------------------------------------------------------------------
+# {
+#   "model":               str,
+#   "provider":            str,
+#   "input_cost_per_1k":   float,   # USD per 1 000 input tokens
+#   "output_cost_per_1k":  float,   # USD per 1 000 output tokens
+#   "context_window":      int | None,
+#   "notes":               str,
+#   "raw_source":          dict     # original record, unmodified
+# }
 
-TRACKER_PATH = Path("memory/outreach/ai_token_cost_tracker.json")
-
-# Cost per 1K tokens (input, output) in USD — extend as needed
-MODEL_PRICING: dict[str, dict[str, float]] = {
-    "gpt-4o":                {"input": 0.005,   "output": 0.015},
-    "gpt-4o-mini":           {"input": 0.000150,"output": 0.000600},
-    "gpt-4-turbo":           {"input": 0.010,   "output": 0.030},
-    "gpt-3.5-turbo":         {"input": 0.0005,  "output": 0.0015},
-    "claude-3-5-sonnet":     {"input": 0.003,   "output": 0.015},
-    "claude-3-opus":         {"input": 0.015,   "output": 0.075},
-    "claude-3-haiku":        {"input": 0.00025, "output": 0.00125},
-    "gemini-1.5-pro":        {"input": 0.00125, "output": 0.005},
-    "kimi":                  {"input": 0.0014,  "output": 0.0014},
-    "deepseek-chat":         {"input": 0.00014, "output": 0.00028},
-}
-
-UNKNOWN_MODEL_FALLBACK = {"input": 0.002, "output": 0.002}
+DEFAULT_PATH = Path("memory/outreach/ai_token_cost_tracker.json")
 
 
 # ---------------------------------------------------------------------------
-# Storage helpers
+# Helpers
 # ---------------------------------------------------------------------------
 
-def _load_tracker() -> dict:
-    """Load existing tracker file or return a fresh structure."""
-    if TRACKER_PATH.exists():
-        try:
-            with open(TRACKER_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            # Validate top-level keys
-            if "meta" not in data or "calls" not in data:
-                raise ValueError("Malformed tracker file — rebuilding.")
-            return data
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"[ai_token_cost_tracker] WARNING: {e}")
-
-    return {
-        "meta": {
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "last_updated": None,
-            "total_calls": 0,
-            "total_tokens_in": 0,
-            "total_tokens_out": 0,
-            "total_cost_usd": 0.0,
-            "currency": "USD",
-        },
-        "calls": [],
-    }
-
-
-def _save_tracker(data: dict) -> None:
-    """Persist tracker to disk atomically."""
-    TRACKER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = TRACKER_PATH.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-    tmp.replace(TRACKER_PATH)
-
-
-# ---------------------------------------------------------------------------
-# Core: compute cost
-# ---------------------------------------------------------------------------
-
-def compute_cost(model: str, tokens_in: int, tokens_out: int) -> float:
-    """
-    Return USD cost for one API call.
-    Pricing is per-1K tokens.
-    """
-    pricing = MODEL_PRICING.get(model.lower().strip(), UNKNOWN_MODEL_FALLBACK)
-    cost = (tokens_in / 1000.0) * pricing["input"] + \
-           (tokens_out / 1000.0) * pricing["output"]
-    return round(cost, 8)
-
-
-# ---------------------------------------------------------------------------
-# Core: log one call
-# ---------------------------------------------------------------------------
-
-def log_call(
-    model: str,
-    tokens_in: int,
-    tokens_out: int,
-    *,
-    timestamp: str | None = None,
-    call_id: str | None = None,
-    tags: list[str] | None = None,
-    extra: dict | None = None,
-) -> dict:
-    """
-    Parse and store one LLM API call.
-
-    Parameters
-    ----------
-    model       : model identifier, e.g. "gpt-4o"
-    tokens_in   : prompt / input token count
-    tokens_out  : completion / output token count
-    timestamp   : ISO-8601 string; defaults to UTC now
-    call_id     : unique id; auto-generated if omitted
-    tags        : optional list of string labels
-    extra       : arbitrary metadata dict stored verbatim
-
-    Returns
-    -------
-    The call record dict that was written to disk.
-    """
-    if tokens_in < 0 or tokens_out < 0:
-        raise ValueError("Token counts must be non-negative.")
-    if not model:
-        raise ValueError("model must be a non-empty string.")
-
-    ts = timestamp or datetime.now(timezone.utc).isoformat()
-    cid = call_id or str(uuid.uuid4())
-    cost = compute_cost(model, tokens_in, tokens_out)
-
-    record = {
-        "call_id":    cid,
-        "timestamp":  ts,
-        "model":      model,
-        "tokens_in":  tokens_in,
-        "tokens_out": tokens_out,
-        "tokens_total": tokens_in + tokens_out,
-        "cost_usd":   cost,
-        "tags":       tags or [],
-        "extra":      extra or {},
-    }
-
-    data = _load_tracker()
-    data["calls"].append(record)
-
-    m = data["meta"]
-    m["last_updated"]    = datetime.now(timezone.utc).isoformat()
-    m["total_calls"]     += 1
-    m["total_tokens_in"] += tokens_in
-    m["total_tokens_out"]+= tokens_out
-    m["total_cost_usd"]   = round(m["total_cost_usd"] + cost, 8)
-
-    _save_tracker(data)
-    return record
-
-
-# ---------------------------------------------------------------------------
-# Core: bulk ingest raw log list
-# ---------------------------------------------------------------------------
-
-def ingest_log_list(entries: list[dict]) -> list[dict]:
-    """
-    Ingest a list of raw log dicts.
-    Each dict must have: model, tokens_in, tokens_out
-    Optional keys: timestamp, call_id, tags, extra
-
-    Returns list of stored records.
-    """
-    stored = []
-    for i, entry in enumerate(entries):
-        try:
-            rec = log_call(
-                model      = entry["model"],
-                tokens_in  = int(entry["tokens_in"]),
-                tokens_out = int(entry["tokens_out"]),
-                timestamp  = entry.get("timestamp"),
-                call_id    = entry.get("call_id"),
-                tags       = entry.get("tags"),
-                extra      = entry.get("extra"),
-            )
-            stored.append(rec)
-        except (KeyError, ValueError) as e:
-            print(f"[ai_token_cost_tracker] SKIP entry {i}: {e}")
-    return stored
-
-
-# ---------------------------------------------------------------------------
-# Query helpers
-# ---------------------------------------------------------------------------
-
-def get_summary() -> dict:
-    """Return the meta block from the tracker."""
-    return _load_tracker()["meta"]
-
-
-def get_calls(
-    model: str | None = None,
-    limit: int | None = None,
-) -> list[dict]:
-    """Return call records, optionally filtered by model, newest first."""
-    calls = _load_tracker()["calls"]
-    if model:
-        calls = [c for c in calls if c["model"] == model.lower().strip()]
-    calls = list(reversed(calls))
-    if limit:
-        calls = calls[:limit]
-    return calls
-
-
-# ---------------------------------------------------------------------------
-# NEW FEATURE: aggregated cost summary
-# ---------------------------------------------------------------------------
-
-def _parse_day(timestamp: str) -> str:
-    """
-    Extract the UTC date string (YYYY-MM-DD) from an ISO-8601 timestamp.
-
-    Handles:
-      - timestamps with UTC offset  "2026-01-15T12:00:00+00:00"
-      - timestamps with Z suffix    "2026-01-15T12:00:00Z"
-      - naive timestamps             "2026-01-15T12:00:00"
-      - date-only strings            "2026-01-15"
-
-    Returns "unknown" if the timestamp cannot be parsed.
-    """
-    if not timestamp:
-        return "unknown"
-    # Normalise Z → +00:00 so fromisoformat handles it on Python < 3.11
-    normalised = timestamp.strip().replace("Z", "+00:00")
+def _to_float(value: Any, fallback: float = 0.0) -> float:
+    """Best-effort conversion to float; handles None, '', '$0.002', etc."""
+    if value is None:
+        return fallback
     try:
-        dt = datetime.fromisoformat(normalised)
-        # Convert to UTC so days are always aligned to the same timezone
-        if dt.tzinfo is not None:
-            dt = dt.astimezone(timezone.utc)
-        return dt.strftime("%Y-%m-%d")
-    except ValueError:
-        # Fall back: grab the first 10 characters if they look like a date
-        if len(timestamp) >= 10 and timestamp[4] == "-" and timestamp[7] == "-":
-            return timestamp[:10]
-        return "unknown"
+        return float(str(value).replace("$", "").replace(",", "").strip())
+    except (ValueError, TypeError):
+        return fallback
 
 
-def summary() -> dict:
+def _to_int_or_none(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        # accept "128k", "128000", 128000, etc.
+        s = str(value).lower().replace(",", "").strip()
+        if s.endswith("k"):
+            return int(float(s[:-1]) * 1_000)
+        if s.endswith("m"):
+            return int(float(s[:-1]) * 1_000_000)
+        return int(float(s))
+    except (ValueError, TypeError):
+        return None
+
+
+def _cost_per_1k(raw_cost: Any, unit: str = "per_1k") -> float:
     """
-    Return aggregated cost statistics across all logged calls.
-
-    Returns
-    -------
-    {
-        "total_cost": float,          # sum of all cost_usd values
-        "by_model": {                 # per-model breakdown
-            "<model>": {
-                "calls":       int,
-                "tokens_in":   int,
-                "tokens_out":  int,
-                "cost_usd":    float,
-            },
-            ...
-        },
-        "by_day": {                   # per-UTC-day breakdown
-            "YYYY-MM-DD": {
-                "calls":       int,
-                "tokens_in":   int,
-                "tokens_out":  int,
-                "cost_usd":    float,
-            },
-            ...
-        },
-    }
+    Normalise cost to per-1 000-tokens regardless of how it was stored.
+    unit hints: 'per_1k', 'per_1m', 'per_token'
     """
-    calls = _load_tracker()["calls"]
+    cost = _to_float(raw_cost)
+    unit = str(unit).lower()
+    if "1m" in unit or "million" in unit:
+        return cost / 1_000
+    if "per_token" in unit or unit == "token":
+        return cost * 1_000
+    # default: already per 1k
+    return cost
 
-    total_cost: float = 0.0
-    by_model: dict[str, dict] = {}
-    by_day:   dict[str, dict] = {}
 
-    def _blank_bucket() -> dict:
-        return {"calls": 0, "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0}
+# ---------------------------------------------------------------------------
+# Field-name aliases — covers common variations in the wild
+# ---------------------------------------------------------------------------
 
-    for call in calls:
-        model  = call.get("model", "unknown")
-        day    = _parse_day(call.get("timestamp", ""))
-        tin    = call.get("tokens_in",  0)
-        tout   = call.get("tokens_out", 0)
-        cost   = call.get("cost_usd",   0.0)
+_MODEL_KEYS = ("model", "model_name", "name", "model_id")
+_PROVIDER_KEYS = ("provider", "vendor", "company", "org")
+_INPUT_COST_KEYS = (
+    "input_cost_per_1k", "input_cost", "prompt_cost",
+    "prompt_price", "input_price", "cost_input",
+    "input_cost_per_1m", "prompt_cost_per_1m",
+)
+_OUTPUT_COST_KEYS = (
+    "output_cost_per_1k", "output_cost", "completion_cost",
+    "completion_price", "output_price", "cost_output",
+    "output_cost_per_1m", "completion_cost_per_1m",
+)
+_CONTEXT_KEYS = ("context_window", "context_length", "max_tokens", "window")
+_NOTES_KEYS = ("notes", "note", "description", "comment", "details")
 
-        total_cost = round(total_cost + cost, 8)
 
-        # --- by_model ---
-        if model not in by_model:
-            by_model[model] = _blank_bucket()
-        bm = by_model[model]
-        bm["calls"]      += 1
-        bm["tokens_in"]  += tin
-        bm["tokens_out"] += tout
-        bm["cost_usd"]    = round(bm["cost_usd"] + cost, 8)
+def _first(record: dict, keys: tuple, default: Any = None) -> Any:
+    """Return the value of the first matching key in *record*."""
+    for k in keys:
+        if k in record:
+            return record[k]
+    return default
 
-        # --- by_day ---
-        if day not in by_day:
-            by_day[day] = _blank_bucket()
-        bd = by_day[day]
-        bd["calls"]      += 1
-        bd["tokens_in"]  += tin
-        bd["tokens_out"] += tout
-        bd["cost_usd"]    = round(bd["cost_usd"] + cost, 8)
+
+def _detect_unit(record: dict, cost_key: str) -> str:
+    """Guess the cost unit from the key name or a sibling 'unit' field."""
+    unit_field = record.get("unit") or record.get("cost_unit") or ""
+    if unit_field:
+        return str(unit_field).lower()
+    if "1m" in cost_key or "million" in cost_key:
+        return "per_1m"
+    if "per_token" in cost_key:
+        return "per_token"
+    return "per_1k"
+
+
+# ---------------------------------------------------------------------------
+# Core normaliser
+# ---------------------------------------------------------------------------
+
+def normalize_record(record: dict) -> dict:
+    """
+    Accept one raw record (any shape) and return a normalised schema dict.
+    """
+    # -- model
+    model = str(_first(record, _MODEL_KEYS, "unknown")).strip()
+
+    # -- provider (fall back to extracting from model name)
+    provider = str(_first(record, _PROVIDER_KEYS, "")).strip()
+    if not provider:
+        # heuristic: "gpt-4" → "openai", "claude-*" → "anthropic", etc.
+        m = model.lower()
+        if m.startswith("gpt") or m.startswith("o1") or m.startswith("o3"):
+            provider = "openai"
+        elif m.startswith("claude"):
+            provider = "anthropic"
+        elif m.startswith("gemini") or m.startswith("palm"):
+            provider = "google"
+        elif m.startswith("mistral") or m.startswith("mixtral"):
+            provider = "mistral"
+        elif m.startswith("llama") or m.startswith("meta"):
+            provider = "meta"
+        elif m.startswith("command"):
+            provider = "cohere"
+        else:
+            provider = "unknown"
+
+    # -- input cost
+    input_raw_key = next(
+        (k for k in _INPUT_COST_KEYS if k in record), None
+    )
+    input_raw_val = record.get(input_raw_key) if input_raw_key else None
+    input_unit = _detect_unit(record, input_raw_key or "")
+    input_cost_per_1k = _cost_per_1k(input_raw_val, input_unit)
+
+    # -- output cost
+    output_raw_key = next(
+        (k for k in _OUTPUT_COST_KEYS if k in record), None
+    )
+    output_raw_val = record.get(output_raw_key) if output_raw_key else None
+    output_unit = _detect_unit(record, output_raw_key or "")
+    output_cost_per_1k = _cost_per_1k(output_raw_val, output_unit)
+
+    # -- context window
+    context_window = _to_int_or_none(_first(record, _CONTEXT_KEYS))
+
+    # -- notes
+    notes = str(_first(record, _NOTES_KEYS, "")).strip()
 
     return {
-        "total_cost": total_cost,
-        "by_model":   by_model,
-        "by_day":     by_day,
+        "model": model,
+        "provider": provider,
+        "input_cost_per_1k": round(input_cost_per_1k, 8),
+        "output_cost_per_1k": round(output_cost_per_1k, 8),
+        "context_window": context_window,
+        "notes": notes,
+        "raw_source": record,
     }
 
 
 # ---------------------------------------------------------------------------
-# --test self-check
+# Loader — handles list, dict-of-lists, dict-of-dicts, nested wrapper keys
 # ---------------------------------------------------------------------------
 
-def _run_tests() -> None:
-    """Self-contained test suite. Uses an isolated temp tracker path."""
-    import tempfile
+def _unwrap_to_list(data: Any) -> list[dict]:
+    """
+    The JSON file might be:
+      - a list of records                         → use directly
+      - {"models": [...]}                         → unwrap "models" key
+      - {"data": [...]}                           → unwrap "data" key
+      - {"openai": [...], "anthropic": [...]}     → flatten all lists
+      - {"gpt-4": {...}, "claude-3": {...}}       → inject key as model name
+    """
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
 
-    global TRACKER_PATH
-    original_path = TRACKER_PATH
+    if isinstance(data, dict):
+        # single wrapper key containing a list
+        for wrapper in ("models", "data", "records", "costs", "pricing"):
+            if wrapper in data and isinstance(data[wrapper], list):
+                return [r for r in data[wrapper] if isinstance(r, dict)]
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        TRACKER_PATH = Path(tmp_dir) / "memory/outreach/ai_token_cost_tracker.json"
+        # dict of lists (keyed by provider or category)
+        all_records: list[dict] = []
+        for key, val in data.items():
+            if isinstance(val, list):
+                for r in val:
+                    if isinstance(r, dict):
+                        # inject provider hint if not present
+                        if not any(k in r for k in _PROVIDER_KEYS):
+                            r = {**r, "provider": key}
+                        all_records.append(r)
+            elif isinstance(val, dict):
+                # dict-of-dicts: key = model name
+                record = {**val}
+                if not any(k in record for k in _MODEL_KEYS):
+                    record["model"] = key
+                all_records.append(record)
 
-        passed = 0
-        failed = 0
+        if all_records:
+            return all_records
 
-        def ok(label: str) -> None:
-            nonlocal passed
-            passed += 1
-            print(f"  ✓ {label}")
+    return []
 
-        def fail(label: str, reason: str) -> None:
-            nonlocal failed
-            failed += 1
-            print(f"  ✗ {label}: {reason}")
 
-        print("\n[TAD] ai_token_cost_tracker — self-check\n")
+def load_and_parse(filepath: Path = DEFAULT_PATH) -> list[dict]:
+    """
+    Load the tracker JSON and return a list of normalised records.
+    Raises FileNotFoundError if the file does not exist.
+    """
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"Tracker file not found: {filepath}")
 
-        # ------------------------------------------------------------------
-        # T1: compute_cost known model
-        # ------------------------------------------------------------------
-        label = "T1: compute_cost gpt-4o"
-        try:
-            cost = compute_cost("gpt-4o", 1000, 500)
-            expected = round((1.0 * 0.005) + (0.5 * 0.015), 8)  # 0.0125
-            assert abs(cost - expected) < 1e-9, f"got {cost}, want {expected}"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
+    with open(filepath, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
 
-        # ------------------------------------------------------------------
-        # T2: compute_cost unknown model uses fallback
-        # ------------------------------------------------------------------
-        label = "T2: compute_cost unknown model fallback"
-        try:
-            cost = compute_cost("mystery-model-9000", 500, 500)
-            expected = round((0.5 * 0.002) + (0.5 * 0.002), 8)
-            assert abs(cost - expected) < 1e-9, f"got {cost}"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
+    raw_records = _unwrap_to_list(data)
+    normalised = [normalize_record(r) for r in raw_records]
+    return normalised
 
-        # ------------------------------------------------------------------
-        # T3: log_call creates file and record
-        # ------------------------------------------------------------------
-        label = "T3: log_call creates tracker file"
-        try:
-            assert not TRACKER_PATH.exists(), "file should not exist yet"
-            rec = log_call("claude-3-5-sonnet", 800, 200)
-            assert TRACKER_PATH.exists(), "tracker file not created"
-            assert rec["model"] == "claude-3-5-sonnet"
-            assert rec["tokens_in"] == 800
-            assert rec["tokens_out"] == 200
-            assert rec["tokens_total"] == 1000
-            assert isinstance(rec["call_id"], str) and len(rec["call_id"]) == 36
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
 
-        # ------------------------------------------------------------------
-        # T4: log_call meta totals accumulate correctly
-        # ------------------------------------------------------------------
-        label = "T4: meta totals accumulate"
-        try:
-            log_call("gpt-4o-mini", 400, 100)
-            s = get_summary()
-            assert s["total_calls"] == 2, f"calls={s['total_calls']}"
-            assert s["total_tokens_in"] == 1200
-            assert s["total_tokens_out"] == 300
-            assert s["total_cost_usd"] > 0
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
+def print_summary(records: list[dict]) -> None:
+    """Pretty-print a summary table to stdout."""
+    if not records:
+        print("No records found.")
+        return
 
-        # ------------------------------------------------------------------
-        # T5: explicit timestamp and call_id are preserved
-        # ------------------------------------------------------------------
-        label = "T5: explicit timestamp + call_id preserved"
-        try:
-            ts  = "2026-01-15T12:00:00+00:00"
-            cid = "test-call-0001"
-            rec = log_call("kimi", 100, 100, timestamp=ts, call_id=cid)
-            assert rec["timestamp"] == ts, f"ts={rec['timestamp']}"
-            assert rec["call_id"] == cid, f"id={rec['call_id']}"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
+    header = f"{'MODEL':<30} {'PROVIDER':<12} {'IN $/1K':>10} {'OUT $/1K':>10} {'CTX WIN':>10}"
+    print(header)
+    print("-" * len(header))
+    for r in records:
+        ctx = str(r["context_window"]) if r["context_window"] else "—"
+        print(
+            f"{r['model']:<30} "
+            f"{r['provider']:<12} "
+            f"{r['input_cost_per_1k']:>10.6f} "
+            f"{r['output_cost_per_1k']:>10.6f} "
+            f"{ctx:>10}"
+        )
+    print(f"\nTotal records: {len(records)}")
 
-        # ------------------------------------------------------------------
-        # T6: tags and extra stored verbatim
-        # ------------------------------------------------------------------
-        label = "T6: tags and extra stored verbatim"
-        try:
-            rec = log_call(
-                "deepseek-chat", 300, 150,
-                tags=["outreach", "scan"],
-                extra={"agent": "market_agent", "run_id": "abc"},
+
+# ---------------------------------------------------------------------------
+# Self-check / test mode
+# ---------------------------------------------------------------------------
+
+_SAMPLE_DATA_CASES: list[tuple[str, Any, dict]] = [
+    # (description, raw_record, expected_subset)
+    (
+        "Standard per-1k keys",
+        {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "input_cost_per_1k": 0.005,
+            "output_cost_per_1k": 0.015,
+            "context_window": 128000,
+        },
+        {"model": "gpt-4o", "provider": "openai",
+         "input_cost_per_1k": 0.005, "output_cost_per_1k": 0.015,
+         "context_window": 128000},
+    ),
+    (
+        "Per-million cost keys + string dollar values",
+        {
+            "model_name": "claude-3-opus",
+            "prompt_cost_per_1m": "$15.00",
+            "completion_cost_per_1m": "$75.00",
+            "context_length": "200k",
+        },
+        {"model": "claude-3-opus", "provider": "anthropic",
+         "input_cost_per_1k": 0.015, "output_cost_per_1k": 0.075,
+         "context_window": 200_000},
+    ),
+    (
+        "Provider inferred from model name",
+        {"name": "gemini-1.5-pro", "input_cost": 0.0035, "output_cost": 0.0105},
+        {"provider": "google"},
+    ),
+    (
+        "Context window as '128k' string",
+        {"model": "test-model", "max_tokens": "128k",
+         "input_cost_per_1k": 0.001, "output_cost_per_1k": 0.002},
+        {"context_window": 128_000},
+    ),
+    (
+        "Missing costs default to 0.0",
+        {"model": "free-model"},
+        {"input_cost_per_1k": 0.0, "output_cost_per_1k": 0.0},
+    ),
+]
+
+_UNWRAP_CASES: list[tuple[str, Any, int]] = [
+    # (description, raw_json, expected_record_count)
+    ("Plain list", [{"model": "a"}, {"model": "b"}], 2),
+    ("Wrapper key 'models'", {"models": [{"model": "x"}, {"model": "y"}, {"model": "z"}]}, 3),
+    ("Dict-of-lists (provider-keyed)", {"openai": [{"model": "gpt-4"}], "anthropic": [{"model": "claude-3"}]}, 2),
+    ("Dict-of-dicts (model-keyed)", {"gpt-3.5": {"input_cost_per_1k": 0.001}, "gpt-4": {"input_cost_per_1k": 0.01}}, 2),
+]
+
+
+def _assert_subset(actual: dict, expected: dict, label: str) -> None:
+    for key, exp_val in expected.items():
+        act_val = actual.get(key)
+        if isinstance(exp_val, float):
+            assert abs(act_val - exp_val) < 1e-9, (
+                f"[{label}] {key}: expected {exp_val}, got {act_val}"
             )
-            assert rec["tags"] == ["outreach", "scan"]
-            assert rec["extra"]["agent"] == "market_agent"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T7: negative token count raises ValueError
-        # ------------------------------------------------------------------
-        label = "T7: negative tokens raises ValueError"
-        try:
-            try:
-                log_call("gpt-4o", -1, 100)
-                fail(label, "no exception raised")
-            except ValueError:
-                ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T8: get_calls filter by model
-        # ------------------------------------------------------------------
-        label = "T8: get_calls filter by model"
-        try:
-            calls = get_calls(model="kimi")
-            assert len(calls) == 1, f"got {len(calls)}"
-            assert calls[0]["model"] == "kimi"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T9: get_calls limit
-        # ------------------------------------------------------------------
-        label = "T9: get_calls limit"
-        try:
-            all_calls = get_calls()
-            limited   = get_calls(limit=2)
-            assert len(limited) == 2, f"got {len(limited)}"
-            assert len(all_calls) > 2
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T10: ingest_log_list bulk ingest
-        # ------------------------------------------------------------------
-        label = "T10: ingest_log_list bulk"
-        try:
-            before = get_summary()["total_calls"]
-            raw_logs = [
-                {"model": "gpt-3.5-turbo", "tokens_in": 200, "tokens_out": 80},
-                {"model": "gemini-1.5-pro", "tokens_in": 500, "tokens_out": 300,
-                 "tags": ["batch"], "extra": {"source": "test"}},
-                {"model": "bad-entry"},   # missing tokens — should be skipped
-            ]
-            stored = ingest_log_list(raw_logs)
-            after = get_summary()["total_calls"]
-            assert len(stored) == 2, f"stored={len(stored)}"
-            assert after == before + 2, f"calls went {before}->{after}"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T11: tracker JSON is valid after all writes
-        # ------------------------------------------------------------------
-        label = "T11: tracker JSON valid on disk"
-        try:
-            with open(TRACKER_PATH, "r") as f:
-                data = json.load(f)
-            assert "meta" in data and "calls" in data
-            assert isinstance(data["calls"], list)
-            assert data["meta"]["total_calls"] == len(data["calls"])
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T12: cost_usd in every record is a float >= 0
-        # ------------------------------------------------------------------
-        label = "T12: cost_usd non-negative float in every record"
-        try:
-            calls = get_calls()
-            bad = [c for c in calls if not isinstance(c["cost_usd"], float) or c["cost_usd"] < 0]
-            assert not bad, f"{len(bad)} bad records"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T13: summary() top-level keys present
-        # ------------------------------------------------------------------
-        label = "T13: summary() returns required top-level keys"
-        try:
-            agg = summary()
-            assert "total_cost" in agg, "missing total_cost"
-            assert "by_model"   in agg, "missing by_model"
-            assert "by_day"     in agg, "missing by_day"
-            assert isinstance(agg["total_cost"], float), "total_cost not float"
-            assert isinstance(agg["by_model"],   dict),  "by_model not dict"
-            assert isinstance(agg["by_day"],     dict),  "by_day not dict"
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T14: summary() total_cost matches sum of individual records
-        # ------------------------------------------------------------------
-        label = "T14: summary() total_cost matches per-record sum"
-        try:
-            calls = get_calls()
-            expected_total = round(sum(c["cost_usd"] for c in calls), 8)
-            agg = summary()
-            assert abs(agg["total_cost"] - expected_total) < 1e-7, (
-                f"total_cost={agg['total_cost']} expected={expected_total}"
-            )
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T15: summary() by_model buckets have correct structure and totals
-        # ------------------------------------------------------------------
-        label = "T15: summary() by_model bucket structure and totals"
-        try:
-            agg = summary()
-            calls = get_calls()
-
-            # Every model that appears in calls must be in by_model
-            models_in_calls = {c["model"] for c in calls}
-            assert models_in_calls == set(agg["by_model"].keys()), (
-                f"model key mismatch: calls={models_in_calls} "
-                f"by_model={set(agg['by_model'].keys())}"
-            )
-
-            # Verify bucket fields and value consistency for one known model
-            # "kimi" was logged exactly once with 100 in / 100 out
-            kimi_bucket = agg["by_model"]["kimi"]
-            assert kimi_bucket["calls"]     == 1,   f"calls={kimi_bucket['calls']}"
-            assert kimi_bucket["tokens_in"] == 100, f"tokens_in={kimi_bucket['tokens_in']}"
-            assert kimi_bucket["tokens_out"]== 100, f"tokens_out={kimi_bucket['tokens_out']}"
-            assert isinstance(kimi_bucket["cost_usd"], float)
-            assert kimi_bucket["cost_usd"]  >  0
-
-            # Required keys in every bucket
-            required_keys = {"calls", "tokens_in", "tokens_out", "cost_usd"}
-            for mdl, bucket in agg["by_model"].items():
-                missing = required_keys - set(bucket.keys())
-                assert not missing, f"model '{mdl}' bucket missing keys: {missing}"
-
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T16: summary() by_day buckets have correct structure
-        # ------------------------------------------------------------------
-        label = "T16: summary() by_day bucket structure"
-        try:
-            agg = summary()
-            required_keys = {"calls", "tokens_in", "tokens_out", "cost_usd"}
-            assert len(agg["by_day"]) >= 1, "by_day should have at least one entry"
-            for day, bucket in agg["by_day"].items():
-                # Day key must look like YYYY-MM-DD or "unknown"
-                assert (
-                    day == "unknown" or
-                    (len(day) == 10 and day[4] == "-" and day[7] == "-")
-                ), f"unexpected day key format: '{day}'"
-                missing = required_keys - set(bucket.keys())
-                assert not missing, f"day '{day}' bucket missing keys: {missing}"
-                assert isinstance(bucket["cost_usd"], float)
-                assert bucket["calls"] >= 1
-
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T17: summary() by_day groups calls on the same day together
-        # ------------------------------------------------------------------
-        label = "T17: summary() by_day groups same-day calls correctly"
-        try:
-            # Log two calls with identical explicit dates on a fresh sub-tracker
-            # We need a clean slate for predictable counts, so we save/restore
-            old_path = TRACKER_PATH
-            TRACKER_PATH = Path(tmp_dir) / "memory/outreach/day_test.json"
-
-            log_call("gpt-4o", 100, 50,  timestamp="2030-03-10T08:00:00+00:00")
-            log_call("gpt-4o", 200, 100, timestamp="2030-03-10T22:59:59+00:00")
-            log_call("gpt-4o", 50,  25,  timestamp="2030-03-11T00:00:01+00:00")
-
-            agg = summary()
-            assert "2030-03-10" in agg["by_day"], "expected day 2030-03-10"
-            assert "2030-03-11" in agg["by_day"], "expected day 2030-03-11"
-            assert agg["by_day"]["2030-03-10"]["calls"] == 2, (
-                f"expected 2 calls on 2030-03-10, got {agg['by_day']['2030-03-10']['calls']}"
-            )
-            assert agg["by_day"]["2030-03-11"]["calls"] == 1, (
-                f"expected 1 call on 2030-03-11, got {agg['by_day']['2030-03-11']['calls']}"
-            )
-            assert abs(
-                agg["by_day"]["2030-03-10"]["tokens_in"] - 300
-            ) == 0, "tokens_in mismatch for 2030-03-10"
-
-            # Restore tracker path
-            TRACKER_PATH = old_path
-            ok(label)
-        except Exception as e:
-            # Always restore path even on failure
-            TRACKER_PATH = Path(tmp_dir) / "memory/outreach/ai_token_cost_tracker.json"
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T18: summary() by_model cost sum equals total_cost
-        # ------------------------------------------------------------------
-        label = "T18: summary() by_model cost sum equals total_cost"
-        try:
-            agg = summary()
-            model_cost_sum = round(
-                sum(b["cost_usd"] for b in agg["by_model"].values()), 8
-            )
-            assert abs(model_cost_sum - agg["total_cost"]) < 1e-7, (
-                f"by_model sum={model_cost_sum} total_cost={agg['total_cost']}"
-            )
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T19: summary() by_day cost sum equals total_cost
-        # ------------------------------------------------------------------
-        label = "T19: summary() by_day cost sum equals total_cost"
-        try:
-            agg = summary()
-            day_cost_sum = round(
-                sum(b["cost_usd"] for b in agg["by_day"].values()), 8
-            )
-            assert abs(day_cost_sum - agg["total_cost"]) < 1e-7, (
-                f"by_day sum={day_cost_sum} total_cost={agg['total_cost']}"
-            )
-            ok(label)
-        except Exception as e:
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # T20: summary() on empty tracker returns zeroed structure
-        # ------------------------------------------------------------------
-        label = "T20: summary() on empty tracker returns zeroed structure"
-        try:
-            old_path = TRACKER_PATH
-            TRACKER_PATH = Path(tmp_dir) / "memory/outreach/empty_test.json"
-            # Do not log anything — file doesn't even exist
-            agg = summary()
-            assert agg["total_cost"] == 0.0, f"total_cost={agg['total_cost']}"
-            assert agg["by_model"]   == {},   f"by_model={agg['by_model']}"
-            assert agg["by_day"]     == {},   f"by_day={agg['by_day']}"
-            TRACKER_PATH = old_path
-            ok(label)
-        except Exception as e:
-            TRACKER_PATH = Path(tmp_dir) / "memory/outreach/ai_token_cost_tracker.json"
-            fail(label, str(e))
-
-        # ------------------------------------------------------------------
-        # Summary
-        # ------------------------------------------------------------------
-        total = passed + failed
-        print(f"\n  Results: {passed}/{total} passed", end="")
-        if failed:
-            print(f"  ({failed} FAILED)")
-            TRACKER_PATH = original_path
-            sys.exit(1)
         else:
-            print(" — all good ✓")
+            assert act_val == exp_val, (
+                f"[{label}] {key}: expected {exp_val!r}, got {act_val!r}"
+            )
 
-    TRACKER_PATH = original_path
+
+def run_tests() -> None:
+    print("=" * 60)
+    print("TAD token_cost_parser — self-check mode")
+    print("=" * 60)
+
+    # --- normalize_record tests
+    print("\n[1] normalize_record() tests")
+    passed = 0
+    for desc, raw, expected in _SAMPLE_DATA_CASES:
+        try:
+            result = normalize_record(raw)
+            _assert_subset(result, expected, desc)
+            print(f"  ✓  {desc}")
+            passed += 1
+        except AssertionError as exc:
+            print(f"  ✗  {desc}\n     {exc}")
+
+    # --- _unwrap_to_list tests
+    print("\n[2] _unwrap_to_list() tests")
+    for desc, raw, count in _UNWRAP_CASES:
+        records = _unwrap_to_list(raw)
+        try:
+            assert len(records) == count, f"expected {count} records, got {len(records)}"
+            print(f"  ✓  {desc}")
+            passed += 1
+        except AssertionError as exc:
+            print(f"  ✗  {desc} — {exc}")
+
+    # --- round-trip with synthetic file
+    print("\n[3] Round-trip load_and_parse() with synthetic JSON")
+    import tempfile
+    synthetic = {
+        "models": [
+            {"model": "gpt-4o-mini", "provider": "openai",
+             "input_cost_per_1k": 0.00015, "output_cost_per_1k": 0.0006,
+             "context_window": 128000, "notes": "fast and cheap"},
+            {"model_name": "claude-3-haiku", "provider": "anthropic",
+             "prompt_cost_per_1m": "0.25", "completion_cost_per_1m": "1.25",
+             "context_length": "200k"},
+        ]
+    }
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", delete=False, encoding="utf-8"
+    ) as tmp:
+        json.dump(synthetic, tmp)
+        tmp_path = Path(tmp.name)
+
+    try:
+        records = load_and_parse(tmp_path)
+        assert len(records) == 2, f"expected 2, got {len(records)}"
+        r0 = records[0]
+        assert r0["model"] == "gpt-4o-mini"
+        assert r0["input_cost_per_1k"] == 0.00015
+        r1 = records[1]
+        assert r1["model"] == "claude-3-haiku"
+        assert abs(r1["input_cost_per_1k"] - 0.00025) < 1e-9, r1["input_cost_per_1k"]
+        assert r1["context_window"] == 200_000
+        print("  ✓  Round-trip load + parse + schema validation")
+        passed += 1
+        print("\n  Parsed output:")
+        print_summary(records)
+    except AssertionError as exc:
+        print(f"  ✗  Round-trip failed: {exc}")
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    total = len(_SAMPLE_DATA_CASES) + len(_UNWRAP_CASES) + 1
+    print(f"\n{'='*60}")
+    print(f"Results: {passed}/{total} passed")
+    if passed < total:
+        sys.exit(1)
+    print("All tests passed ✓")
 
 
 # ---------------------------------------------------------------------------
-# CLI entry point
+# Entrypoint
 # ---------------------------------------------------------------------------
+
+def main() -> None:
+    if "--test" in sys.argv:
+        run_tests()
+        return
+
+    # normal run: parse the real tracker file
+    filepath = DEFAULT_PATH
+    for arg in sys.argv[1:]:
+        if not arg.startswith("--"):
+            filepath = Path(arg)
+
+    try:
+        records = load_and_parse(filepath)
+        print(f"Loaded {len(records)} records from {filepath}\n")
+        print_summary(records)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        print("Tip: run with --test to verify the module without a real file.")
+        sys.exit(1)
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: Could not parse JSON — {exc}")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    if "--test" in sys.argv:
-        _run_tests()
-    else:
-        # Quick demo: log a sample call and print summary
-        print("[ai_token_cost_tracker] Logging sample call...")
-        rec = log_call(
-            model="gpt-4o",
-            tokens_in=1500,
-            tokens_out=420,
-            tags=["demo"],
-            extra={"agent": "market_agent"},
-        )
-        print(f"  Logged: {rec['call_id']} | cost=${rec['cost_usd']:.6f}")
-        meta = get_summary()
-        print(f"  Tracker summary: {json.dumps(meta, indent=2)}")
-        agg = summary()
-        print(f"  Aggregated summary: {json.dumps(agg, indent=2)}")
-        print(f"  Saved to: {TRACKER_PATH.resolve()}")
+    main()

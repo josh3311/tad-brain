@@ -171,7 +171,26 @@
       "use_count": 0,
       "last_used": null,
       "success_rate": null
+    },
+    {
+      "id": "llm_api_cost_tracking",
+      "name": "LLM API Cost Tracking",
+      "description": "Parse, store, and aggregate LLM API call logs with cost analysis by model and time period.",
+      "trigger_keywords": [
+        "cost tracking",
+        "token accounting",
+        "API logging",
+        "LLM expenses",
+        "usage analytics"
+      ],
+      "what_it_does": "Extracts and persists LLM API call metadata (timestamps, model names, token counts, costs) into structured JSON storage, then generates cost summaries aggregated by model and by day. Use this whenever you need to monitor, report, or analyze spending across multiple LLM API calls over time.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: Outreach: memory/outreach/ai_token_cost_tracker.js",
+      "learned_at": "2026-06-28T01:39:04.178349",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
     }
   ],
-  "last_updated": "2026-06-28T01:10:17.551086"
+  "last_updated": "2026-06-28T01:39:04.178763"
 }

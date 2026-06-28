@@ -1,0 +1,14 @@
+{"ts": "2026-06-28T01:39:03.077235", "event": "pipeline.start", "data": {"run": 1, "focus": null}}
+{"ts": "2026-06-28T01:39:03.079674", "event": "stage_score.start", "data": {"input_count": 1}}
+{"ts": "2026-06-28T01:39:09.010873", "event": "stage_score.approved", "data": {"name": "AI Receptionist for HVAC companies", "score": 32}}
+{"ts": "2026-06-28T01:39:09.011443", "event": "stage_score.done", "data": {"approved": 1, "killed": 0}}
+{"ts": "2026-06-28T01:39:09.011976", "event": "stage_ceo.start", "data": {"count": 1}}
+{"ts": "2026-06-28T01:39:12.357140", "event": "stage_ceo.go", "data": {"name": "AI Receptionist for HVAC companies", "decision": "GO"}}
+{"ts": "2026-06-28T01:39:12.358967", "event": "stage_ceo.done", "data": {"go": 1}}
+{"ts": "2026-06-28T01:39:12.360364", "event": "stage_build.start", "data": {"count": 1}}
+{"ts": "2026-06-28T01:39:13.459296", "event": "stage_build.building", "data": {"name": "AI Receptionist for HVAC companies"}}
+{"ts": "2026-06-28T01:39:13.460455", "event": "stage_build.item_error", "data": {"name": "AI Receptionist for HVAC companies", "error": "unsupported operand type(s) for /: 'str' and 'str'"}}
+{"ts": "2026-06-28T01:39:13.460868", "event": "stage_build.done", "data": {"built": 0}}
+{"ts": "2026-06-28T01:39:13.461345", "event": "pipeline.no_builds", "data": {}}
+{"ts": "2026-06-28T01:39:13.461757", "event": "stage_cseo.start", "data": {}}
+{"ts": "2026-06-28T01:40:17.628883", "event": "stage_cseo.error", "data": {"error": "'charmap' codec can't encode character '\\u2713' in position 7: character maps to <undefined>"}}

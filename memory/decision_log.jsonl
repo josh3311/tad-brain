@@ -28,3 +28,6 @@
 {"ts": "2026-06-27T11:29:25.132781", "msg": "Decision Agent loaded \u2014 ready to score"}
 {"ts": "2026-06-28T00:55:34.363643", "msg": "Decision Agent loaded \u2014 ready to score"}
 {"ts": "2026-06-28T01:08:32.570085", "msg": "Decision Agent loaded \u2014 ready to score"}
+{"ts": "2026-06-28T01:39:05.030148", "msg": "Decision Agent loaded \u2014 ready to score"}
+{"ts": "2026-06-28T01:39:05.054431", "msg": "Running learned skill: competitive_win_loss_analysis_engine"}
+{"ts": "2026-06-28T01:39:09.009837", "msg": "APPROVE: AI Receptionist for HVAC companies \u2014 Score: 32/40"}
