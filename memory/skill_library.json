@@ -190,7 +190,27 @@
       "use_count": 0,
       "last_used": null,
       "success_rate": null
+    },
+    {
+      "id": "parse_and_normalize_token_cost_data",
+      "name": "Parse and Normalize Token Cost Data",
+      "description": "Parses and normalizes AI token cost data from JSON sources into a unified schema with standardized fields.",
+      "trigger_keywords": [
+        "token",
+        "cost",
+        "normalize",
+        "parse",
+        "ai_cost",
+        "pricing"
+      ],
+      "what_it_does": "This skill extracts token cost information from JSON files and transforms it into a consistent schema including input/output tokens, model names, and cost per 1K tokens. Use this whenever you need to standardize AI pricing data from multiple sources or formats into a unified structure for analysis or comparison.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: Outreach: memory/outreach/ai_token_cost_tracker.js",
+      "learned_at": "2026-06-28T01:47:29.567679",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
     }
   ],
-  "last_updated": "2026-06-28T01:39:04.178763"
+  "last_updated": "2026-06-28T01:47:29.569856"
 }
