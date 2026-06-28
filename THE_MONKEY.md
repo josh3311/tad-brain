@@ -499,7 +499,7 @@ Build: Python webhook handler that takes inbound call transcript (Twilio/Bland.a
        responds with appointment booking flow, emails owner a summary.
        Starter pack: the Python server + prompt template + setup guide PDF.
 - [ ] Build: memory/products/hvac_ai_receptionist/
-- [ ] List: memory/listings/hvac_ai_receptionist.md
+- [x] List: memory/listings/hvac_ai_receptionist.md (done 2026-06-28)
 - [ ] Outreach: memory/outreach/hvac_ai_receptionist.json
 
 ### PRODUCT 3 — LLM Context Window Optimizer ($79 Gumroad)

@@ -1,12 +1,12 @@
 {
-  "started_at": "2026-06-28T01:14:13.134182",
-  "calls": 50,
-  "input_tokens": 132698,
-  "output_tokens": 235231,
-  "spent_usd": 3.726896,
+  "started_at": "2026-06-28T01:14:40.425678",
+  "calls": 44,
+  "input_tokens": 156358,
+  "output_tokens": 242608,
+  "spent_usd": 3.828512,
   "blocked": 0,
   "cap_usd": 5.0,
-  "remaining_usd": 1.273104,
-  "pct_used": 74.5,
+  "remaining_usd": 1.171488,
+  "pct_used": 76.6,
   "monthly_budget_usd": 50.0
 }

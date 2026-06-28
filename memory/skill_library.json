@@ -210,7 +210,27 @@
       "use_count": 0,
       "last_used": null,
       "success_rate": null
+    },
+    {
+      "id": "interactive_form_builder",
+      "name": "Interactive Form Builder",
+      "description": "Creates text-based intake forms that capture structured user input through sequential prompts and validation.",
+      "trigger_keywords": [
+        "form",
+        "intake",
+        "capture",
+        "questionnaire",
+        "user input",
+        "validation"
+      ],
+      "what_it_does": "Builds interactive forms that systematically gather information from users through text prompts, storing responses in structured format. Use this when you need to collect organized data from users (contact info, service requests, preferences, etc.) with built-in validation. Apply to customer intake, support requests, registration flows, or any scenario requiring validated multi-field data collection.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: Build: memory/products/hvac_ai_receptionist/",
+      "learned_at": "2026-06-28T02:07:19.300119",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
     }
   ],
-  "last_updated": "2026-06-28T01:47:29.569856"
+  "last_updated": "2026-06-28T02:07:19.301888"
 }
