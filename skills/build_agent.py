@@ -219,6 +219,84 @@ def _generate_code(prompt: str, max_tokens: int = 8000) -> str:
     return ""
 
 
+# ── Truncation detection and continuation ────────────────────────────────────
+
+def _is_truncated(code: str) -> bool:
+    """
+    Detect code that got cut off mid-stream.
+    Truncated code always causes syntax errors but the root cause
+    is output limit, not bad generation — continuation fixes it.
+    """
+    import ast
+    code = code.strip()
+    if not code:
+        return False
+    # Unclosed triple-quote strings
+    if code.count('"""') % 2 != 0:
+        return True
+    if code.count("'''") % 2 != 0:
+        return True
+    # Unclosed string literals (single or double quote)
+    try:
+        ast.parse(code)
+    except SyntaxError as e:
+        msg = str(e).lower()
+        if any(phrase in msg for phrase in [
+            "eol while scanning string",
+            "eof while scanning",
+            "unterminated string",
+            "unexpected eof",
+        ]):
+            return True
+    lines = [l for l in code.split('\n') if l.strip()]
+    if not lines:
+        return False
+    last = lines[-1].strip()
+    # Last line is a continuation character or open bracket
+    if last.endswith(('\\', ',', '(', '[', '{')):
+        return True
+    # Last line is a partial keyword with no body
+    if last.endswith(':') and not any(
+        last.startswith(k) for k in
+        ('class ', 'def ', 'if ', 'else:', 'elif ', 'for ',
+         'while ', 'try:', 'except', 'finally:', 'with ')
+    ):
+        return True
+    return False
+
+
+def _continue_truncated(original_prompt: str,
+                        partial_code: str,
+                        max_tokens: int = 16000) -> str:
+    """
+    Ask the model to continue from where it got cut off.
+    Combines original + continuation into one complete module.
+    """
+    _log("[BUILD] Output truncated — requesting continuation")
+    continuation_prompt = f"""You were writing a Python module and
+your output was cut off before you finished.
+
+Here is everything you wrote so far:
+{partial_code}
+
+Continue writing the Python code from EXACTLY where you stopped.
+Output ONLY the remaining code — do NOT repeat what is already
+written above. Start from the next line after the cut-off point.
+Complete the module including the if __name__ == '__main__': block
+and --test mode if not already present."""
+
+    try:
+        continuation = _generate_code(continuation_prompt, max_tokens)
+        continuation = _extract_code(continuation)
+        if continuation and _is_real_python(continuation):
+            combined = partial_code.rstrip() + '\n' + continuation.lstrip()
+            _log(f"[BUILD] Continuation added {len(continuation)} chars")
+            return combined
+    except Exception as e:
+        _log(f"[BUILD] Continuation failed: {e}")
+    return partial_code
+
+
 # ── Code generation ───────────────────────────────────────────────────────────
 
 def generate_code(opportunity: dict, filename: str) -> str | None:
@@ -253,9 +331,11 @@ Output the Python code directly. Start with imports or docstring."""
     for attempt in range(1, 4):
         _log(f"Code generation attempt {attempt}/3 for {filename}")
         try:
-            raw  = _generate_code(prompt)
+            raw  = _generate_code(prompt, max_tokens=16000)
             code = _extract_code(raw)
 
+            if _is_truncated(code):
+                code = _continue_truncated(prompt, code)
             if _is_real_python(code):
                 _log(f"Real Python code generated on attempt {attempt}")
                 return code
@@ -284,7 +364,7 @@ Fix the error and return ONLY the corrected Python code.
 No explanation. Start with imports or docstring."""
 
     try:
-        raw  = _generate_code(fix_prompt)
+        raw  = _generate_code(fix_prompt, max_tokens=32000)
         code = _extract_code(raw)
         return code if _is_real_python(code) else None
     except Exception as e:
@@ -326,6 +406,140 @@ def _mark_done(item_name: str):
 
 # ── Main build function ───────────────────────────────────────────────────────
 
+def _plan_architecture(opportunity: dict, output_dir: Path) -> dict:
+    """
+    Generate a full project blueprint before any code is written.
+    Saves ARCHITECTURE.md to the product output directory.
+    Returns architecture dict that guides the build.
+    """
+    from config_providers import claude_json as _claude_json
+    name    = opportunity.get("name", "unknown")
+    problem = opportunity.get("problem", "")
+    score   = opportunity.get("total_score", 0)
+
+    ci       = opportunity.get("complaint_intelligence", {})
+    who      = ci.get("who", "")
+    language = ci.get("their_language", "")
+    resonant = ci.get("resonant_solution", "")
+
+    prompt = f"""You are TAD's senior software architect.
+Plan the complete architecture for this MVP product.
+
+PRODUCT: {name}
+PROBLEM BEING SOLVED: {problem}
+TARGET USER: {who if who else 'AI developers and teams'}
+WHAT RESONATES WITH THEM: {resonant if resonant else 'clear, working solution'}
+THEIR LANGUAGE: {language if language else 'technical'}
+OPPORTUNITY SCORE: {score}/40
+
+Return ONLY valid JSON — no preamble, no explanation:
+{{
+  "entry_point": "main file e.g. main.py",
+  "files": [
+    {{
+      "name": "filename.py",
+      "purpose": "one sentence: what this file does",
+      "depends_on": []
+    }}
+  ],
+  "data_model": "key data structures in 1-2 sentences",
+  "mvp_scope": "what the MVP does — 2 sentences max",
+  "done_criteria": "how we know the build is complete",
+  "build_order": ["file1.py", "file2.py"]
+}}
+
+IMPORTANT: Keep MVP scope tight — maximum 2 files for overnight build.
+One file is better. Complexity kills overnight builds."""
+
+    try:
+        raw  = _claude_json(
+            "You are a software architect. Return only valid JSON.",
+            prompt,
+            max_tokens=1500,
+        )
+        import json as _json
+        arch = _json.loads(raw) if isinstance(raw, str) else raw
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        arch_lines = [
+            f"# {name} — Architecture Plan",
+            f"Generated: {datetime.now().isoformat()}",
+            "",
+            "## MVP Scope",
+            arch.get("mvp_scope", ""),
+            "",
+            "## Target User",
+            who if who else "AI developers and teams",
+            "",
+            "## Files",
+        ]
+        for f in arch.get("files", []):
+            arch_lines.append(f"\n### {f['name']}")
+            arch_lines.append(f["purpose"])
+            if f.get("depends_on"):
+                arch_lines.append(f"Depends on: {', '.join(f['depends_on'])}")
+        arch_lines += [
+            "",
+            "## Data Model",
+            arch.get("data_model", ""),
+            "",
+            "## Done Criteria",
+            arch.get("done_criteria", ""),
+        ]
+        arch_path = output_dir / "ARCHITECTURE.md"
+        arch_path.write_text("\n".join(arch_lines), encoding="utf-8")
+        _log(f"[BUILD] Architecture planned -> {arch_path}")
+        _log(f"[BUILD] MVP: {arch.get('mvp_scope', '')[:80]}")
+        return arch
+
+    except Exception as e:
+        _log(f"[BUILD] Architecture planning failed: {e} — using default")
+        return {
+            "entry_point": "main.py",
+            "files": [{"name": "main.py",
+                       "purpose": "main product module",
+                       "depends_on": []}],
+            "data_model": "standard Python data structures",
+            "mvp_scope": problem[:100],
+            "done_criteria": "module runs without errors with --test mode",
+            "build_order": ["main.py"],
+        }
+
+
+def _save_checkpoint(output_dir: Path, feature_name: str,
+                     code: str, features_done: list):
+    """Save build progress after each successful feature."""
+    checkpoint = {
+        "ts":                     datetime.now().isoformat(),
+        "last_completed_feature": feature_name,
+        "features_done":          features_done,
+        "features_done_count":    len(features_done),
+        "code_length":            len(code),
+    }
+    cp_path = output_dir / "progress.json"
+    try:
+        cp_path.write_text(
+            json.dumps(checkpoint, indent=2), encoding="utf-8"
+        )
+        _log(f"[BUILD] Checkpoint saved: {len(features_done)} features done")
+    except Exception as e:
+        _log(f"[BUILD] Checkpoint save failed: {e}")
+
+
+def _load_checkpoint(output_dir: Path) -> dict:
+    """Load previous build progress if it exists."""
+    cp_path = output_dir / "progress.json"
+    if cp_path.exists():
+        try:
+            data = json.loads(cp_path.read_text(encoding="utf-8"))
+            _log(f"[BUILD] Checkpoint found: "
+                 f"{data.get('features_done_count', 0)} features previously done")
+            return data
+        except Exception:
+            pass
+    return {}
+
+
 def build(opportunity: dict, output_dir: Path = None) -> dict:
     """
     Full build cycle for one approved opportunity.
@@ -345,6 +559,9 @@ def build(opportunity: dict, output_dir: Path = None) -> dict:
 
     _log(f"=== Building: {name} → {filename} ===")
 
+    # Step 0: Plan architecture before writing any code
+    arch = _plan_architecture(opportunity, output_dir)
+
     # Generate code
     code = generate_code(opportunity, filename)
     if not code:
@@ -360,6 +577,7 @@ def build(opportunity: dict, output_dir: Path = None) -> dict:
         ok, error = _syntax_check(filepath)
         if ok:
             _log(f"Syntax check passed on round {fix_round}")
+            _save_checkpoint(output_dir, name, code, [name])
             break
 
         _log(f"Syntax error round {fix_round}: {error}")
@@ -404,6 +622,7 @@ def build(opportunity: dict, output_dir: Path = None) -> dict:
         "filename":    filename,
         "pushed":      pushed,
         "timestamp":   datetime.now().isoformat(),
+        "mvp_scope":   arch.get("mvp_scope", ""),
     }
     _save_build_result(result)
     _log_history("build", {
