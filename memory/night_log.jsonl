@@ -2012,3 +2012,440 @@
 {"ts": "2026-06-12T00:41:22.921377", "msg": "  Test failure round 1: Syntax error:   File \"C:\\TAD\\tad_revenue_tracker.py\", line 14\n    \"\"\"\n    ^\nSyntaxError: unterminated triple-quoted string literal (detected at line 14)\n\n[syntax_check] stderr:   File \"C:\\TAD\\tad_reve"}
 {"ts": "2026-06-12T00:43:15.736654", "msg": "  Tests pass: tad_revenue_tracker.py"}
 {"ts": "2026-06-12T00:43:16.181429", "msg": "  Review error (treating as skipped): Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CbxkhNWdUhxxwC3V3w3P8'}"}
+{"ts": "2026-06-12T00:43:18.439858", "msg": "  Pushed to GitHub: tad_revenue_tracker"}
+{"ts": "2026-06-12T00:43:18.440558", "msg": "  Completed (success): tad_revenue_tracker"}
+{"ts": "2026-06-12T00:43:33.670426", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-12T00:43:44.526610", "msg": "Task generation error: Expecting value: line 1 column 1 (char 0)"}
+{"ts": "2026-06-12T00:43:44.527724", "msg": "Building (1/3): tad_skill_gap_analyzer"}
+{"ts": "2026-06-12T00:43:52.768071", "msg": "  Feature planning error: Expecting value: line 1 column 1 (char 0)"}
+{"ts": "2026-06-12T00:43:52.769257", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-12T00:43:52.770238", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-12T00:43:52.771160", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-12T00:43:52.772444", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-12T00:43:52.773509", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-12T00:43:52.774344", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-12T00:45:30.987375", "msg": "  Test failure round 1: Syntax error:   File \"C:\\TAD\\tad_skill_gap_analyzer.py\", line 77\n    assert\n          ^\nSyntaxError: invalid syntax\n\n[syntax_check] stderr:   File \"C:\\TAD\\tad_skill_gap_analyzer.py\", line 77\n    asser"}
+{"ts": "2026-06-12T17:17:05.556517", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-12T17:17:05.558505", "msg": "Building (1/3): fake review gate test item"}
+{"ts": "2026-06-12T17:17:05.598851", "msg": "  Review error (blocking push): Error code: 400 - credit balance is too low (simulated)"}
+{"ts": "2026-06-12T17:17:05.599293", "msg": "  review_failed_blocking_push: Error code: 400 - credit balance is too low (simulated) \u2014 fake_review_gate_test_item.py kept local, NOT pushed"}
+{"ts": "2026-06-12T17:17:05.599627", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-12T17:17:05.600465", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report_TEST.json"}
+{"ts": "2026-06-26T01:44:18.847875", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-26T01:44:18.850734", "msg": "=== CSEO Evolution cycle starting ==="}
+{"ts": "2026-06-26T01:45:49.447247", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-26T01:45:49.448618", "msg": "=== CSEO Evolution cycle starting ==="}
+{"ts": "2026-06-26T01:48:22.786000", "msg": "CSEO evolution complete -- 2 new skills built"}
+{"ts": "2026-06-26T01:48:22.787042", "msg": "=== Market Agent scanning for loopholes ==="}
+{"ts": "2026-06-26T01:48:32.139066", "msg": "Market scan complete -- 3 opportunities found"}
+{"ts": "2026-06-26T01:48:32.140338", "msg": "  -> AI Model Token Counter Validator (Score: 32/40)"}
+{"ts": "2026-06-26T01:48:32.142497", "msg": "  -> AI API Deprecation & Breaking Change Monitor (Score: 31/40)"}
+{"ts": "2026-06-26T01:48:32.143890", "msg": "  -> LLM Context Window Usage Optimizer (Score: 30/40)"}
+{"ts": "2026-06-26T01:48:32.145937", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T01:48:40.644264", "msg": "Building (1/3): Deploy autonomous web scraping agent to monitor AI subreddits, Discord servers, and Hacker News for recurring unsolved pain points with high complaint velocity"}
+{"ts": "2026-06-26T01:48:48.401491", "msg": "  Plan: 5 feature(s)"}
+{"ts": "2026-06-26T01:48:48.402720", "msg": "    1. Scrape a single Reddit post's comments and extract raw text using PRAW API with rate-limited requests"}
+{"ts": "2026-06-26T01:48:48.404033", "msg": "    2. Parse scraped text with regex keyword matcher to flag posts containing pain-point keywords ('frustrated', 'workaround', 'impossible', 'wasting hours')"}
+{"ts": "2026-06-26T01:48:48.405161", "msg": "    3. Store flagged posts in local SQLite with timestamp, source URL, keyword hit count, and raw text for trend analysis"}
+{"ts": "2026-06-26T01:48:48.406227", "msg": "    4. Add scheduled loop to re-run scraper every 6 hours and append new results, detecting duplicate URLs before insert"}
+{"ts": "2026-06-26T01:48:48.407500", "msg": "    5. Generate simple text report of top 5 most-mentioned keywords and highest-engagement posts from last 7 days of stored data"}
+{"ts": "2026-06-26T01:48:48.409598", "msg": "  Cycle: Scrape a single Reddit post's comments and extract raw text using PRAW API with rate-limited requests"}
+{"ts": "2026-06-26T01:50:00.217427", "msg": "  Test failure round 1: Tests failed\n[import_check] stderr: Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers_"}
+{"ts": "2026-06-26T01:52:39.983297", "msg": "  Tests pass: deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers__and_hacker_news_for_recurring_unsolved_pain_points_with_high_complaint_velocity.py"}
+{"ts": "2026-06-26T01:52:39.984341", "msg": "  Cycle: Parse scraped text with regex keyword matcher to flag posts containing pain-point keywords ('frustrated', 'workaround', 'impossible', 'wasting hours')"}
+{"ts": "2026-06-26T01:55:50.707734", "msg": "kimi_length_retry: truncated (33078 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T01:58:08.491356", "msg": "  Test failure round 1: Tests failed\n[run] stderr: C:\\TAD\\deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers__and_hacker_news_for_recurring_unsolved_pain_points_with_high_complaint_velocity.py:568"}
+{"ts": "2026-06-26T02:00:22.029955", "msg": "  Tests pass: deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers__and_hacker_news_for_recurring_unsolved_pain_points_with_high_complaint_velocity.py"}
+{"ts": "2026-06-26T02:00:22.030788", "msg": "  Cycle: Store flagged posts in local SQLite with timestamp, source URL, keyword hit count, and raw text for trend analysis"}
+{"ts": "2026-06-26T02:06:21.269155", "msg": "kimi_length_retry: truncated (33863 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T02:12:29.441308", "msg": "  Test failure round 1: Tests failed\n[run] stderr: Traceback (most recent call last):\n  File \"C:\\TAD\\deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers__and_hacker_news_for_recurring_unsolved_pain"}
+{"ts": "2026-06-26T02:14:34.098534", "msg": "kimi_length_retry: truncated (34589 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T02:20:30.354161", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:20:31.603415", "msg": "  Fix error: Connection error."}
+{"ts": "2026-06-26T02:20:31.604473", "msg": "  Feature failed tests after 3 fixes: Store flagged posts in local SQLite with timestamp, source URL, keyword hit count, and raw text for trend analysis"}
+{"ts": "2026-06-26T02:20:32.933542", "msg": "  Review error (blocking push): Connection error."}
+{"ts": "2026-06-26T02:20:32.934843", "msg": "  review_failed_blocking_push: Connection error. \u2014 deploy_autonomous_web_scraping_agent_to_monitor_ai_subreddits__discord_servers__and_hacker_news_for_recurring_unsolved_pain_points_with_high_complaint_velocity.py kept local, NOT pushed"}
+{"ts": "2026-06-26T02:20:47.939730", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:21:00.453696", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:21:01.738622", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:21:01.739314", "msg": "Building (1/3): tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:21:03.104298", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:21:04.414323", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:21:04.418273", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:21:04.421358", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:21:04.423896", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:21:04.426898", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:21:04.432013", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:21:04.436803", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:21:05.785504", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:21:07.171191", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:21:35.596585", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:21:36.869375", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:21:41.873236", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:21:41.875785", "msg": "  Build failed (attempt 1): tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:21:56.879728", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:21:58.200563", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:21:59.716684", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:21:59.717444", "msg": "Building (2/3): tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:22:01.198922", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:02.483938", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:22:02.488345", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:22:02.492188", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:22:02.494897", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:02.500744", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:22:02.502699", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:22:02.504516", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:03.869124", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:05.226467", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:22:11.541388", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:12.970688", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:22:17.972431", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:17.973594", "msg": "  Build failed (attempt 2): tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:22:32.977529", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:22:34.318580", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:35.593466", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:22:35.596635", "msg": "Building (3/3): tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:22:36.901276", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:38.303010", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:22:38.304228", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:22:38.305102", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:22:38.305913", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:38.306726", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:22:38.307550", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:22:38.308319", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:39.733377", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:41.075861", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:22:47.263414", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:22:48.575415", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:22:53.578434", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:22:53.584948", "msg": "  Blocked after 3 attempts: tad_opportunity_scorer"}
+{"ts": "2026-06-26T02:23:08.592096", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:23:09.859940", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:11.312199", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:23:11.316989", "msg": "Building (1/3): tad_lead_finder"}
+{"ts": "2026-06-26T02:23:12.710050", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:13.985402", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:23:13.988487", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:23:13.991314", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:23:13.994399", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:23:13.999101", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:23:14.002384", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:23:14.004899", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:23:15.330202", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:16.657031", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:23:23.049105", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:24.274074", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:23:29.277823", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:23:29.280948", "msg": "  Build failed (attempt 1): tad_lead_finder"}
+{"ts": "2026-06-26T02:23:44.288010", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:23:45.727791", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:46.994332", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:23:46.997509", "msg": "Building (2/3): tad_lead_finder"}
+{"ts": "2026-06-26T02:23:48.279131", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:49.693802", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:23:49.696850", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:23:49.700760", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:23:49.704546", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:23:49.708091", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:23:49.710833", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:23:49.713755", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:23:51.194177", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:23:52.524149", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:23:58.950232", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:00.369478", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:24:05.372033", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:24:05.373060", "msg": "  Build failed (attempt 2): tad_lead_finder"}
+{"ts": "2026-06-26T02:24:20.376313", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:24:21.598639", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:22.899063", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:24:22.902529", "msg": "Building (3/3): tad_lead_finder"}
+{"ts": "2026-06-26T02:24:24.310526", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:25.582057", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:24:25.587882", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:24:25.591408", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:24:25.594097", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:24:25.597295", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:24:25.604266", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:24:25.608827", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:24:27.032304", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:28.273498", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:24:34.692008", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:35.948376", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:24:40.954105", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:24:40.955922", "msg": "  Blocked after 3 attempts: tad_lead_finder"}
+{"ts": "2026-06-26T02:24:55.959796", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:24:57.318532", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:24:58.759566", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:24:58.762939", "msg": "Building (1/3): tad_client_outreach"}
+{"ts": "2026-06-26T02:25:00.028963", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:01.527954", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:25:01.529289", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:25:01.530361", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:25:01.531407", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:01.532457", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:25:01.533774", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:25:01.534918", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:02.854280", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:04.132423", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:25:10.602552", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:11.798767", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:25:16.803804", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:16.805844", "msg": "  Build failed (attempt 1): tad_client_outreach"}
+{"ts": "2026-06-26T02:25:31.810836", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:25:33.209215", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:34.538608", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:25:34.543102", "msg": "Building (2/3): tad_client_outreach"}
+{"ts": "2026-06-26T02:25:36.006266", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:37.183683", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:25:37.188804", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:25:37.191973", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:25:37.194559", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:37.197666", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:25:37.200461", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:25:37.204151", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:38.626591", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:40.012184", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:25:46.252412", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:25:47.590542", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:25:52.594142", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:25:52.597283", "msg": "  Build failed (attempt 2): tad_client_outreach"}
+{"ts": "2026-06-26T02:26:07.604729", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:26:09.022221", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:10.330578", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:26:10.334242", "msg": "Building (3/3): tad_client_outreach"}
+{"ts": "2026-06-26T02:26:11.687266", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:12.936126", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:26:12.937284", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:26:12.938082", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:26:12.938832", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:26:12.939615", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:26:12.940259", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:26:12.940876", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:26:14.362824", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:15.662303", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:26:21.940616", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:23.161683", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:26:28.163476", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:26:28.165981", "msg": "  Blocked after 3 attempts: tad_client_outreach"}
+{"ts": "2026-06-26T02:26:43.171441", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:26:44.420763", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:45.849155", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:26:45.853183", "msg": "Building (1/3): tad_revenue_tracker"}
+{"ts": "2026-06-26T02:26:47.324981", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:48.641455", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:26:48.645157", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:26:48.647970", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:26:48.652830", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:26:48.658479", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:26:48.662594", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:26:48.667677", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:26:49.930448", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:51.428595", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:26:57.819295", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:26:59.107043", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:27:04.112293", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:27:04.115589", "msg": "  Build failed (attempt 1): tad_revenue_tracker"}
+{"ts": "2026-06-26T02:27:19.123221", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:27:20.437255", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:27:21.949274", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:27:21.952328", "msg": "Building (2/3): tad_revenue_tracker"}
+{"ts": "2026-06-26T02:27:23.204409", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:27:24.697325", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:27:24.701135", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:27:24.704979", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:27:24.708325", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:27:24.713774", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:27:24.717318", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:27:24.722237", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:27:26.142497", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:27:27.596805", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:27:33.781809", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:27:35.016956", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:27:40.021166", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:27:40.024029", "msg": "  Build failed (attempt 2): tad_revenue_tracker"}
+{"ts": "2026-06-26T02:27:55.029144", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:27:56.349150", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:27:57.718751", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:27:57.721945", "msg": "Building (3/3): tad_revenue_tracker"}
+{"ts": "2026-06-26T02:27:59.006712", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:00.240236", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:28:00.241300", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:28:00.242045", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:28:00.242771", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:00.243459", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:28:00.244084", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:28:00.244682", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:01.478047", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:02.786820", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:28:09.106898", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:10.361460", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:28:15.365135", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:15.369839", "msg": "  Blocked after 3 attempts: tad_revenue_tracker"}
+{"ts": "2026-06-26T02:28:30.375196", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:28:31.812451", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:33.258850", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:28:33.260095", "msg": "Building (1/3): tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:28:34.638369", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:35.884326", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:28:35.885384", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:28:35.886335", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:28:35.888179", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:35.889363", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:28:35.890149", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:28:35.890912", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:37.307276", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:38.515396", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:28:44.815152", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:28:46.201274", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:28:51.207629", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:28:51.211299", "msg": "  Build failed (attempt 1): tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:29:06.218738", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:29:07.523560", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:08.717701", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:29:08.720784", "msg": "Building (2/3): tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:29:10.151729", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:11.417623", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:29:11.420251", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:29:11.424531", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:29:11.428201", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:29:11.431909", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:29:11.434584", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:29:11.437020", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:29:12.723137", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:14.002726", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:29:20.403763", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:21.772215", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:29:26.776831", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:29:26.779793", "msg": "  Build failed (attempt 2): tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:29:41.785931", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:29:43.099492", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:44.479413", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:29:44.483028", "msg": "Building (3/3): tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:29:45.908755", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:47.415815", "msg": "  Feature planning error: Connection error."}
+{"ts": "2026-06-26T02:29:47.420202", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T02:29:47.424395", "msg": "  Plan: 3 feature(s)"}
+{"ts": "2026-06-26T02:29:47.427665", "msg": "    1. Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:29:47.430090", "msg": "    2. Storage or aggregation layer on top of the core model (e.g. recording multiple entries and summarizing them), with --test checks"}
+{"ts": "2026-06-26T02:29:47.432137", "msg": "    3. Simple text or HTML report/output function summarizing the data, plus a small CLI demo in __main__, with --test checks"}
+{"ts": "2026-06-26T02:29:47.434046", "msg": "  Cycle: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:29:48.665652", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:50.109313", "msg": "  Kimi error attempt 1: Connection error."}
+{"ts": "2026-06-26T02:29:56.374283", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:29:57.875025", "msg": "  Kimi error attempt 2: Connection error."}
+{"ts": "2026-06-26T02:30:02.876729", "msg": "  Generation failed for feature: Core data model and the single most important calculation/logic, with a --test mode that checks that calculation on 1-2 known inputs"}
+{"ts": "2026-06-26T02:30:02.878166", "msg": "  Blocked after 3 attempts: tad_skill_gap_analyzer"}
+{"ts": "2026-06-26T02:30:17.881526", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T02:30:19.138748", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T02:30:20.429415", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T02:30:20.433598", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T03:00:20.439041", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T03:00:21.905038", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T03:00:23.353017", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T03:00:23.354016", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T03:30:23.360345", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T03:30:24.720945", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T03:30:25.985834", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T03:30:25.989374", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T04:00:25.994021", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T04:00:27.346946", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T04:00:28.595196", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T04:00:28.597708", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T04:30:28.605014", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T04:30:29.839997", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T04:30:31.074384", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T04:30:31.080192", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T05:00:31.087217", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T05:00:32.387180", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T05:00:33.861318", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T05:00:33.870525", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T05:30:33.880523", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T05:30:35.196897", "msg": "kimi no-think rejected (Connection error.) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T05:30:36.591306", "msg": "Task generation error: Connection error."}
+{"ts": "2026-06-26T05:30:36.594143", "msg": "No buildable tasks left -- sleeping 30m"}
+{"ts": "2026-06-26T06:00:36.597630", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-26T06:00:36.669358", "msg": "Ops check complete -- 3 issues"}
+{"ts": "2026-06-26T06:00:36.670382", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-26T06:00:36.683669", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-26T13:38:22.363812", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T14:09:16.104673", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-26T14:09:16.689740", "msg": "task_generation_failed: Expecting value: line 1 column 1 (char 0)"}
+{"ts": "2026-06-26T14:09:16.837955", "msg": "feature_planning_failed: Expecting value: line 1 column 1 (char 0)"}
+{"ts": "2026-06-26T14:09:16.839319", "msg": "  Using generic fallback feature plan (small steps)"}
+{"ts": "2026-06-26T22:21:20.335618", "msg": "[NIGHT] Building CEO-approved: AI Receptionist for HVAC companies (score 31/40)"}
+{"ts": "2026-06-26T23:03:17.789549", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-26T23:03:37.544693", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-26T23:03:37.545950", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-26T23:03:37.581430", "msg": "Ops check complete -- 0 issues"}
+{"ts": "2026-06-26T23:03:37.582386", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-26T23:03:37.584095", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-26T23:56:43.977877", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-26T23:56:44.899686", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-26T23:56:44.902117", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-26T23:56:44.924018", "msg": "Ops check complete -- 0 issues"}
+{"ts": "2026-06-26T23:56:44.924773", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-26T23:56:44.927777", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-27T23:41:20.360463", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-27T23:41:22.058965", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-27T23:41:22.059741", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-27T23:41:22.109660", "msg": "Ops check error: 'list' object has no attribute 'get'"}
+{"ts": "2026-06-27T23:41:22.110232", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-27T23:41:22.111349", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-27T23:41:45.997688", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-27T23:41:46.840422", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-27T23:41:46.841531", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-27T23:41:46.891922", "msg": "Ops check error: 'list' object has no attribute 'get'"}
+{"ts": "2026-06-27T23:41:46.892529", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-27T23:41:46.893737", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-27T23:42:34.660058", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-27T23:42:35.421080", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-27T23:42:35.422220", "msg": "Ops Agent health check..."}
+{"ts": "2026-06-27T23:42:35.472852", "msg": "Ops check error: 'list' object has no attribute 'get'"}
+{"ts": "2026-06-27T23:42:35.473572", "msg": "=== Night mode ended -- saving report ==="}
+{"ts": "2026-06-27T23:42:35.474537", "msg": "Report saved -> C:\\TAD\\memory\\overnight_report.json"}
+{"ts": "2026-06-28T00:55:31.698486", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-28T00:55:32.622566", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-28T00:55:32.623391", "msg": "=== CSEO Evolution cycle starting ==="}
+{"ts": "2026-06-28T00:55:33.001124", "msg": "CSEO evolution error: 'list' object has no attribute 'get'"}
+{"ts": "2026-06-28T00:55:33.002132", "msg": "=== Market Agent scanning for loopholes ==="}
+{"ts": "2026-06-28T00:55:44.489451", "msg": "Market scan complete -- 3 opportunities found"}
+{"ts": "2026-06-28T00:55:44.489976", "msg": "  -> AI Model Context Window Waste Detector (Score: 30/40)"}
+{"ts": "2026-06-28T00:55:44.490458", "msg": "  -> AI Output Reproducibility Verifier (Score: 27/40)"}
+{"ts": "2026-06-28T00:55:44.491024", "msg": "  -> AI Model Instruction Conflict Resolver (Score: 26/40)"}
+{"ts": "2026-06-28T00:55:44.491957", "msg": "[NIGHT] 5 CEO-approved opportunities queued for build"}
+{"ts": "2026-06-28T00:55:44.492684", "msg": "[NIGHT] Building CEO-approved: Score of 32/40 exceeds threshold (score ?/40)"}
+{"ts": "2026-06-28T00:57:11.477015", "msg": "[NIGHT] Built approved: Score of 32/40 exceeds threshold \u2192 score_of_32_40_exceeds_threshold.py"}
+{"ts": "2026-06-28T00:57:11.477856", "msg": "[NIGHT] Building CEO-approved: Score of 29 exceeds threshold of 28 (score ?/40)"}
+{"ts": "2026-06-28T00:59:03.083501", "msg": "[NIGHT] Built approved: Score of 29 exceeds threshold of 28 \u2192 score_of_29_exceeds_threshold_of_28.py"}
+{"ts": "2026-06-28T00:59:03.084480", "msg": "[NIGHT] Building CEO-approved: Score of 35/40 exceeds GO threshold of 28 (score ?/40)"}
+{"ts": "2026-06-28T01:01:33.080728", "msg": "[NIGHT] Built approved: Score of 35/40 exceeds GO threshold of 28 \u2192 score_of_35_40_exceeds_go_threshold_of_28.py"}
+{"ts": "2026-06-28T01:01:33.081718", "msg": "[NIGHT] Building CEO-approved: Score of 28/40 hits our GO threshold exactly (score ?/40)"}
+{"ts": "2026-06-28T01:03:37.418100", "msg": "=== Night mode v0.6.1 started (iterate-and-test) ==="}
+{"ts": "2026-06-28T01:03:38.685519", "msg": "[NIGHT] Primary model (Haiku/Sonnet) reachable \u2014 proceeding"}
+{"ts": "2026-06-28T01:03:38.685998", "msg": "=== CSEO Evolution cycle starting ==="}
+{"ts": "2026-06-28T01:03:39.021244", "msg": "CSEO evolution error: 'list' object has no attribute 'get'"}
+{"ts": "2026-06-28T01:03:39.021667", "msg": "=== Market Agent scanning for loopholes ==="}
+{"ts": "2026-06-28T01:03:54.038606", "msg": "Market scan complete -- 3 opportunities found"}
+{"ts": "2026-06-28T01:03:54.039205", "msg": "  -> AI Model Context Window Analyzer & Optimizer (Score: 30/40)"}
+{"ts": "2026-06-28T01:03:54.039789", "msg": "  -> AI Vendor Switching Cost Simulator (Score: 28/40)"}
+{"ts": "2026-06-28T01:03:54.040376", "msg": "  -> AI Output Parsing & Structured Data Extractor (Score: 28/40)"}
+{"ts": "2026-06-28T01:03:54.041567", "msg": "[NIGHT] 2 CEO-approved opportunities queued for build"}
+{"ts": "2026-06-28T01:03:54.042420", "msg": "[NIGHT] Building CEO-approved: Score of 28/40 hits our GO threshold exactly (score ?/40)"}
+{"ts": "2026-06-28T01:04:09.837508", "msg": "[NIGHT] Built approved: Score of 28/40 hits our GO threshold exactly \u2192 score_of_28_40_hits_our_go_threshold_exactly.py"}
+{"ts": "2026-06-28T01:04:09.839325", "msg": "[NIGHT] Building CEO-approved: Score of 29 exceeds threshold (28/40) (score ?/40)"}
+{"ts": "2026-06-28T01:05:30.291828", "msg": "[NIGHT] Built approved: Score of 29 exceeds threshold (28/40) \u2192 score_of_29_exceeds_threshold__28_40.py"}
+{"ts": "2026-06-28T01:05:30.303577", "msg": "Priority list empty -- CSEO generating new tasks..."}
+{"ts": "2026-06-28T01:05:32.616603", "msg": "Building (1/3): Scan emerging AI regulatory gaps in enterprise compliance automation where solutions are incomplete"}
+{"ts": "2026-06-28T01:05:36.392298", "msg": "  Plan: 5 feature(s)"}
+{"ts": "2026-06-28T01:05:36.394202", "msg": "    1. AI model audit trail logger \u2014 capture model names, versions, prompts, and outputs to immutable JSON log for compliance proof"}
+{"ts": "2026-06-28T01:05:36.396649", "msg": "    2. Data lineage tracker \u2014 map which training datasets and customer data touched each model inference, with retention policy enforcement"}
+{"ts": "2026-06-28T01:05:36.398527", "msg": "    3. Regulatory requirement matcher \u2014 scan logs against GDPR/SOX/HIPAA rules and flag violations with remediation hints"}
+{"ts": "2026-06-28T01:05:36.400405", "msg": "    4. Consent and disclosure generator \u2014 auto-produce legally-reviewed transparency statements for customers about AI usage in their workflows"}
+{"ts": "2026-06-28T01:05:36.402172", "msg": "    5. Audit report exporter \u2014 compile compliant PDF/CSV snapshots of model behavior, data handling, and policy adherence for regulatory submission"}
+{"ts": "2026-06-28T01:05:36.404036", "msg": "  Cycle: AI model audit trail logger \u2014 capture model names, versions, prompts, and outputs to immutable JSON log for compliance proof"}
+{"ts": "2026-06-28T01:06:36.630610", "msg": "  Tests pass: scan_emerging_ai_regulatory_gaps_in_enterprise_compliance_automation_where_solutions_are_incomplete.py"}
+{"ts": "2026-06-28T01:06:36.631291", "msg": "  Cycle: Data lineage tracker \u2014 map which training datasets and customer data touched each model inference, with retention policy enforcement"}
+{"ts": "2026-06-28T01:08:19.834680", "msg": "  Test failure round 1: Syntax error:   File \"C:\\TAD\\scan_emerging_ai_regulatory_gaps_in_enterprise_compliance_automation_where_solutions_are_incomplete.py\", line 802\n    customer_data_sources=[{\n                           ^"}
+{"ts": "2026-06-28T01:10:05.547393", "msg": "  Test failure round 2: Syntax error:   File \"C:\\TAD\\scan_emerging_ai_regulatory_gaps_in_enterprise_compliance_automation_where_solutions_are_incomplete.py\", line 1\n    Looking at the error, the issue is an unclosed `[{` on "}
+{"ts": "2026-06-28T01:10:05.548180", "msg": "  Feature failed tests after 3 fixes: Data lineage tracker \u2014 map which training datasets and customer data touched each model inference, with retention policy enforcement"}
+{"ts": "2026-06-28T01:10:11.816651", "msg": "  Claude review: APPROVE"}

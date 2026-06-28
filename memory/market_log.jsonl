@@ -139,3 +139,48 @@
 {"ts": "2026-06-11T23:00:54.433850", "msg": "Starting market scan..."}
 {"ts": "2026-06-11T23:00:54.586601", "msg": "Scan error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CbxctfLncC7ardLQyoz7p'}"}
 {"ts": "2026-06-11T23:00:54.587847", "msg": "No qualifying opportunities found this cycle"}
+{"ts": "2026-06-12T03:00:32.248238", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-12T03:00:32.251848", "msg": "Starting market scan..."}
+{"ts": "2026-06-12T03:00:41.014002", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-12T03:00:41.017601", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-12-0300.md"}
+{"ts": "2026-06-12T03:00:41.018118", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-12T11:24:30.485261", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-12T11:24:30.489311", "msg": "Starting market scan..."}
+{"ts": "2026-06-12T11:24:42.413222", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-12T11:24:42.417390", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-12-1124.md"}
+{"ts": "2026-06-12T11:24:42.418100", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-26T01:48:23.164504", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-26T01:48:23.200167", "msg": "Starting market scan..."}
+{"ts": "2026-06-26T01:48:32.131822", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-26T01:48:32.136954", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-26-0148.md"}
+{"ts": "2026-06-26T01:48:32.137889", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-26T03:00:44.188393", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-26T03:00:44.237043", "msg": "Starting market scan..."}
+{"ts": "2026-06-26T03:00:45.581459", "msg": "Scan error: Connection error."}
+{"ts": "2026-06-26T03:00:45.583076", "msg": "No qualifying opportunities found this cycle"}
+{"ts": "2026-06-27T00:04:21.897012", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-27T00:04:21.915390", "msg": "Starting market scan..."}
+{"ts": "2026-06-27T00:04:34.676461", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-27T00:04:34.679884", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-27-0004.md"}
+{"ts": "2026-06-27T00:04:34.680425", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-27T03:00:20.776069", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-27T03:00:20.834851", "msg": "Starting market scan..."}
+{"ts": "2026-06-27T03:00:32.751914", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-27T03:00:32.761220", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-27-0300.md"}
+{"ts": "2026-06-27T03:00:32.764211", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-28T00:55:33.380294", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-28T00:55:33.402965", "msg": "Starting market scan..."}
+{"ts": "2026-06-28T00:55:33.429116", "msg": "Running learned skill: autonomous_loophole_monetization_pipeline"}
+{"ts": "2026-06-28T00:55:33.816245", "msg": "Running learned skill: competitive_win_loss_analysis_engine"}
+{"ts": "2026-06-28T00:55:44.467199", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-28T00:55:44.482568", "msg": "Learned skills available: ['real_time_market_opportunity_tracking___early_detection']"}
+{"ts": "2026-06-28T00:55:44.488628", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-28-0055.md"}
+{"ts": "2026-06-28T00:55:44.489117", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}
+{"ts": "2026-06-28T01:03:39.259528", "msg": "=== Full market scan started ==="}
+{"ts": "2026-06-28T01:03:39.275528", "msg": "Starting market scan..."}
+{"ts": "2026-06-28T01:03:39.285542", "msg": "Running learned skill: autonomous_loophole_monetization_pipeline"}
+{"ts": "2026-06-28T01:03:39.524046", "msg": "Running learned skill: competitive_win_loss_analysis_engine"}
+{"ts": "2026-06-28T01:03:54.008558", "msg": "Found 5 qualifying opportunities. Top 3 selected."}
+{"ts": "2026-06-28T01:03:54.033007", "msg": "Learned skills available: ['real_time_market_opportunity_tracking___early_detection']"}
+{"ts": "2026-06-28T01:03:54.037636", "msg": "Scan report saved \u2192 C:\\TAD\\workflows\\market-scans\\market-scan-2026-06-28-0103.md"}
+{"ts": "2026-06-28T01:03:54.038169", "msg": "=== Scan complete \u2014 3 opportunities ready for CEO ==="}

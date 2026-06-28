@@ -1,0 +1,140 @@
+{"ts": "2026-06-12T11:41:20.792060", "msg": "=== Building: AI Output Bias Detection for Sensitive Domains \u2192 ai_output_bias_detection_for_sensitive_domains.py ==="}
+{"ts": "2026-06-12T11:41:20.807170", "msg": "Code generation attempt 1/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T11:43:40.505583", "msg": "Attempt 1 returned prose \u2014 retrying"}
+{"ts": "2026-06-12T11:43:40.506297", "msg": "Code generation attempt 2/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T11:44:25.885971", "msg": "Attempt 2 returned prose \u2014 retrying"}
+{"ts": "2026-06-12T11:44:25.889686", "msg": "Code generation attempt 3/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T11:45:43.499448", "msg": "Attempt 3 returned prose \u2014 retrying"}
+{"ts": "2026-06-12T11:45:43.500096", "msg": "All 3 generation attempts failed for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T11:45:43.500586", "msg": "Code generation failed for AI Output Bias Detection for Sensitive Domains"}
+{"ts": "2026-06-12T16:49:43.307365", "msg": "=== Building: AI Output Bias Detection for Sensitive Domains \u2192 ai_output_bias_detection_for_sensitive_domains.py ==="}
+{"ts": "2026-06-12T16:49:43.309625", "msg": "Code generation attempt 1/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T16:52:48.282330", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-12T16:52:48.447071", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-12T16:52:50.476257", "msg": "Pushed to GitHub: ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T16:52:50.478648", "msg": "=== Build complete: ai_output_bias_detection_for_sensitive_domains.py ==="}
+{"ts": "2026-06-12T16:53:36.013848", "msg": "Code generation attempt 1/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T16:56:54.374599", "msg": "kimi_length_retry: truncated (7585 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-12T17:01:44.201477", "msg": "kimi_length_retry FAILED: still length at 12000"}
+{"ts": "2026-06-12T17:01:44.202544", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-12T17:08:12.100580", "msg": "=== Building: AI Output Bias Detection for Sensitive Domains \u2192 ai_output_bias_detection_for_sensitive_domains.py ==="}
+{"ts": "2026-06-12T17:08:12.101461", "msg": "Code generation attempt 1/3 for ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T17:10:31.142901", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-12T17:10:31.297070", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-12T17:10:33.105918", "msg": "Pushed to GitHub: ai_output_bias_detection_for_sensitive_domains.py"}
+{"ts": "2026-06-12T17:10:33.116838", "msg": "=== Build complete: ai_output_bias_detection_for_sensitive_domains.py ==="}
+{"ts": "2026-06-26T01:18:02.462253", "msg": "=== Building: test_build_smoke \u2192 test_build_smoke.py ==="}
+{"ts": "2026-06-26T01:18:02.495014", "msg": "Code generation attempt 1/3 for test_build_smoke.py"}
+{"ts": "2026-06-26T01:19:45.715272", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T01:19:45.716587", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-26T01:19:45.874896", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-26T01:19:48.422617", "msg": "Pushed to GitHub: test_build_smoke.py"}
+{"ts": "2026-06-26T01:19:48.436826", "msg": "=== Build complete: test_build_smoke.py ==="}
+{"ts": "2026-06-26T01:55:50.704502", "msg": "kimi_length_retry: truncated (33078 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T02:06:21.265573", "msg": "kimi_length_retry: truncated (33863 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T02:14:34.096056", "msg": "kimi_length_retry: truncated (34589 chars) content at max_tokens=8000, retrying at 12000"}
+{"ts": "2026-06-26T08:32:24.597435", "msg": "=== STEP A: Kimi invalid key \u2014 expect kimi fail, claude-sonnet succeed ==="}
+{"ts": "2026-06-26T08:32:25.321410", "msg": "claude-sonnet returned empty \u2014 trying next model"}
+{"ts": "2026-06-26T08:32:26.907648", "msg": "kimi no-think rejected (Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_er) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T08:32:27.206405", "msg": "kimi-k2.6 failed: Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_error'}} \u2014 trying next model"}
+{"ts": "2026-06-26T08:32:28.874444", "msg": "minimax-m3 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T08:32:30.014371", "msg": "deepseek-v4 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T08:32:30.016286", "msg": "all_code_models_failed \u2014 build cannot proceed"}
+{"ts": "2026-06-26T08:41:08.076653", "msg": "claude-sonnet returned empty \u2014 trying next model"}
+{"ts": "2026-06-26T08:41:09.453746", "msg": "kimi no-think rejected (Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_er) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T08:41:09.741294", "msg": "kimi-k2.6 failed: Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_error'}} \u2014 trying next model"}
+{"ts": "2026-06-26T08:41:10.848203", "msg": "minimax-m3 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T08:41:11.698807", "msg": "deepseek-v4 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T08:41:11.701015", "msg": "all_code_models_failed \u2014 build cannot proceed"}
+{"ts": "2026-06-26T08:41:38.980206", "msg": "=== STEP C: normal operation test ==="}
+{"ts": "2026-06-26T08:41:42.690573", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T13:59:25.983588", "msg": "=== Step B: code-gen path test ==="}
+{"ts": "2026-06-26T13:59:30.061162", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T14:09:16.982385", "msg": "claude-sonnet returned empty \u2014 trying next model"}
+{"ts": "2026-06-26T14:09:18.426686", "msg": "kimi no-think rejected (Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_er) \u2014 falling back to thinking mode"}
+{"ts": "2026-06-26T14:09:18.705791", "msg": "kimi-k2.6 failed: Error code: 401 - {'error': {'message': 'Invalid Authentication', 'type': 'invalid_authentication_error'}} \u2014 trying next model"}
+{"ts": "2026-06-26T14:09:20.732653", "msg": "minimax-m3 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T14:09:21.798581", "msg": "deepseek-v4 failed: 'choices' \u2014 trying next model"}
+{"ts": "2026-06-26T14:09:21.801367", "msg": "all_code_models_failed \u2014 build cannot proceed"}
+{"ts": "2026-06-26T22:21:20.337274", "msg": "=== Building: AI Receptionist for HVAC companies \u2192 ai_receptionist_for_hvac_companies.py ==="}
+{"ts": "2026-06-26T22:21:20.352845", "msg": "Code generation attempt 1/3 for ai_receptionist_for_hvac_companies.py"}
+{"ts": "2026-06-26T22:23:02.890101", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T22:23:02.890934", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-26T22:23:02.892066", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py"}
+{"ts": "2026-06-26T22:23:03.024770", "msg": "Syntax error round 1: File \"C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py\", line 284\n    raw = re.sub(r\"^\n                 ^\nSyntaxError: unterminated string literal (detected at line 284)"}
+{"ts": "2026-06-26T22:24:12.817789", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T22:24:12.946763", "msg": "Syntax error round 2: File \"C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py\", line 284\n    raw = re.sub(r\"^\n                 ^\nSyntaxError: unterminated string literal (detected at line 284)"}
+{"ts": "2026-06-26T22:25:23.184410", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T22:25:23.356707", "msg": "Syntax error round 3: File \"C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py\", line 284\n    raw = re.sub(r\"^\n                 ^\nSyntaxError: unterminated string literal (detected at line 284)"}
+{"ts": "2026-06-26T22:26:34.292144", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-26T22:26:34.293984", "msg": "Could not fix ai_receptionist_for_hvac_companies.py after 3 attempts \u2014 flagging to Ops"}
+{"ts": "2026-06-27T22:59:41.047167", "msg": "[BUILD] Architecture planned \u2192 memory\\products\\test_arch_verify\\ARCHITECTURE.md"}
+{"ts": "2026-06-27T22:59:41.051864", "msg": "[BUILD] Architecture planning failed: 'charmap' codec can't encode character '\\u2192' in position 37: character maps to <undefined> \u2014 using default"}
+{"ts": "2026-06-27T22:59:43.435457", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-27T22:59:43.453037", "msg": "[BUILD] Checkpoint found: 1 features previously done"}
+{"ts": "2026-06-27T23:01:03.375610", "msg": "[BUILD] Architecture planned -> memory\\products\\test_arch_verify2\\ARCHITECTURE.md"}
+{"ts": "2026-06-27T23:01:03.376286", "msg": "[BUILD] MVP: Read a CSV of unpaid invoices and generate 3 personalized, human-sounding follow"}
+{"ts": "2026-06-27T23:01:20.390551", "msg": "[BUILD] Architecture planned -> memory\\products\\final_verify\\ARCHITECTURE.md"}
+{"ts": "2026-06-27T23:01:20.391228", "msg": "[BUILD] MVP: CLI tool that reads test cases, executes user-provided solution code, and report"}
+{"ts": "2026-06-27T23:01:20.392956", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-27T23:01:20.404369", "msg": "[BUILD] Checkpoint found: 1 features previously done"}
+{"ts": "2026-06-28T00:55:44.493433", "msg": "=== Building: Score of 32/40 exceeds threshold \u2192 score_of_32_40_exceeds_threshold.py ==="}
+{"ts": "2026-06-28T00:55:48.146714", "msg": "[BUILD] Architecture planned -> C:\\TAD\\memory\\products\\ARCHITECTURE.md"}
+{"ts": "2026-06-28T00:55:48.147270", "msg": "[BUILD] MVP: Parse incoming call data (CSV or JSON), calculate missed-call rate per HVAC comp"}
+{"ts": "2026-06-28T00:55:48.176558", "msg": "Code generation attempt 1/3 for score_of_32_40_exceeds_threshold.py"}
+{"ts": "2026-06-28T00:57:08.873457", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T00:57:08.889346", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-28T00:57:08.892601", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\score_of_32_40_exceeds_threshold.py"}
+{"ts": "2026-06-28T00:57:09.041830", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-28T00:57:09.043068", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-28T00:57:11.458954", "msg": "Pushed to GitHub: score_of_32_40_exceeds_threshold.py"}
+{"ts": "2026-06-28T00:57:11.475086", "msg": "=== Build complete: score_of_32_40_exceeds_threshold.py ==="}
+{"ts": "2026-06-28T00:57:11.478387", "msg": "=== Building: Score of 29 exceeds threshold of 28 \u2192 score_of_29_exceeds_threshold_of_28.py ==="}
+{"ts": "2026-06-28T00:57:14.981123", "msg": "[BUILD] Architecture planned -> C:\\TAD\\memory\\products\\ARCHITECTURE.md"}
+{"ts": "2026-06-28T00:57:14.982158", "msg": "[BUILD] MVP: Accepts invoice JSON input, computes numeric score based on amount and age, comp"}
+{"ts": "2026-06-28T00:57:15.016187", "msg": "Code generation attempt 1/3 for score_of_29_exceeds_threshold_of_28.py"}
+{"ts": "2026-06-28T00:59:00.902554", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T00:59:00.918056", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-28T00:59:00.920695", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\score_of_29_exceeds_threshold_of_28.py"}
+{"ts": "2026-06-28T00:59:01.059471", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-28T00:59:01.060352", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-28T00:59:03.061036", "msg": "Pushed to GitHub: score_of_29_exceeds_threshold_of_28.py"}
+{"ts": "2026-06-28T00:59:03.082393", "msg": "=== Build complete: score_of_29_exceeds_threshold_of_28.py ==="}
+{"ts": "2026-06-28T00:59:03.085031", "msg": "=== Building: Score of 35/40 exceeds GO threshold of 28 \u2192 score_of_35_40_exceeds_go_threshold_of_28.py ==="}
+{"ts": "2026-06-28T00:59:06.420406", "msg": "[BUILD] Architecture planned -> C:\\TAD\\memory\\products\\ARCHITECTURE.md"}
+{"ts": "2026-06-28T00:59:06.421068", "msg": "[BUILD] MVP: Receive inbound call, extract patient info via voice conversation, check dentist"}
+{"ts": "2026-06-28T00:59:06.443128", "msg": "Code generation attempt 1/3 for score_of_35_40_exceeds_go_threshold_of_28.py"}
+{"ts": "2026-06-28T01:01:30.764249", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:01:30.782882", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-28T01:01:30.784440", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\score_of_35_40_exceeds_go_threshold_of_28.py"}
+{"ts": "2026-06-28T01:01:30.939927", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-28T01:01:30.940894", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-28T01:01:33.074799", "msg": "Pushed to GitHub: score_of_35_40_exceeds_go_threshold_of_28.py"}
+{"ts": "2026-06-28T01:01:33.079674", "msg": "=== Build complete: score_of_35_40_exceeds_go_threshold_of_28.py ==="}
+{"ts": "2026-06-28T01:01:33.082257", "msg": "=== Building: Score of 28/40 hits our GO threshold exactly \u2192 score_of_28_40_hits_our_go_threshold_exactly.py ==="}
+{"ts": "2026-06-28T01:01:36.553371", "msg": "[BUILD] Architecture planned -> C:\\TAD\\memory\\products\\ARCHITECTURE.md"}
+{"ts": "2026-06-28T01:01:36.553902", "msg": "[BUILD] MVP: Accept healthcare model inference logs, compute statistical divergence between p"}
+{"ts": "2026-06-28T01:01:36.588463", "msg": "Code generation attempt 1/3 for score_of_28_40_hits_our_go_threshold_exactly.py"}
+{"ts": "2026-06-28T01:03:54.043074", "msg": "=== Building: Score of 28/40 hits our GO threshold exactly \u2192 score_of_28_40_hits_our_go_threshold_exactly.py ==="}
+{"ts": "2026-06-28T01:04:06.593437", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:04:06.611349", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-28T01:04:06.613299", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\score_of_28_40_hits_our_go_threshold_exactly.py"}
+{"ts": "2026-06-28T01:04:06.749489", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-28T01:04:06.750680", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-28T01:04:09.818433", "msg": "Pushed to GitHub: score_of_28_40_hits_our_go_threshold_exactly.py"}
+{"ts": "2026-06-28T01:04:09.836133", "msg": "=== Build complete: score_of_28_40_hits_our_go_threshold_exactly.py ==="}
+{"ts": "2026-06-28T01:04:09.840103", "msg": "=== Building: Score of 29 exceeds threshold (28/40) \u2192 score_of_29_exceeds_threshold__28_40.py ==="}
+{"ts": "2026-06-28T01:04:12.623088", "msg": "[BUILD] Architecture planned -> C:\\TAD\\memory\\products\\ARCHITECTURE.md"}
+{"ts": "2026-06-28T01:04:12.623427", "msg": "[BUILD] MVP: Single-file service that collects model latency data, compares against configura"}
+{"ts": "2026-06-28T01:04:12.647179", "msg": "Code generation attempt 1/3 for score_of_29_exceeds_threshold__28_40.py"}
+{"ts": "2026-06-28T01:05:27.334348", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:05:27.361635", "msg": "Real Python code generated on attempt 1"}
+{"ts": "2026-06-28T01:05:27.365322", "msg": "[BUILD] Output written to: C:\\TAD\\memory\\products\\score_of_29_exceeds_threshold__28_40.py"}
+{"ts": "2026-06-28T01:05:27.499032", "msg": "Syntax check passed on round 1"}
+{"ts": "2026-06-28T01:05:27.500341", "msg": "[BUILD] Checkpoint saved: 1 features done"}
+{"ts": "2026-06-28T01:05:30.287558", "msg": "Pushed to GitHub: score_of_29_exceeds_threshold__28_40.py"}
+{"ts": "2026-06-28T01:05:30.290722", "msg": "=== Build complete: score_of_29_exceeds_threshold__28_40.py ==="}
+{"ts": "2026-06-28T01:06:36.227966", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:08:19.674085", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:10:05.417318", "msg": "Code generated via claude-sonnet"}
+{"ts": "2026-06-28T01:10:05.547903", "msg": "Code generated via claude-sonnet"}

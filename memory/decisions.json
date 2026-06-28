@@ -48,7 +48,12 @@
       "report_type": "opportunity_score",
       "decision": "GO",
       "assigned_to": "CTO Agent",
-      "reasoning": "Score of 32/40 exceeds threshold. High demand (9), low competition (8), and proven market pain (40% missed calls) match THE_MONKEY criteria perfectly. HVAC companies are trapped in a solvable problem with clear willingness to pay."
+      "reasoning": "Score of 32/40 exceeds threshold. High demand (9), low competition (8), and proven market pain (40% missed calls) match THE_MONKEY criteria perfectly. HVAC companies are trapped in a solvable problem with clear willingness to pay.",
+      "opportunity_name": "Score of 32/40 exceeds threshold",
+      "task_type": "autonomous",
+      "built": true,
+      "built_at": "2026-06-28T00:57:11.475847",
+      "build_file": "score_of_32_40_exceeds_threshold.py"
     },
     {
       "opportunity_name": "LLM Token Cost Attribution & Real-Time Spend Dashboard",
@@ -96,7 +101,183 @@
       "report_type": "opportunity_score",
       "decision": "GO",
       "assigned_to": "CTO Agent",
-      "reasoning": "Score of 29 exceeds threshold of 28. Trade contractors face real invoice collection pain with no dominant AI solution. Fast build window and niche market alignment with THE_MONKEY.md mission."
+      "reasoning": "Score of 29 exceeds threshold of 28. Trade contractors face real invoice collection pain with no dominant AI solution. Fast build window and niche market alignment with THE_MONKEY.md mission.",
+      "opportunity_name": "Score of 29 exceeds threshold of 28",
+      "task_type": "autonomous",
+      "built": true,
+      "built_at": "2026-06-28T00:59:03.082826",
+      "build_file": "score_of_29_exceeds_threshold_of_28.py"
+    },
+    {
+      "ts": "2026-06-12T02:10:57.037558",
+      "report_type": "market_scan",
+      "decision": "GO",
+      "assigned_to": "CTO Agent",
+      "reasoning": "Score of 35/40 exceeds GO threshold of 28. Dental offices face real scheduling/intake pain, low competition in AI receptionist space, and clear willingness to pay. This fits THE_MONKEY mission perfectly.",
+      "opportunity_name": "Score of 35/40 exceeds GO threshold of 28",
+      "task_type": "autonomous",
+      "built": true,
+      "built_at": "2026-06-28T01:01:33.080086",
+      "build_file": "score_of_35_40_exceeds_go_threshold_of_28.py"
+    },
+    {
+      "opportunity_name": "AI Model Context Degradation Monitor",
+      "scores": {
+        "demand": 6,
+        "competition": 8,
+        "buildability": 7,
+        "revenue_speed": 5
+      },
+      "total_score": 26,
+      "decision": "CONDITIONAL",
+      "reasoning": "The core problem is real (context window degradation is measurable pain), but demand evidence is weak\u2014Reddit posts \u2260 paying customers, and teams haven't yet shifted from cost monitoring to quality monitoring. Revenue speed is the critical weakness: LLM ops teams are budget-constrained and slow to adopt new monitoring tools. Buildability is solid, but without proof of urgent willingness-to-pay, this lands in CONDITIONAL territory.",
+      "risk_flags": [
+        "Demand signal is forum-based, not cash-based; no evidence of anyone currently paying for this specific solution",
+        "Revenue model unclear\u2014enterprise monitoring tools have long sales cycles (6-12 months typical)",
+        "OpenAI/Anthropic may build this natively into their APIs before a standalone vendor gains traction",
+        "Requires API access to model internals; most providers limit this for security/proprietary reasons",
+        "TAD would need to integrate with multiple LLM providers separately to be useful"
+      ],
+      "market_size": "$150M-$300M (subset of broader LLM observability market ~$2B+, but this niche is nascent)",
+      "conditional_approval_path": "CONDITIONAL APPROVE if Market Agent can find: (1) at least 2 companies paying for context monitoring or willing to commit to pilot, OR (2) evidence that context degradation causes measurable revenue loss that teams actively budget to solve. Otherwise recommend KILL in 48 hours.",
+      "kill_reason": null,
+      "scored_at": "2026-06-12T03:00:46.603669"
+    },
+    {
+      "opportunity_name": "AI Output Bias Detection for Sensitive Domains",
+      "scores": {
+        "demand": 8,
+        "competition": 7,
+        "buildability": 6,
+        "revenue_speed": 7
+      },
+      "total_score": 28,
+      "decision": "APPROVE",
+      "reasoning": "Real regulatory demand exists (compliance officers actively discussing, healthcare tech subreddits mentioning pressure) and competition focuses on training data bias, not output bias detection\u2014creating a genuine gap. Revenue speed is strong due to compliance-driven urgency and sticky enterprise contracts. Buildability is solid but requires domain-specific training data assembly for each vertical, making the MVP more complex than stated.",
+      "risk_flags": [
+        "Domain-specific training data may be harder to acquire than anticipated",
+        "Sales cycle could be longer than 7 days despite urgency\u2014enterprise compliance still moves slowly",
+        "Regulatory landscape evolving; requirements may shift mid-build",
+        "Output bias detection accuracy needs to be extremely high to avoid false positives that erode trust"
+      ],
+      "market_size": "$2.1B+ (compliance software + risk management + enterprise AI audit tools combined; TAM grows as regulatory pressure increases across verticals)",
+      "kill_reason": null,
+      "scored_at": "2026-06-12T03:00:50.131969"
+    },
+    {
+      "opportunity_name": "Multi-Model Response Consistency Enforcer",
+      "scores": {
+        "demand": 7,
+        "competition": 7,
+        "buildability": 6,
+        "revenue_speed": 5
+      },
+      "total_score": 25,
+      "decision": "CONDITIONAL",
+      "reasoning": "Real demand exists (HN, OpenAI forums confirm pain point), but buildability score should drop to 6\u2014normalizing outputs across 5+ models requires deep prompt engineering and model-specific behavior mapping that's messier than described. Revenue speed is weak (5, not 6)\u2014B2B automation tools typically need 2-3 month sales cycles. Score of 25 lands in CONDITIONAL zone.",
+      "risk_flags": [
+        "Model behavior changes constantly\u2014any solution becomes outdated quickly as vendors update models",
+        "Requires real-time API access to multiple closed-source models; vendor changes break the product",
+        "B2B sales cycle for DevTools typically 60-90 days; revenue speed assumption too optimistic",
+        "Market may be narrow\u2014only teams running multi-model redundancy strategies (niche within a niche)",
+        "Competitive risk: OpenAI, Anthropic could build consistency layers into their own platforms"
+      ],
+      "market_size": "$15-25M TAM (teams using 3+ models simultaneously; estimated ~2,000 mid-market product teams)",
+      "conditional_research": "Before approval: (1) Validate exact market size\u2014survey 5-10 product teams currently running multi-model setups to confirm willingness to pay. (2) Map technical debt\u2014how many model-specific edge cases exist? Can one normalization approach handle Instruct, Chat, and Code models? (3) Define retention risk\u2014what happens when Claude 4 breaks your consistency layer?",
+      "scored_at": "2026-06-12T03:00:56.337086"
+    },
+    {
+      "ts": "2026-06-12T03:00:59.211792",
+      "report_type": "opportunity_score",
+      "decision": "GO",
+      "assigned_to": "CTO Agent",
+      "reasoning": "Score of 28/40 hits our GO threshold exactly. Regulatory demand is real and proven, competition gap is genuine (output bias vs training bias is a legitimate blind spot), and $2.1B TAM justifies build investment. Risk flags are manageable within MVP scope\u2014focus healthcare vertical first to validate domain-specific training data acquisition before scaling.",
+      "opportunity_name": "Score of 28/40 hits our GO threshold exactly",
+      "task_type": "autonomous",
+      "built": true,
+      "built_at": "2026-06-28T01:04:09.836641",
+      "build_file": "score_of_28_40_hits_our_go_threshold_exactly.py"
+    },
+    {
+      "opportunity_name": "AI Model Latency SLA Tracker & Breach Alert System",
+      "scores": {
+        "demand": 7,
+        "competition": 8,
+        "buildability": 8,
+        "revenue_speed": 6
+      },
+      "total_score": 29,
+      "decision": "APPROVE",
+      "reasoning": "Real demand signal exists (Reddit complaints about unpredictable API performance), weak competition in the SLA-specific monitoring layer, and straightforward buildability using Python + existing monitoring APIs. Revenue speed is slightly lower than ideal (requires B2B sales cycle), but the 29/40 score places this in solid APPROVE territory with proven market pain.",
+      "risk_flags": [
+        "B2B sales cycle may extend revenue timeline beyond 7 days",
+        "Requires API integrations with multiple providers (OpenAI, Anthropic, etc.) \u2014 scope creep risk",
+        "Market may prefer built-in monitoring features from API providers themselves",
+        "Pricing model unclear \u2014 need to validate whether teams will pay monthly for this vs. waiting for native solutions"
+      ],
+      "market_size": "$150M-$250M TAM (enterprises + mid-market AI teams using 3+ API providers simultaneously)",
+      "kill_reason": null,
+      "scored_at": "2026-06-27T03:00:37.625391"
+    },
+    {
+      "opportunity_name": "AI Output Reproducibility Debugger",
+      "scores": {
+        "demand": 6,
+        "competition": 8,
+        "buildability": 6,
+        "revenue_speed": 5
+      },
+      "total_score": 25,
+      "decision": "CONDITIONAL",
+      "reasoning": "Real pain point exists (forum evidence), but demand signal is weak \u2014 frustration \u2260 willingness to pay. Revenue model unclear: are LLM teams paying monthly for debugging, or is this feature expected built-in? Buildability downgraded from 7 to 6 \u2014 storing/comparing thousands of API calls requires robust infrastructure TAD may not have access to in 1-3 nights.",
+      "risk_flags": [
+        "No clear revenue model \u2014 are customers paying per API call tracked, per team, or subscription?",
+        "LLM providers (OpenAI, Anthropic) could build this natively and kill the market overnight",
+        "Requires API access and database scale that may exceed TAD's current infrastructure",
+        "Market hasn't proven this is separate product \u2014 could be feature request, not standalone product"
+      ],
+      "market_size": "$50M-150M (fragmented across ML teams at scale, but not yet recognized as standalone category)",
+      "kill_reason": null,
+      "research_needed": "Before build decision: (1) Survey 10+ LLM teams \u2014 would they pay $200-500/month for this vs. rolling their own? (2) Check if OpenAI's or Anthropic's roadmaps already include this. (3) Clarify exact buildability constraints \u2014 how many concurrent API call comparisons can TAD handle in MVP?",
+      "scored_at": "2026-06-27T03:00:43.040524"
+    },
+    {
+      "opportunity_name": "AI Model Fine-Tuning ROI Calculator & Comparator",
+      "scores": {
+        "demand": 6,
+        "competition": 7,
+        "buildability": 6,
+        "revenue_speed": 5
+      },
+      "total_score": 24,
+      "decision": "CONDITIONAL",
+      "reasoning": "Real pain point with evidence (Reddit, LinkedIn), but demand is softer than initial assessment\u2014questions exist but no clear indication teams are actively paying for solutions or would pay premium for a calculator. Buildability is moderate: requires benchmarking infrastructure across multiple LLM strategies on real datasets, which is more complex than a simple wrapper tool. Revenue speed is unclear\u2014B2B LLM tool adoption is typically slow, and this is pre-decision validation rather than a must-have production tool.",
+      "risk_flags": [
+        "Monetization unclear: who pays and when? ML teams might use this free then never convert.",
+        "Data collection bottleneck: requires access to customer datasets and compute to run fair benchmarks\u2014potential blocker.",
+        "Market size concentrated: only relevant to teams actively considering fine-tuning (niche within niche).",
+        "TAD's current API access may not support efficient multi-model benchmarking at scale."
+      ],
+      "market_size": "$50-80M annually (ML engineering tool market), but addressable segment is ~5-8% = $2.5-6.4M for fine-tuning ROI decisioning tools specifically",
+      "kill_reason": null,
+      "conditional_research_required": [
+        "Survey 5-10 ML engineering teams: Would you pay for a fine-tuning ROI calculator? What's your budget?",
+        "Validate buildability: Can TAD run fair benchmarks across Claude, GPT-4, open-source models in one night? Or does this require multi-day compute?",
+        "Competitor research: Has Weights & Biases, Hugging Face, or OpenAI released similar decision tools in the last 3 months?"
+      ],
+      "scored_at": "2026-06-27T03:00:48.996886"
+    },
+    {
+      "ts": "2026-06-27T06:31:51.105248",
+      "report_type": "opportunity_score",
+      "decision": "GO",
+      "assigned_to": "CTO",
+      "reasoning": "Score of 29 exceeds threshold (28/40). Real pain point: AI teams have no real-time SLA visibility for model latency. This is a clear loophole with paying customers waiting.",
+      "opportunity_name": "Score of 29 exceeds threshold (28/40)",
+      "task_type": "autonomous",
+      "built": true,
+      "built_at": "2026-06-28T01:05:30.291122",
+      "build_file": "score_of_29_exceeds_threshold__28_40.py"
     }
   ]
 }

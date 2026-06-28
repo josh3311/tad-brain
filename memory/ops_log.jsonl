@@ -163,3 +163,166 @@
 {"ts": "2026-06-12T01:07:16.400285", "msg": "Running full system health check..."}
 {"ts": "2026-06-12T01:07:16.411714", "msg": "Health check complete \u2014 0 issues found"}
 {"ts": "2026-06-12T01:07:16.412886", "msg": "PII WARNING: 2 item(s) detected writing _pii_smoke_test.json \u2014 see memory/pii_audit.jsonl"}
+{"ts": "2026-06-12T01:31:56.902384", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T01:31:56.908278", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T01:32:22.872394", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T01:32:22.875056", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T02:21:32.756152", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T02:21:32.776186", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T03:21:32.039091", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T03:21:32.079522", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T04:21:32.237098", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T04:21:32.242701", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T05:21:32.375951", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T05:21:32.383423", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T06:21:32.579059", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T06:21:32.592215", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T07:21:32.731098", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T07:21:32.768138", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T08:21:32.895493", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T08:21:32.903429", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T09:21:33.097232", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T09:21:33.103820", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T10:21:33.264918", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T10:21:33.271980", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T11:21:33.687932", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T11:21:33.694108", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T12:21:34.273934", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T12:21:34.314139", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T13:21:34.676699", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T13:21:34.689933", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T14:21:34.939237", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T14:21:34.946271", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T15:21:35.176197", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T15:21:35.184595", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T16:21:35.444469", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T16:21:35.456774", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T17:21:35.930241", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T17:21:35.958373", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T18:21:36.443478", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T18:21:36.450554", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-12T18:23:38.404802", "msg": "Running full system health check..."}
+{"ts": "2026-06-12T18:23:38.413017", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-13T14:17:33.580780", "msg": "Running full system health check..."}
+{"ts": "2026-06-13T14:17:33.672679", "msg": "Health check complete \u2014 2 issues found"}
+{"ts": "2026-06-13T14:17:33.673375", "msg": "Issues: ['market_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T01:40:18.095765", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T01:40:18.153806", "msg": "Health check complete \u2014 5 issues found"}
+{"ts": "2026-06-26T01:40:18.154228", "msg": "Issues: ['market_agent', 'finance_agent', 'cseo_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T01:43:48.440254", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T01:43:48.448988", "msg": "Health check complete \u2014 5 issues found"}
+{"ts": "2026-06-26T01:43:48.449919", "msg": "Issues: ['market_agent', 'finance_agent', 'cseo_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T01:45:44.399469", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T01:45:44.412126", "msg": "Health check complete \u2014 4 issues found"}
+{"ts": "2026-06-26T01:45:44.412494", "msg": "Issues: ['market_agent', 'finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T02:45:44.067415", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T02:45:44.133787", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T02:45:44.134483", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T03:45:44.489897", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T03:45:44.534394", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T03:45:44.535206", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T04:45:44.820026", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T04:45:44.839944", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T04:45:44.840945", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T05:45:45.159531", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T05:45:45.180630", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T05:45:45.182095", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T06:00:36.603015", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T06:00:36.633788", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T06:00:36.637086", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T06:00:36.668742", "msg": "Daily summary generated: 1 builds, $0.00 revenue"}
+{"ts": "2026-06-26T06:45:45.425571", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T06:45:45.438109", "msg": "Health check complete \u2014 3 issues found"}
+{"ts": "2026-06-26T06:45:45.439053", "msg": "Issues: ['finance_agent', 'decision_agent', 'ceo_agent']"}
+{"ts": "2026-06-26T07:45:45.975601", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T07:45:46.028412", "msg": "Health check complete \u2014 2 issues found"}
+{"ts": "2026-06-26T07:45:46.029228", "msg": "Issues: ['finance_agent', 'decision_agent']"}
+{"ts": "2026-06-26T08:45:46.413941", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T08:45:46.447009", "msg": "Health check complete \u2014 2 issues found"}
+{"ts": "2026-06-26T08:45:46.447661", "msg": "Issues: ['finance_agent', 'decision_agent']"}
+{"ts": "2026-06-26T09:45:46.738873", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T09:45:46.780320", "msg": "Health check complete \u2014 1 issues found"}
+{"ts": "2026-06-26T09:45:46.780987", "msg": "Issues: ['decision_agent']"}
+{"ts": "2026-06-26T10:06:17.414212", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T10:06:17.431614", "msg": "Health check complete \u2014 1 issues found"}
+{"ts": "2026-06-26T10:06:17.433672", "msg": "Issues: ['decision_agent']"}
+{"ts": "2026-06-26T11:06:16.031661", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T11:06:16.044625", "msg": "Health check complete \u2014 1 issues found"}
+{"ts": "2026-06-26T11:06:16.045766", "msg": "Issues: ['decision_agent']"}
+{"ts": "2026-06-26T12:06:16.334077", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T12:06:16.347911", "msg": "Health check complete \u2014 1 issues found"}
+{"ts": "2026-06-26T12:06:16.349147", "msg": "Issues: ['decision_agent']"}
+{"ts": "2026-06-26T23:01:42.989780", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T23:01:43.039576", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-26T23:03:37.547361", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T23:03:37.551777", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-26T23:03:37.580714", "msg": "Daily summary generated: 1 builds, $0.00 revenue"}
+{"ts": "2026-06-26T23:56:44.907079", "msg": "Running full system health check..."}
+{"ts": "2026-06-26T23:56:44.916993", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-26T23:56:44.923445", "msg": "Daily summary generated: 1 builds, $0.00 revenue"}
+{"ts": "2026-06-27T00:01:42.782002", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T00:01:42.794522", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T00:02:20.016207", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T00:02:20.021200", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T01:02:19.842569", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T01:02:19.856038", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T02:02:20.340813", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T02:02:20.348804", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T03:02:20.787951", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T03:02:20.792032", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T04:02:21.257337", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T04:02:21.267248", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T05:02:21.737589", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T05:02:21.746784", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T06:02:22.311227", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T06:02:22.323148", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T09:06:43.792843", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T09:06:43.881469", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T09:15:45.441942", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T10:36:27.713834", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T10:36:27.801565", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T11:07:43.840277", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T11:07:43.851723", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T11:07:43.917139", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T11:13:25.090118", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T11:13:25.118933", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T11:13:25.165427", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T23:35:29.756728", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T23:35:29.824353", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T23:35:29.868772", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T23:41:22.060409", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T23:41:22.064048", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T23:41:22.097491", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T23:41:46.842675", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T23:41:46.846933", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T23:41:46.877641", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T23:42:35.423484", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T23:42:35.427946", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T23:42:35.460763", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-27T23:47:49.637608", "msg": "Running full system health check..."}
+{"ts": "2026-06-27T23:47:49.643430", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-27T23:47:49.671638", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-28T00:32:09.847825", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T00:32:09.857940", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T00:32:09.901550", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-28T00:53:03.985715", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T00:53:03.993368", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T00:53:04.202100", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-28T00:54:31.167506", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T00:54:31.172707", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T00:54:31.199430", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-28T00:58:17.751739", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T00:58:17.756932", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T00:58:17.784350", "msg": "skills/learned/: 19 skills, 11 broken \u2014 ['autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)', 'autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)', \"autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)\", 'autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)', 'autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)', 'competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)', \"customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)\", 'loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)', 'market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)', \"multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)\", \"self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)\"]"}
+{"ts": "2026-06-28T01:02:26.028239", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T01:02:26.036324", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T01:02:26.061490", "msg": "skills/learned/: 19 skills, all syntax-valid"}
+{"ts": "2026-06-28T01:02:50.809038", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T01:02:50.815110", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T01:02:50.843603", "msg": "skills/learned/: 19 skills, all syntax-valid"}
+{"ts": "2026-06-28T01:07:30.435071", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T01:07:30.459266", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T01:07:30.489732", "msg": "skills/learned/: 21 skills, all syntax-valid"}
+{"ts": "2026-06-28T01:09:49.611254", "msg": "Running full system health check..."}
+{"ts": "2026-06-28T01:09:49.636336", "msg": "Health check complete \u2014 0 issues found"}
+{"ts": "2026-06-28T01:09:49.688529", "msg": "skills/learned/: 22 skills, all syntax-valid"}

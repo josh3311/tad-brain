@@ -10,15 +10,6 @@
     "TAD"
   ],
   "phrases_he_uses": [
-    "launcher",
-    "input,",
-    "_toggle_voice,",
-    "_inject_voice",
-    "full_text",
-    "field,",
-    "defensive",
-    "fallback",
-    "added",
     "working:",
     "voice,",
     "popup,",
@@ -59,7 +50,16 @@
     "health",
     "check",
     "generate",
-    "report"
+    "report",
+    "briefing?",
+    "happened",
+    "market",
+    "decision",
+    "morning?",
+    "evolution",
+    "cycle",
+    "broken",
+    "things"
   ],
   "response_patterns": {},
   "last_updated": "2026-06-08T04:42:57.271832"

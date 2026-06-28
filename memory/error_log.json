@@ -1,10 +1,804 @@
-{
-  "errors": [
-    {
-      "agent": "self_test",
-      "error": "ZeroDivisionError: division by zero (tad_observability self-test)",
-      "ts": "2026-06-12T17:20:00",
-      "resolved": true
-    }
-  ]
-}
+[
+  {
+    "errors": [
+      {
+        "agent": "self_test",
+        "error": "ZeroDivisionError: division by zero (tad_observability self-test)",
+        "ts": "2026-06-12T17:20:00",
+        "resolved": true
+      }
+    ]
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460523",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460546",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460552",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460557",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460562",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460566",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460570",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460573",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460577",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460581",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T09:15:45.460585",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918160",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918175",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918179",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918183",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918186",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918190",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918193",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918197",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918200",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918203",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:07:43.918206",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166609",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166625",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166631",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166635",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166639",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166642",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166646",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166649",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166653",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166657",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T11:13:25.166662",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878402",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878416",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878419",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878421",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878423",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878425",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878427",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878430",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878431",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878433",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:35:29.878435",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098331",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098337",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098339",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098341",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098342",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098343",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098345",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098346",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098348",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098349",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:22.098351",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878507",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878513",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878515",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878516",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878518",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878520",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878522",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878523",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878524",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878527",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:41:46.878528",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461485",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461492",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461493",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461495",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461497",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461498",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461500",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461501",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461503",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461504",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:42:35.461507",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672642",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672649",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672651",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672653",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672654",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672655",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672657",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672658",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672659",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672661",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-27T23:47:49.672662",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902928",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902938",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902940",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902942",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902945",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902950",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902951",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902953",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902954",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902956",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:32:09.902957",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202722",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202729",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202732",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202733",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202735",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202736",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202737",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202739",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202740",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202742",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:53:04.202744",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201011",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201018",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201021",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201022",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201024",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201025",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201027",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201028",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201030",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201031",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:54:31.201033",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785041",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_intelligence.py: unterminated string literal (detected at line 219) (<unknown>, line 219)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785047",
+    "error": "Syntax error in learned skill: autonomous_deal_pipeline_visibility___forecasting.py: invalid syntax (<unknown>, line 202)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785049",
+    "error": "Syntax error in learned skill: autonomous_go_to_market___sales_pipeline_execution.py: '(' was never closed (<unknown>, line 186)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785051",
+    "error": "Syntax error in learned skill: autonomous_prospect_qualification___lead_scoring_pre_outreach.py: unterminated string literal (detected at line 198) (<unknown>, line 198)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785053",
+    "error": "Syntax error in learned skill: autonomous_revenue_validation___deal_closure.py: unterminated string literal (detected at line 220) (<unknown>, line 220)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785054",
+    "error": "Syntax error in learned skill: competitive_intelligence___market_saturation_detector.py: unterminated triple-quoted string literal (detected at line 268) (<unknown>, line 262)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785055",
+    "error": "Syntax error in learned skill: customer_acquisition___outreach_automation__b2b_sales_intelligence_.py: '[' was never closed (<unknown>, line 177)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785057",
+    "error": "Syntax error in learned skill: loophole_discovery_engine.py: unterminated string literal (detected at line 273) (<unknown>, line 273)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785059",
+    "error": "Syntax error in learned skill: market_validation___pricing_intelligence.py: invalid syntax (<unknown>, line 1)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785063",
+    "error": "Syntax error in learned skill: multi_channel_outreach_orchestration.py: expected an indented block after 'if' statement on line 194 (<unknown>, line 194)",
+    "source": "ops_agent",
+    "resolved": false
+  },
+  {
+    "ts": "2026-06-28T00:58:17.785064",
+    "error": "Syntax error in learned skill: self_healing_observability___error_recovery_system.py: expected ':' (<unknown>, line 214)",
+    "source": "ops_agent",
+    "resolved": false
+  }
+]

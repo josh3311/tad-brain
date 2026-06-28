@@ -1,0 +1,2 @@
+{"action": "scan", "found": 5, "top_3": ["AI Model Context Window Waste Detector", "AI Output Reproducibility Verifier", "AI Model Instruction Conflict Resolver"], "top_score": 30, "ts": "2026-06-28T00:55:44.483426"}
+{"action": "scan", "found": 5, "top_3": ["AI Model Context Window Analyzer & Optimizer", "AI Vendor Switching Cost Simulator", "AI Output Parsing & Structured Data Extractor"], "top_score": 30, "ts": "2026-06-28T01:03:54.033784"}

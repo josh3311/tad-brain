@@ -1,19 +1,19 @@
 {
   "ops": {
-    "call_count": 1,
+    "call_count": 4,
     "error_count": 0,
-    "total_time_s": 0.562,
-    "avg_response_time": 0.562,
+    "total_time_s": 1.157,
+    "avg_response_time": 0.289,
     "last_error": null,
-    "last_call": "2026-06-12T01:04:08.029233"
+    "last_call": "2026-06-28T00:58:17.799310"
   },
   "finance": {
-    "call_count": 1,
+    "call_count": 3,
     "error_count": 0,
-    "total_time_s": 0.916,
-    "avg_response_time": 0.916,
+    "total_time_s": 2.079,
+    "avg_response_time": 0.693,
     "last_error": null,
-    "last_call": "2026-06-12T01:04:29.872968"
+    "last_call": "2026-06-27T00:04:16.500610"
   },
   "self_test": {
     "call_count": 2,
@@ -22,5 +22,29 @@
     "avg_response_time": 0.025,
     "last_error": "ZeroDivisionError: division by zero",
     "last_call": "2026-06-12T01:04:49.759546"
+  },
+  "ceo": {
+    "call_count": 2,
+    "error_count": 0,
+    "total_time_s": 151.78,
+    "avg_response_time": 75.89,
+    "last_error": null,
+    "last_call": "2026-06-27T00:05:19.357218"
+  },
+  "market": {
+    "call_count": 2,
+    "error_count": 0,
+    "total_time_s": 24.962,
+    "avg_response_time": 12.481,
+    "last_error": null,
+    "last_call": "2026-06-27T00:04:34.691987"
+  },
+  "cseo": {
+    "call_count": 6,
+    "error_count": 0,
+    "total_time_s": 691.098,
+    "avg_response_time": 115.183,
+    "last_error": null,
+    "last_call": "2026-06-27T00:03:31.135994"
   }
 }

@@ -1,0 +1,157 @@
+{
+  "skills": [
+    {
+      "id": "system_health_check",
+      "name": "System Health Check",
+      "description": "Performs a comprehensive system health assessment across all agents and identifies issues.",
+      "trigger_keywords": [
+        "health check",
+        "system status",
+        "diagnostics",
+        "system health",
+        "agent check"
+      ],
+      "what_it_does": "Runs a full diagnostic scan of the system to detect issues, check agent status, and generate a health report. Use this skill when you need to verify system integrity, troubleshoot problems, or get a status overview. Returns detected issues and agent health metrics for analysis.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: run a full system health check",
+      "learned_at": "2026-06-26T01:43:50.918822",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "generate_p_l_report",
+      "name": "Generate P&L Report",
+      "description": "Creates a comprehensive profit and loss report with revenue, expenses, profit, and margin calculations.",
+      "trigger_keywords": [
+        "profit and loss",
+        "P&L report",
+        "financial report",
+        "revenue expenses",
+        "profit margin"
+      ],
+      "what_it_does": "Generates a structured profit and loss statement that calculates total revenue, total expenses, net profit, and profit margin percentage. Use this skill whenever financial performance analysis is needed, such as for monthly/quarterly reviews, investor reporting, or business performance tracking.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: generate a full profit and loss report",
+      "learned_at": "2026-06-27T00:04:18.422361",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "cseo_evolution_cycle",
+      "name": "CSEO_evolution_cycle",
+      "description": "Autonomous skill gap identification and capability building for revenue operations systems.",
+      "trigger_keywords": [
+        "evolution",
+        "skill building",
+        "gap analysis",
+        "autonomous development",
+        "revenue ops"
+      ],
+      "what_it_does": "Runs unsupervised analysis of TAD's current capabilities against goals, identifies critical gaps in deal pipeline visibility and lead qualification, builds missing skills, and generates prioritized task queue for continuous improvement. Execute during low-activity periods to maximize learning without operational disruption.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: now run CSEO to selve evolve while i am going to s",
+      "learned_at": "2026-06-26T23:27:36.880683",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "error_pattern_recognition_and_autonomous_skill_repair",
+      "name": "error_pattern_recognition_and_autonomous_skill_repair",
+      "description": "Identifies failure patterns in complex system cycles and autonomously repairs broken components without human intervention.",
+      "trigger_keywords": [
+        "failed_build",
+        "broken_system",
+        "error_recovery",
+        "autonomous_repair",
+        "pattern_analysis"
+      ],
+      "what_it_does": "When a task cycle partially fails, this skill analyzes error patterns to isolate root causes, prioritizes which components to repair based on impact, and executes autonomous fixes. Use this when system complexity causes cascading failures but recovery is still possible within the cycle.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: run cseo evolution cycle and fix all broken things",
+      "learned_at": "2026-06-26T23:42:50.024542",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "deal_velocity_compression_analysis",
+      "name": "deal_velocity_compression_analysis",
+      "description": "Identifies and quantifies revenue multipliers by analyzing deal closure timeline compression across sales cycles.",
+      "trigger_keywords": [
+        "deal velocity",
+        "sales cycle optimization",
+        "revenue multiplier",
+        "closure timeline",
+        "deal compression"
+      ],
+      "what_it_does": "Analyzes current deal closure timelines (e.g., 3 months) and calculates revenue impact of compression (e.g., 2 weeks = 6x more deals annually). Use when optimizing sales pipeline efficiency or identifying high-impact revenue levers. Apply to TAD's space specifically where deal velocity directly multiplies annual deal volume.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: run cseo evolution cycle and fix all broken things",
+      "learned_at": "2026-06-26T23:48:47.623543",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "deal_to_cash_pipeline_gap_detection",
+      "name": "Deal-to-Cash Pipeline Gap Detection",
+      "description": "Identifies critical blind spots in revenue execution\u2014from deal closure to contract fulfillment and profitability tracking.",
+      "trigger_keywords": [
+        "pipeline gaps",
+        "deal execution",
+        "contract tracking",
+        "profitability validation",
+        "revenue blind spots"
+      ],
+      "what_it_does": "Systematically scans the deal-to-cash workflow to detect where TAD can identify opportunities and close deals but cannot autonomously execute contracts or measure actual profitability. When triggered, it flags execution gaps that require human intervention or system integration, preventing false confidence in revenue realization and enabling targeted skill-building in autonomous contract management and real-time profit tracking.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: run cseo evolution cycle and fix all broken things",
+      "learned_at": "2026-06-27T00:03:33.833676",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "market_opportunity_scanner",
+      "name": "Market Opportunity Scanner",
+      "description": "Systematically scans markets to identify and score the best available opportunities.",
+      "trigger_keywords": [
+        "market scan",
+        "find opportunity",
+        "market analysis",
+        "opportunity detection",
+        "market research"
+      ],
+      "what_it_does": "Conducts comprehensive market scans to discover viable opportunities and ranks them by a scoring system. Use this skill when you need to identify high-potential opportunities across markets or when planning strategic initiatives. The skill evaluates multiple candidates and surfaces top-ranked options with quantified scores for decision-making.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: run a market scan and find the best opportunity ri",
+      "learned_at": "2026-06-27T00:04:39.428673",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    },
+    {
+      "id": "generate_ceo_daily_briefing",
+      "name": "Generate CEO Daily Briefing",
+      "description": "Compiles executive summary of key business metrics, product updates, pipeline status, and strategic priorities for leadership review.",
+      "trigger_keywords": [
+        "CEO briefing",
+        "daily summary",
+        "executive summary",
+        "leadership report",
+        "business update"
+      ],
+      "what_it_does": "Aggregates recent accomplishments, current business metrics (revenue pipeline, deals), product launches, and identifies immediate priorities or gaps. Use when leadership needs a consolidated view of business health and recent progress to inform decisions and drive focus.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: give me today's CEO briefing summary",
+      "learned_at": "2026-06-27T00:05:21.310284",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
+    }
+  ],
+  "last_updated": "2026-06-27T00:05:21.311362"
+}

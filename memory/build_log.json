@@ -1,0 +1,80 @@
+{
+  "builds": [
+    {
+      "status": "success",
+      "opportunity": "AI Output Bias Detection for Sensitive Domains",
+      "file": "C:\\TAD\\ai_output_bias_detection_for_sensitive_domains.py",
+      "filename": "ai_output_bias_detection_for_sensitive_domains.py",
+      "pushed": true,
+      "timestamp": "2026-06-12T16:52:50.477902"
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Output Bias Detection for Sensitive Domains",
+      "file": "C:\\TAD\\ai_output_bias_detection_for_sensitive_domains.py",
+      "filename": "ai_output_bias_detection_for_sensitive_domains.py",
+      "pushed": true,
+      "timestamp": "2026-06-12T17:10:33.107025"
+    },
+    {
+      "status": "success",
+      "opportunity": "test_build_smoke",
+      "file": "C:\\TAD\\test_build_smoke.py",
+      "filename": "test_build_smoke.py",
+      "pushed": true,
+      "timestamp": "2026-06-26T01:19:48.424882"
+    },
+    {
+      "status": "failed",
+      "reason": "unfixable_syntax_error",
+      "file": "ai_receptionist_for_hvac_companies.py",
+      "error": "File \"C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py\", line 284\n    raw = re.sub(r\"^\n                 ^\nSyntaxError: unterminated string literal (detected at line 284)",
+      "timestamp": "2026-06-26T22:26:34.294445"
+    },
+    {
+      "status": "success",
+      "opportunity": "Score of 32/40 exceeds threshold",
+      "file": "C:\\TAD\\memory\\products\\score_of_32_40_exceeds_threshold.py",
+      "filename": "score_of_32_40_exceeds_threshold.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T00:57:11.460574",
+      "mvp_scope": "Parse incoming call data (CSV or JSON), calculate missed-call rate per HVAC company, flag any rate exceeding 40% threshold, output JSON alerts with company ID and violation severity. No auth, no UI, API-ready JSON output only."
+    },
+    {
+      "status": "success",
+      "opportunity": "Score of 29 exceeds threshold of 28",
+      "file": "C:\\TAD\\memory\\products\\score_of_29_exceeds_threshold_of_28.py",
+      "filename": "score_of_29_exceeds_threshold_of_28.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T00:59:03.072851",
+      "mvp_scope": "Accepts invoice JSON input, computes numeric score based on amount and age, compares against configurable threshold (default 28), returns boolean result with delta. No persistence, no UI."
+    },
+    {
+      "status": "success",
+      "opportunity": "Score of 35/40 exceeds GO threshold of 28",
+      "file": "C:\\TAD\\memory\\products\\score_of_35_40_exceeds_go_threshold_of_28.py",
+      "filename": "score_of_35_40_exceeds_go_threshold_of_28.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:01:33.077548",
+      "mvp_scope": "Receive inbound call, extract patient info via voice conversation, check dentist availability, book appointment if slot exists, confirm via SMS. One dental office, one provider, hardcoded availability."
+    },
+    {
+      "status": "success",
+      "opportunity": "Score of 28/40 hits our GO threshold exactly",
+      "file": "C:\\TAD\\memory\\products\\score_of_28_40_hits_our_go_threshold_exactly.py",
+      "filename": "score_of_28_40_hits_our_go_threshold_exactly.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:04:09.820242",
+      "mvp_scope": "Accept healthcare model inference logs, compute statistical divergence between predicted distribution and training distribution, classify as GO/STOP based on 28/40 threshold. Healthcare vertical only."
+    },
+    {
+      "status": "success",
+      "opportunity": "Score of 29 exceeds threshold (28/40)",
+      "file": "C:\\TAD\\memory\\products\\score_of_29_exceeds_threshold__28_40.py",
+      "filename": "score_of_29_exceeds_threshold__28_40.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:05:30.289148",
+      "mvp_scope": "Single-file service that collects model latency data, compares against configurable SLA thresholds (default 28/40ms), and emits real-time breach alerts. Includes basic HTTP endpoint to query current SLA status per model."
+    }
+  ]
+}

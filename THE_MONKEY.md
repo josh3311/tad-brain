@@ -1,11 +1,13 @@
 # THE_MONKEY.md — TAD Master Build File
-# Last updated: 2026-06-27
+# Last updated: 2026-06-28
 # CEO: Joshua Abraham
 # Agent: TAD (Total Autonomous Director)
 
 ---
 
 ## RECENT FIXES
+- 2026-06-27: Skill utilization loop — skills/learned/ skills now actually run during market scans and decision scoring. Fixed _check_learned_skills() bug (*.md -> *.py). Added execute_learned_skill() + _update_skill_usage() to agent_soul.py. memory/skill_registry.json built (19 skills, 8 runnable, 11 broken flagged for CSEO). Ops health check AST-validates all skills on every run.
+- 2026-06-27: agent.py — _is_action_command() added; "implement X", "fix the routing", "apply the", "wire up", "refactor the" now route to real CSEO instead of Kimi role-play fabrication. Priority -1 fires before identify_agent().
 - 2026-06-27: Agent soul architecture — each of the 8 agents now has persistent identity (memory/agents/{name}/identity.json), decision rules, and history log (memory/agents/{name}/history.jsonl). Identity context prepended to every Claude system prompt via skills/agent_soul.py. Also fixed raw_decode in decision_agent and finance_agent.
 - 2026-06-27: ceo_agent.py — replaced json.loads with raw_decode; CEO now produces GO verdicts even when Claude appends trailing text after JSON
 - 2026-06-26: tad_command_center.py — full visual command center with 8 animated agent faces, pipeline bar, comms feed, product queue, error interpreter panel (⬡ Dashboard button in tad_gui.py sidebar)
@@ -479,6 +481,12 @@ The Ops Agent logs every CRUD action to memory/crud_log.json.
 No CRUD action happens without being logged.
 
 ## SESSION LOG
+
+### CSEO Auto-build 2026-06-28
+- [x] CSEO built: skill_syntax_validator___auto_repair ✓ 2026-06-28
+- [x] CSEO built: real_time_learned_skill_health_dashboard ✓ 2026-06-28
+- [x] CSEO built: autonomous_skill_output_validation___format_enforcement ✓ 2026-06-28
+
 
 ### CSEO Auto-build 2026-06-26
 - [x] CSEO built: error_pattern_recognition_and_autonomous_skill_repair ✓ 2026-06-26
