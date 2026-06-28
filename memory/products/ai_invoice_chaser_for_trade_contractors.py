@@ -2,917 +2,1030 @@
 AI Invoice Chaser for Trade Contractors
 ========================================
 Product: Automated invoice follow-up system for small construction/trade contractors
-Target: ~2.8M US/Canada trade contractors losing $15-40K/yr to unpaid invoices
-Revenue Model: SaaS subscription ($49-149/mo) + optional SMS add-on
-
-Architecture:
-- InvoiceChaser: Core engine — loads invoices, determines follow-up strategy, sends messages
-- EscalationEngine: Decides tone/channel based on days overdue + client history
-- MessageComposer: Generates professional, legally compliant follow-up messages
-- DeliveryEngine: Sends via SendGrid (email) + Twilio (SMS) with fallback logging
-- ReportEngine: Produces daily contractor dashboard (console + JSON)
-
-Compliance Notes:
-- Messages stay informational (invoice reminders), not debt-collection demands
-- Avoids FDCPA-triggering language (we are not a debt collector, we are a billing tool)
-- State-specific soft-caps: no threatening language, no contact before 8AM / after 9PM
-- All contact timestamps logged for audit trail
-
 Author: TAD Build Agent
-Built: 2026-06-28
+Build Date: 2026-06-28
+Version: 1.0.0
+
+Business Logic:
+- Ingests invoices (CSV or manual entry)
+- Tracks payment status and days outstanding
+- Generates escalating follow-up messages (polite → firm → final notice)
+- Sends via email (SMTP) and SMS (Twilio)
+- Logs all activity to memory/products/invoice_chaser/
+- Provides CLI dashboard of outstanding invoices + revenue at risk
+- Compliance-aware: avoids FDCPA-triggering language, adds state opt-out hooks
+
+Revenue Model: SaaS subscription — contractors pay $29-79/mo based on invoice volume
 """
 
 import os
+import csv
 import json
+import time
+import smtplib
 import logging
 import hashlib
-import smtplib
-import time
-import re
-from datetime import datetime, timedelta, timezone
-from dataclasses import dataclass, field, asdict
-from enum import Enum
+import argparse
+import textwrap
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dataclasses import dataclass, field, asdict
+from typing import Optional
+from enum import Enum
 
-# ─────────────────────────────────────────────
-# LOGGING SETUP
-# ─────────────────────────────────────────────
-LOG_DIR = Path("memory/invoice_chaser")
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+# ── Optional Twilio (graceful degradation if not installed) ──────────────────
+try:
+    from twilio.rest import Client as TwilioClient
+    TWILIO_AVAILABLE = True
+except ImportError:
+    TWILIO_AVAILABLE = False
 
+# ── Optional Anthropic for AI message generation ────────────────────────────
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+# ── Directory bootstrap ──────────────────────────────────────────────────────
+BASE_DIR = Path("memory/products/invoice_chaser")
+BASE_DIR.mkdir(parents=True, exist_ok=True)
+LOG_PATH = BASE_DIR / "activity.log"
+INVOICE_DB = BASE_DIR / "invoices.json"
+AUDIT_LOG  = BASE_DIR / "audit_trail.jsonl"
+
+# ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler(LOG_DIR / "invoice_chaser.log"),
+        logging.FileHandler(LOG_PATH),
         logging.StreamHandler(),
     ],
 )
-log = logging.getLogger("InvoiceChaser")
+log = logging.getLogger("invoice_chaser")
 
-# ─────────────────────────────────────────────
-# ENUMS & CONSTANTS
-# ─────────────────────────────────────────────
 
-class InvoiceStatus(Enum):
-    PENDING   = "pending"
-    OVERDUE   = "overdue"
-    PAID      = "paid"
-    DISPUTED  = "disputed"
-    ESCALATED = "escalated"
+# ════════════════════════════════════════════════════════════════════════════
+# DATA MODELS
+# ════════════════════════════════════════════════════════════════════════════
+
+class InvoiceStatus(str, Enum):
+    DRAFT      = "draft"
+    SENT       = "sent"
+    OVERDUE    = "overdue"
+    ESCALATED  = "escalated"
+    FINAL_NOTICE = "final_notice"
+    PAID       = "paid"
     WRITTEN_OFF = "written_off"
 
 
-class ContactChannel(Enum):
-    EMAIL = "email"
-    SMS   = "sms"
-    BOTH  = "both"
+class ChaseStage(int, Enum):
+    """Maps to escalation level — higher = more assertive tone."""
+    FRIENDLY_REMINDER = 1   # 1-7 days overdue
+    POLITE_FOLLOW_UP  = 2   # 8-14 days overdue
+    FIRM_REQUEST      = 3   # 15-29 days overdue
+    FINAL_NOTICE      = 4   # 30+ days overdue
 
-
-class EscalationLevel(Enum):
-    REMINDER    = 1   # 1-7 days overdue  — friendly nudge
-    FOLLOW_UP   = 2   # 8-21 days         — firmer, asks for confirmation
-    FINAL_NOTICE = 3  # 22-45 days        — formal, mentions next steps
-    HOLD        = 4   # 45+ days          — flag for contractor decision
-
-
-ESCALATION_THRESHOLDS = {
-    EscalationLevel.REMINDER:     (1, 7),
-    EscalationLevel.FOLLOW_UP:    (8, 21),
-    EscalationLevel.FINAL_NOTICE: (22, 45),
-    EscalationLevel.HOLD:         (46, 9999),
-}
-
-# Safe contact hours (local time assumed; UTC used here for MVP)
-CONTACT_HOUR_START = 8   # 8 AM
-CONTACT_HOUR_END   = 20  # 8 PM
-
-# ─────────────────────────────────────────────
-# DATA MODELS
-# ─────────────────────────────────────────────
 
 @dataclass
-class Client:
-    client_id: str
+class Contact:
     name: str
-    email: Optional[str]
-    phone: Optional[str]          # E.164 format: +15550001234
-    preferred_channel: ContactChannel = ContactChannel.EMAIL
-    dispute_flag: bool = False
-    total_paid_historical: float = 0.0
-    avg_days_to_pay: int = 0
+    email: Optional[str] = None
+    phone: Optional[str] = None   # E.164 format: +15551234567
+    company: Optional[str] = None
+    state: Optional[str] = None   # 2-letter US state for compliance hooks
 
 
 @dataclass
 class Invoice:
     invoice_id: str
-    client: Client
     contractor_name: str
+    client: Contact
     amount: float
-    currency: str
-    issue_date: datetime
-    due_date: datetime
+    issue_date: str          # ISO 8601: YYYY-MM-DD
+    due_date: str
     description: str
-    status: InvoiceStatus = InvoiceStatus.PENDING
-    paid_date: Optional[datetime] = None
-    contact_log: list = field(default_factory=list)  # list of ContactEvent dicts
-    escalation_level: EscalationLevel = EscalationLevel.REMINDER
+    status: InvoiceStatus = InvoiceStatus.SENT
+    chase_count: int = 0
+    last_chased: Optional[str] = None
+    paid_date: Optional[str] = None
+    notes: str = ""
+    tags: list = field(default_factory=list)
 
     @property
     def days_overdue(self) -> int:
-        if self.status == InvoiceStatus.PAID:
-            return 0
-        now = datetime.now(timezone.utc)
-        due = self.due_date.replace(tzinfo=timezone.utc) if self.due_date.tzinfo is None else self.due_date
-        delta = (now - due).days
-        return max(0, delta)
+        due = datetime.fromisoformat(self.due_date)
+        return max(0, (datetime.now() - due).days)
 
     @property
-    def is_overdue(self) -> bool:
-        return self.days_overdue > 0
+    def chase_stage(self) -> ChaseStage:
+        d = self.days_overdue
+        if d <= 7:
+            return ChaseStage.FRIENDLY_REMINDER
+        elif d <= 14:
+            return ChaseStage.POLITE_FOLLOW_UP
+        elif d <= 29:
+            return ChaseStage.FIRM_REQUEST
+        else:
+            return ChaseStage.FINAL_NOTICE
 
     @property
-    def amount_display(self) -> str:
-        return f"{self.currency} {self.amount:,.2f}"
-
-    def log_contact(self, channel: ContactChannel, message_type: str, success: bool, note: str = ""):
-        event = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "channel": channel.value,
-            "message_type": message_type,
-            "success": success,
-            "note": note,
-        }
-        self.contact_log.append(event)
-        log.info(
-            f"[{self.invoice_id}] Contact logged — "
-            f"channel={channel.value} type={message_type} success={success}"
-        )
-
-
-# ─────────────────────────────────────────────
-# MESSAGE COMPOSER
-# ─────────────────────────────────────────────
-
-class MessageComposer:
-    """
-    Generates legally safe, professional invoice follow-up messages.
-    Tone escalates automatically. No FDCPA-triggering language.
-    """
-
-    SUBJECT_TEMPLATES = {
-        EscalationLevel.REMINDER:     "Friendly reminder — Invoice #{invoice_id} due {due_date}",
-        EscalationLevel.FOLLOW_UP:    "Invoice #{invoice_id} — Payment not yet received",
-        EscalationLevel.FINAL_NOTICE: "Action needed — Invoice #{invoice_id} is {days_overdue} days past due",
-        EscalationLevel.HOLD:         "Invoice #{invoice_id} — Please contact us today",
-    }
-
-    def _format_date(self, dt: datetime) -> str:
-        return dt.strftime("%B %d, %Y")
-
-    def compose_email(self, invoice: Invoice) -> dict:
-        """Returns dict with 'subject' and 'body' (HTML string)."""
-        level = invoice.escalation_level
-        subject = self.SUBJECT_TEMPLATES[level].format(
-            invoice_id=invoice.invoice_id,
-            due_date=self._format_date(invoice.due_date),
-            days_overdue=invoice.days_overdue,
-        )
-        body = self._build_email_body(invoice, level)
-        return {"subject": subject, "body": body}
-
-    def _build_email_body(self, invoice: Invoice, level: EscalationLevel) -> str:
-        client_name = invoice.client.name.split()[0]  # first name
-        contractor  = invoice.contractor_name
-        inv_id      = invoice.invoice_id
-        amount      = invoice.amount_display
-        due_str     = self._format_date(invoice.due_date)
-        desc        = invoice.description
-        days_over   = invoice.days_overdue
-
-        opening_map = {
-            EscalationLevel.REMINDER: (
-                f"Hi {client_name},<br><br>"
-                f"Hope your project is going well! This is a friendly reminder that "
-                f"invoice <strong>#{inv_id}</strong> for <strong>{amount}</strong> "
-                f"({desc}) was due on <strong>{due_str}</strong>."
-            ),
-            EscalationLevel.FOLLOW_UP: (
-                f"Hi {client_name},<br><br>"
-                f"I wanted to follow up on invoice <strong>#{inv_id}</strong> "
-                f"for <strong>{amount}</strong> ({desc}), which was due {due_str}. "
-                f"We haven't received payment yet and wanted to make sure everything is in order."
-            ),
-            EscalationLevel.FINAL_NOTICE: (
-                f"Dear {client_name},<br><br>"
-                f"This is an important notice regarding invoice <strong>#{inv_id}</strong> "
-                f"for <strong>{amount}</strong> ({desc}). "
-                f"As of today, this invoice is <strong>{days_over} days past due</strong>. "
-                f"We need to resolve this promptly to keep your account in good standing."
-            ),
-            EscalationLevel.HOLD: (
-                f"Dear {client_name},<br><br>"
-                f"We have been unable to collect payment for invoice <strong>#{inv_id}</strong> "
-                f"totaling <strong>{amount}</strong>. This account requires your immediate attention. "
-                f"Please contact us directly to arrange payment or discuss your situation."
-            ),
-        }
-
-        cta_map = {
-            EscalationLevel.REMINDER: (
-                "If you've already sent payment, please disregard this message — and thank you!<br><br>"
-                "If you have any questions about this invoice, reply to this email and I'll help you right away."
-            ),
-            EscalationLevel.FOLLOW_UP: (
-                "Please arrange payment at your earliest convenience or reply to let us know "
-                "if there is an issue we can help resolve. If payment has already been sent, "
-                "please share the confirmation so we can update our records."
-            ),
-            EscalationLevel.FINAL_NOTICE: (
-                "Please arrange payment within the next <strong>7 business days</strong>. "
-                "If you are experiencing difficulty, contact us immediately — we may be able to arrange "
-                "a payment plan. Continued non-payment may result in additional action."
-            ),
-            EscalationLevel.HOLD: (
-                "Please call or email us within <strong>48 hours</strong> to discuss this matter. "
-                "Failure to respond may require us to pursue other remedies available to us."
-            ),
-        }
-
-        html = f"""
-        <html><body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
-        <div style="border-left: 4px solid #F5A623; padding-left: 16px; margin-bottom: 24px;">
-            <h2 style="color: #F5A623; margin: 0;">Invoice Follow-Up</h2>
-            <p style="margin: 4px 0; font-size: 13px; color: #888;">from {contractor}</p>
-        </div>
-        <p>{opening_map[level]}</p>
-        <table style="background:#f9f9f9; border-radius:8px; padding:16px; width:100%; margin:16px 0;">
-            <tr><td style="color:#888; font-size:13px;">Invoice #</td><td><strong>{inv_id}</strong></td></tr>
-            <tr><td style="color:#888; font-size:13px;">Amount Due</td><td><strong style="color:#d9534f;">{amount}</strong></td></tr>
-            <tr><td style="color:#888; font-size:13px;">Due Date</td><td>{due_str}</td></tr>
-            <tr><td style="color:#888; font-size:13px;">Description</td><td>{desc}</td></tr>
-        </table>
-        <p>{cta_map[level]}</p>
-        <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
-        <p style="font-size:12px; color:#aaa;">
-            This is an automated billing reminder from {contractor}. 
-            To stop receiving these reminders, please reply with "PAID" or contact us directly.<br>
-            This message is not a demand for payment from a debt collection agency.
-        </p>
-        </body></html>
-        """
-        return html.strip()
-
-    def compose_sms(self, invoice: Invoice) -> str:
-        """Returns SMS body (≤160 chars for single segment)."""
-        level   = invoice.escalation_level
-        inv_id  = invoice.invoice_id
-        amount  = invoice.amount_display
-        contractor = invoice.contractor_name[:20]
-
-        sms_map = {
-            EscalationLevel.REMINDER: (
-                f"Hi, this is {contractor}. Friendly reminder: Invoice #{inv_id} "
-                f"for {amount} is due. Reply PAID if sent. Thx!"
-            ),
-            EscalationLevel.FOLLOW_UP: (
-                f"{contractor}: Invoice #{inv_id} ({amount}) is overdue. "
-                f"Please arrange payment or call us. Reply PAID if settled."
-            ),
-            EscalationLevel.FINAL_NOTICE: (
-                f"FINAL NOTICE from {contractor}: Invoice #{inv_id} ({amount}) "
-                f"urgently overdue. Contact us today to avoid further action."
-            ),
-            EscalationLevel.HOLD: (
-                f"{contractor}: Invoice #{inv_id} ({amount}) requires immediate "
-                f"attention. Please call us within 48hrs."
-            ),
-        }
-        msg = sms_map[level]
-        return msg[:320]  # Twilio concat limit; keep reasonable
-
-
-# ─────────────────────────────────────────────
-# ESCALATION ENGINE
-# ─────────────────────────────────────────────
-
-class EscalationEngine:
-    """
-    Determines the correct escalation level and contact channel
-    for each invoice based on days overdue, dispute status, and history.
-    """
-
-    def determine_level(self, invoice: Invoice) -> EscalationLevel:
-        if invoice.client.dispute_flag:
-            log.info(f"[{invoice.invoice_id}] Dispute flag active — holding escalation")
-            return EscalationLevel.HOLD
-
-        days = invoice.days_overdue
-        for level, (lo, hi) in ESCALATION_THRESHOLDS.items():
-            if lo <= days <= hi:
-                return level
-        return EscalationLevel.HOLD
-
-    def should_contact_now(self) -> bool:
-        """Enforce safe contact hours (8AM-8PM UTC as MVP proxy)."""
-        hour = datetime.now(timezone.utc).hour
-        return CONTACT_HOUR_START <= hour < CONTACT_HOUR_END
-
-    def days_since_last_contact(self, invoice: Invoice) -> int:
-        if not invoice.contact_log:
-            return 9999
-        last_ts = invoice.contact_log[-1]["timestamp"]
-        last_dt = datetime.fromisoformat(last_ts)
-        if last_dt.tzinfo is None:
-            last_dt = last_dt.replace(tzinfo=timezone.utc)
-        delta = datetime.now(timezone.utc) - last_dt
-        return delta.days
-
-    def contact_frequency_ok(self, invoice: Invoice) -> bool:
-        """
-        Respect contact frequency limits by escalation level.
-        Reminder: every 3 days | Follow-up: every 4 days | Final/Hold: every 7 days
-        """
-        level = invoice.escalation_level
-        freq_map = {
-            EscalationLevel.REMINDER:     3,
-            EscalationLevel.FOLLOW_UP:    4,
-            EscalationLevel.FINAL_NOTICE: 7,
-            EscalationLevel.HOLD:         7,
-        }
-        min_days = freq_map.get(level, 7)
-        days_since = self.days_since_last_contact(invoice)
-        ok = days_since >= min_days
-        if not ok:
-            log.debug(
-                f"[{invoice.invoice_id}] Skipping — contacted {days_since}d ago, "
-                f"min interval {min_days}d"
-            )
-        return ok
-
-
-# ─────────────────────────────────────────────
-# DELIVERY ENGINE
-# ─────────────────────────────────────────────
-
-class DeliveryEngine:
-    """
-    Sends messages via email (SMTP/SendGrid-compatible) and SMS (Twilio).
-    Falls back to file-based mock delivery when credentials are absent.
-    All sends are logged to memory/invoice_chaser/sent_log.jsonl.
-    """
-
-    SENT_LOG = LOG_DIR / "sent_log.jsonl"
-
-    def __init__(self):
-        self.smtp_host     = os.getenv("SMTP_HOST", "")
-        self.smtp_port     = int(os.getenv("SMTP_PORT", "587"))
-        self.smtp_user     = os.getenv("SMTP_USER", "")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
-        self.from_email    = os.getenv("FROM_EMAIL", "billing@yourcompany.com")
-
-        self.twilio_sid    = os.getenv("TWILIO_ACCOUNT_SID", "")
-        self.twilio_token  = os.getenv("TWILIO_AUTH_TOKEN", "")
-        self.twilio_from   = os.getenv("TWILIO_FROM_NUMBER", "")
-
-        self.mock_mode = not bool(self.smtp_host and self.smtp_user)
-        if self.mock_mode:
-            log.warning(
-                "DeliveryEngine running in MOCK MODE — "
-                "set SMTP_HOST/SMTP_USER/SMTP_PASSWORD env vars for live delivery"
-            )
-
-    # ── EMAIL ──────────────────────────────────
-
-    def send_email(self, to_address: str, subject: str, html_body: str,
-                   invoice_id: str, contractor_name: str) -> bool:
-        if self.mock_mode:
-            return self._mock_send("email", to_address, subject, invoice_id)
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = f"{contractor_name} Billing <{self.from_email}>"
-        msg["To"]      = to_address
-        msg["X-Invoice-ID"] = invoice_id
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-        try:
-            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, [to_address], msg.as_string())
-            self._log_sent("email", to_address, subject, invoice_id, True)
-            log.info(f"[{invoice_id}] Email sent → {to_address}")
-            return True
-        except smtplib.SMTPException as exc:
-            log.error(f"[{invoice_id}] Email failed → {to_address}: {exc}")
-            self._log_sent("email", to_address, subject, invoice_id, False, str(exc))
+    def is_actionable(self) -> bool:
+        """True if invoice should be chased today."""
+        if self.status in (InvoiceStatus.PAID, InvoiceStatus.WRITTEN_OFF, InvoiceStatus.DRAFT):
             return False
-        except Exception as exc:
-            log.error(f"[{invoice_id}] Unexpected email error: {exc}")
-            self._log_sent("email", to_address, subject, invoice_id, False, str(exc))
+        if self.days_overdue <= 0:
             return False
-
-    # ── SMS ────────────────────────────────────
-
-    def send_sms(self, to_number: str, body: str, invoice_id: str) -> bool:
-        if not to_number or not re.match(r"^\+\d{10,15}$", to_number):
-            log.warning(f"[{invoice_id}] Invalid phone number '{to_number}' — skipping SMS")
-            return False
-
-        if self.mock_mode or not self.twilio_sid:
-            return self._mock_send("sms", to_number, body, invoice_id)
-
-        try:
-            # Lazy import so package is optional in email-only deployments
-            from twilio.rest import Client as TwilioClient  # type: ignore
-            client = TwilioClient(self.twilio_sid, self.twilio_token)
-            message = client.messages.create(
-                body=body,
-                from_=self.twilio_from,
-                to=to_number,
-            )
-            self._log_sent("sms", to_number, body[:50], invoice_id, True, message.sid)
-            log.info(f"[{invoice_id}] SMS sent → {to_number} (sid={message.sid})")
-            return True
-        except ImportError:
-            log.warning(f"[{invoice_id}] Twilio not installed — falling back to mock SMS")
-            return self._mock_send("sms", to_number, body, invoice_id)
-        except Exception as exc:
-            log.error(f"[{invoice_id}] SMS failed → {to_number}: {exc}")
-            self._log_sent("sms", to_number, body[:50], invoice_id, False, str(exc))
-            return False
-
-    # ── HELPERS ────────────────────────────────
-
-    def _mock_send(self, channel: str, destination: str, content: str,
-                   invoice_id: str) -> bool:
-        mock_path = LOG_DIR / f"mock_{channel}_{invoice_id}.txt"
-        mock_path.write_text(
-            f"MOCK {channel.upper()} DELIVERY\n"
-            f"To: {destination}\n"
-            f"Invoice: {invoice_id}\n"
-            f"Timestamp: {datetime.now(timezone.utc).isoformat()}\n"
-            f"Content:\n{content}\n",
-            encoding="utf-8",
-        )
-        self._log_sent(channel, destination, content[:80], invoice_id, True, "MOCK")
-        log.info(f"[{invoice_id}] Mock {channel} saved → {mock_path.name}")
+        if self.last_chased:
+            last = datetime.fromisoformat(self.last_chased)
+            cooldown = self._cooldown_days()
+            if (datetime.now() - last).days < cooldown:
+                return False
         return True
 
-    def _log_sent(self, channel: str, destination: str, content_preview: str,
-                  invoice_id: str, success: bool, note: str = ""):
-        record = {
-            "ts":         datetime.now(timezone.utc).isoformat(),
-            "invoice_id": invoice_id,
-            "channel":    channel,
-            "to":         destination,
-            "preview":    content_preview[:80],
-            "success":    success,
-            "note":       note,
-        }
-        with open(self.SENT_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record) + "\n")
+    def _cooldown_days(self) -> int:
+        """Days between follow-ups per stage."""
+        return {
+            ChaseStage.FRIENDLY_REMINDER: 3,
+            ChaseStage.POLITE_FOLLOW_UP:  4,
+            ChaseStage.FIRM_REQUEST:      5,
+            ChaseStage.FINAL_NOTICE:      7,
+        }[self.chase_stage]
+
+    def to_dict(self) -> dict:
+        d = asdict(self)
+        d["status"] = self.status.value
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Invoice":
+        data["status"] = InvoiceStatus(data.get("status", "sent"))
+        data["client"] = Contact(**data["client"])
+        return cls(**data)
 
 
-# ─────────────────────────────────────────────
-# REPORT ENGINE
-# ─────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════════════
+# INVOICE DATABASE (JSON file persistence)
+# ════════════════════════════════════════════════════════════════════════════
 
-class ReportEngine:
-    """
-    Generates daily contractor dashboard:
-    - Total AR outstanding
-    - Overdue breakdown by escalation level
-    - Recent contacts sent
-    - Paid this week
-    """
+class InvoiceDatabase:
+    def __init__(self, path: Path = INVOICE_DB):
+        self.path = path
+        self._data: dict[str, Invoice] = {}
+        self._load()
 
-    REPORT_DIR = LOG_DIR / "reports"
-
-    def __init__(self):
-        self.REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
-    def generate(self, invoices: list[Invoice]) -> dict:
-        now        = datetime.now(timezone.utc)
-        week_ago   = now - timedelta(days=7)
-
-        total_outstanding  = 0.0
-        total_overdue      = 0.0
-        paid_this_week     = 0.0
-        overdue_by_level   = {lvl.name: {"count": 0, "amount": 0.0} for lvl in EscalationLevel}
-        contacts_sent_today = 0
-
-        for inv in invoices:
-            if inv.status == InvoiceStatus.PAID:
-                if inv.paid_date and inv.paid_date >= week_ago:
-                    paid_this_week += inv.amount
-                continue
-
-            if inv.status in (InvoiceStatus.WRITTEN_OFF, InvoiceStatus.DISPUTED):
-                continue
-
-            total_outstanding += inv.amount
-
-            if inv.is_overdue:
-                total_overdue += inv.amount
-                lvl_name = inv.escalation_level.name
-                overdue_by_level[lvl_name]["count"]  += 1
-                overdue_by_level[lvl_name]["amount"] += inv.amount
-
-            # Count today's contacts
-            for event in inv.contact_log:
-                ts = datetime.fromisoformat(event["timestamp"])
-                if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=timezone.utc)
-                if (now - ts).total_seconds() < 86400 and event["success"]:
-                    contacts_sent_today += 1
-
-        report = {
-            "generated_at":         now.isoformat(),
-            "total_outstanding":     round(total_outstanding, 2),
-            "total_overdue":         round(total_overdue, 2),
-            "paid_this_week":        round(paid_this_week, 2),
-            "overdue_by_level":      overdue_by_level,
-            "contacts_sent_today":   contacts_sent_today,
-            "total_invoices":        len(invoices),
-        }
-
-        report_file = self.REPORT_DIR / f"report_{now.strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_file, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2)
-
-        log.info(f"Report saved → {report_file}")
-        return report
-
-    def print_dashboard(self, report: dict):
-        w = 58
-        sep = "─" * w
-
-        def money(v): return f"${v:,.2f}"
-        def pct(a, b): return f"({100*a/b:.1f}%)" if b else ""
-
-        print(f"\n{'═'*w}")
-        print(f"  📊  AI INVOICE CHASER — CONTRACTOR DASHBOARD")
-        print(f"  Generated: {report['generated_at'][:19]} UTC")
-        print(f"{'═'*w}")
-        print(f"  Total AR Outstanding : {money(report['total_outstanding'])}")
-        print(f"  Overdue (at risk)    : {money(report['total_overdue'])} "
-              f"{pct(report['total_overdue'], report['total_outstanding'])}")
-        print(f"  Paid This Week       : {money(report['paid_this_week'])}")
-        print(f"  Contacts Sent Today  : {report['contacts_sent_today']}")
-        print(f"  Total Invoices       : {report['total_invoices']}")
-        print(sep)
-        print("  Overdue Breakdown:")
-        for level, data in report["overdue_by_level"].items():
-            if data["count"] > 0:
-                bar_len = min(20, int(data["count"] * 3))
-                bar = "█" * bar_len
-                print(f"    {level:<14} {bar:<20} {data['count']:>3} inv  {money(data['amount'])}")
-        print(f"{'═'*w}\n")
-
-
-# ─────────────────────────────────────────────
-# INVOICE PERSISTENCE
-# ─────────────────────────────────────────────
-
-class InvoiceStore:
-    """
-    Simple JSON-file persistence for invoice state.
-    Production upgrade: swap for PostgreSQL / SQLite.
-    """
-
-    DATA_FILE = LOG_DIR / "invoices.json"
-
-    def save(self, invoices: list[Invoice]):
-        def serialize(inv: Invoice) -> dict:
-            d = asdict(inv)
-            d["status"]           = inv.status.value
-            d["escalation_level"] = inv.escalation_level.value
-            d["issue_date"]       = inv.issue_date.isoformat()
-            d["due_date"]         = inv.due_date.isoformat()
-            d["paid_date"]        = inv.paid_date.isoformat() if inv.paid_date else None
-            d["client"]["preferred_channel"] = inv.client.preferred_channel.value
-            return d
-
-        with open(self.DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump([serialize(i) for i in invoices], f, indent=2)
-        log.info(f"Saved {len(invoices)} invoices → {self.DATA_FILE}")
-
-    def load(self) -> list[Invoice]:
-        if not self.DATA_FILE.exists():
-            return []
-        with open(self.DATA_FILE, encoding="utf-8") as f:
-            raw = json.load(f)
-
-        invoices = []
-        for d in raw:
+    def _load(self):
+        if self.path.exists():
             try:
-                c_raw = d["client"]
-                client = Client(
-                    client_id=c_raw["client_id"],
-                    name=c_raw["name"],
-                    email=c_raw.get("email"),
-                    phone=c_raw.get("phone"),
-                    preferred_channel=ContactChannel(c_raw.get("preferred_channel", "email")),
-                    dispute_flag=c_raw.get("dispute_flag", False),
-                    total_paid_historical=c_raw.get("total_paid_historical", 0.0),
-                    avg_days_to_pay=c_raw.get("avg_days_to_pay", 0),
-                )
-                inv = Invoice(
-                    invoice_id=d["invoice_id"],
-                    client=client,
-                    contractor_name=d["contractor_name"],
-                    amount=d["amount"],
-                    currency=d.get("currency", "USD"),
-                    issue_date=datetime.fromisoformat(d["issue_date"]),
-                    due_date=datetime.fromisoformat(d["due_date"]),
-                    description=d["description"],
-                    status=InvoiceStatus(d["status"]),
-                    paid_date=datetime.fromisoformat(d["paid_date"]) if d.get("paid_date") else None,
-                    contact_log=d.get("contact_log", []),
-                    escalation_level=EscalationLevel(d.get("escalation_level", 1)),
-                )
-                invoices.append(inv)
-            except (KeyError, ValueError) as exc:
-                log.error(f"Failed to deserialize invoice: {exc} — skipping")
+                raw = json.loads(self.path.read_text())
+                self._data = {k: Invoice.from_dict(v) for k, v in raw.items()}
+                log.info(f"Loaded {len(self._data)} invoices from {self.path}")
+            except Exception as e:
+                log.error(f"Failed to load invoice DB: {e}")
+                self._data = {}
 
-        log.info(f"Loaded {len(invoices)} invoices from {self.DATA_FILE}")
-        return invoices
+    def save(self):
+        try:
+            serialized = {k: v.to_dict() for k, v in self._data.items()}
+            self.path.write_text(json.dumps(serialized, indent=2))
+        except Exception as e:
+            log.error(f"Failed to save invoice DB: {e}")
 
+    def add(self, invoice: Invoice):
+        self._data[invoice.invoice_id] = invoice
+        self.save()
+        log.info(f"Added invoice {invoice.invoice_id} — ${invoice.amount:.2f} from {invoice.client.name}")
 
-# ─────────────────────────────────────────────
-# CORE ENGINE
-# ─────────────────────────────────────────────
+    def get(self, invoice_id: str) -> Optional[Invoice]:
+        return self._data.get(invoice_id)
 
-class InvoiceChaser:
-    """
-    Main orchestrator.
-    Call .run(invoices) to process all eligible overdue invoices.
-    """
+    def all(self) -> list[Invoice]:
+        return list(self._data.values())
 
-    def __init__(self):
-        self.escalation  = EscalationEngine()
-        self.composer    = MessageComposer()
-        self.delivery    = DeliveryEngine()
-        self.reporter    = ReportEngine()
-        self.store       = InvoiceStore()
-
-    def run(self, invoices: list[Invoice]) -> dict:
-        """
-        Process all invoices:
-        1. Determine escalation level
-        2. Check contact eligibility
-        3. Compose + send messages
-        4. Log all actions
-        5. Persist updated state
-        6. Return report
-        """
-        log.info(f"─── InvoiceChaser run started — {len(invoices)} invoices ───")
-
-        if not self.escalation.should_contact_now():
-            hour = datetime.now(timezone.utc).hour
-            log.warning(
-                f"Current hour {hour} UTC is outside safe contact window "
-                f"({CONTACT_HOUR_START}:00–{CONTACT_HOUR_END}:00). "
-                f"No messages sent this cycle."
-            )
-            return self.reporter.generate(invoices)
-
-        contacted = 0
-        skipped   = 0
-        errors    = 0
-
-        for inv in invoices:
-            if inv.status in (InvoiceStatus.PAID, InvoiceStatus.WRITTEN_OFF):
-                skipped += 1
-                continue
-
-            if inv.client.dispute_flag:
-                log.info(f"[{inv.invoice_id}] Dispute flag — skipping")
-                skipped += 1
-                continue
-
-            if not inv.is_overdue:
-                log.debug(f"[{inv.invoice_id}] Not yet overdue — skipping")
-                skipped += 1
-                continue
-
-            # Determine escalation level
-            inv.escalation_level = self.escalation.determine_level(inv)
-            inv.status = InvoiceStatus.OVERDUE
-
-            # Check frequency gate
-            if not self.escalation.contact_frequency_ok(inv):
-                skipped += 1
-                continue
-
-            # Compose messages
-            email_msg = self.composer.compose_email(inv)
-            sms_body  = self.composer.compose_sms(inv)
-
-            channel   = inv.client.preferred_channel
-            success   = False
-
-            try:
-                if channel in (ContactChannel.EMAIL, ContactChannel.BOTH):
-                    if inv.client.email:
-                        ok = self.delivery.send_email(
-                            to_address=inv.client.email,
-                            subject=email_msg["subject"],
-                            html_body=email_msg["body"],
-                            invoice_id=inv.invoice_id,
-                            contractor_name=inv.contractor_name,
-                        )
-                        inv.log_contact(
-                            ContactChannel.EMAIL,
-                            inv.escalation_level.name,
-                            ok,
-                            note=email_msg["subject"],
-                        )
-                        success = success or ok
-                    else:
-                        log.warning(f"[{inv.invoice_id}] No email on file for {inv.client.name}")
-
-                if channel in (ContactChannel.SMS, ContactChannel.BOTH):
-                    if inv.client.phone:
-                        ok = self.delivery.send_sms(
-                            to_number=inv.client.phone,
-                            body=sms_body,
-                            invoice_id=inv.invoice_id,
-                        )
-                        inv.log_contact(
-                            ContactChannel.SMS,
-                            inv.escalation_level.name,
-                            ok,
-                            note=sms_body[:60],
-                        )
-                        success = success or ok
-                    else:
-                        log.warning(f"[{inv.invoice_id}] No phone on file for {inv.client.name}")
-
-            except Exception as exc:
-                log.error(f"[{inv.invoice_id}] Unexpected error during contact: {exc}")
-                inv.log_contact(channel, "ERROR", False, str(exc))
-                errors += 1
-                continue
-
-            if success:
-                contacted += 1
-            else:
-                errors += 1
-
-            # Respect rate limits between sends
-            time.sleep(0.5)
-
-        self.store.save(invoices)
-
-        report = self.reporter.generate(invoices)
-        log.info(
-            f"─── Run complete — contacted={contacted} skipped={skipped} errors={errors} ───"
-        )
-        return report
-
-    def mark_paid(self, invoices: list[Invoice], invoice_id: str) -> bool:
-        """Mark an invoice as paid (call this from your payment webhook)."""
-        for inv in invoices:
-            if inv.invoice_id == invoice_id:
-                inv.status    = InvoiceStatus.PAID
-                inv.paid_date = datetime.now(timezone.utc)
-                self.store.save(invoices)
-                log.info(f"[{invoice_id}] Marked as PAID ✓")
-                return True
-        log.warning(f"Invoice {invoice_id} not found for mark_paid")
+    def mark_paid(self, invoice_id: str):
+        inv = self._data.get(invoice_id)
+        if inv:
+            inv.status = InvoiceStatus.PAID
+            inv.paid_date = datetime.now().date().isoformat()
+            self.save()
+            log.info(f"Invoice {invoice_id} marked PAID")
+            return True
         return False
 
-    def add_invoice(self, invoices: list[Invoice], invoice: Invoice) -> list[Invoice]:
-        """Add a new invoice and persist."""
-        invoices.append(invoice)
-        self.store.save(invoices)
-        log.info(f"Invoice {invoice.invoice_id} added for {invoice.client.name}")
-        return invoices
+    def overdue(self) -> list[Invoice]:
+        return [i for i in self._data.values() if i.days_overdue > 0
+                and i.status not in (InvoiceStatus.PAID, InvoiceStatus.WRITTEN_OFF)]
+
+    def actionable(self) -> list[Invoice]:
+        return [i for i in self._data.values() if i.is_actionable]
+
+    def stats(self) -> dict:
+        all_inv = self._data.values()
+        overdue = [i for i in all_inv if i.days_overdue > 0
+                   and i.status not in (InvoiceStatus.PAID, InvoiceStatus.WRITTEN_OFF)]
+        paid    = [i for i in all_inv if i.status == InvoiceStatus.PAID]
+        return {
+            "total_invoices": len(self._data),
+            "total_outstanding": sum(i.amount for i in overdue),
+            "overdue_count": len(overdue),
+            "avg_days_overdue": (sum(i.days_overdue for i in overdue) / len(overdue)) if overdue else 0,
+            "paid_count": len(paid),
+            "paid_total": sum(i.amount for i in paid),
+            "at_risk_90_plus": sum(i.amount for i in overdue if i.days_overdue >= 90),
+        }
 
 
-# ─────────────────────────────────────────────
-# DEMO DATA
-# ─────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE LAYER
+# ════════════════════════════════════════════════════════════════════════════
 
-def _build_demo_invoices() -> list[Invoice]:
-    """Create a realistic set of demo invoices spanning all escalation levels."""
-    now = datetime.now(timezone.utc)
+# States with stricter commercial debt collection rules (conservative list)
+STRICT_STATES = {"CA", "NY", "TX", "IL", "WA", "MA", "NJ"}
 
-    def make_invoice(inv_id, client_name, email, phone, amount,
-                     days_overdue, description, channel=ContactChannel.EMAIL,
-                     dispute=False, status=InvoiceStatus.OVERDUE):
-        due = now - timedelta(days=days_overdue)
-        issue = due - timedelta(days=30)
-        client = Client(
-            client_id=hashlib.md5(client_name.encode()).hexdigest()[:8],
-            name=client_name,
-            email=email,
-            phone=phone,
-            preferred_channel=channel,
-            dispute_flag=dispute,
+# Banned phrases that could trigger FDCPA / state equivalents
+BANNED_PHRASES = [
+    "you will be sued",
+    "legal action will be taken",
+    "we will report to credit bureau",
+    "debt collector",
+    "collection agency",
+    "final demand before litigation",
+]
+
+def compliance_check(message: str, client_state: Optional[str] = None) -> tuple[bool, list[str]]:
+    """
+    Returns (is_compliant, list_of_issues).
+    Compliance note: This tool targets B2B contractor invoices.
+    FDCPA primarily covers consumer debt; however, many states extend
+    similar protections to commercial contexts. When in doubt, use
+    soft language and always include opt-out language.
+    """
+    issues = []
+    msg_lower = message.lower()
+
+    for phrase in BANNED_PHRASES:
+        if phrase in msg_lower:
+            issues.append(f"Potentially problematic phrase detected: '{phrase}'")
+
+    if client_state and client_state.upper() in STRICT_STATES:
+        # In strict states, add a soft advisory
+        if "opt out" not in msg_lower and "unsubscribe" not in msg_lower:
+            issues.append(f"State {client_state} — consider adding opt-out language")
+
+    return (len(issues) == 0, issues)
+
+
+def add_compliance_footer(state: Optional[str] = None) -> str:
+    base = "\n\n---\nThis is a reminder from your contractor. To stop receiving reminders, " \
+           "reply STOP or email us directly."
+    if state and state.upper() in STRICT_STATES:
+        base += f" [Compliance notice for {state} recipients: This communication is from " \
+                f"the original service provider, not a third-party collector.]"
+    return base
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# MESSAGE GENERATION
+# ════════════════════════════════════════════════════════════════════════════
+
+TEMPLATE_LIBRARY = {
+    ChaseStage.FRIENDLY_REMINDER: {
+        "subject": "Friendly reminder: Invoice #{invoice_id} due {due_date}",
+        "body": textwrap.dedent("""\
+            Hi {client_name},
+
+            Hope your project is going well! Just a quick heads-up that Invoice #{invoice_id}
+            for ${amount:.2f} ({description}) was due on {due_date}.
+
+            If you've already sent payment, please disregard this message — and thank you!
+
+            If not, here are your payment options:
+            • Bank transfer / check payable to {contractor_name}
+            • Online: [Your payment link here]
+
+            Invoice total: ${amount:.2f}
+            Days outstanding: {days_overdue}
+
+            Thanks for your business — I really appreciate it.
+
+            {contractor_name}
+        """),
+    },
+    ChaseStage.POLITE_FOLLOW_UP: {
+        "subject": "Follow-up: Invoice #{invoice_id} — ${amount:.2f} outstanding",
+        "body": textwrap.dedent("""\
+            Hi {client_name},
+
+            I'm following up on Invoice #{invoice_id} for ${amount:.2f} ({description}),
+            which was due on {due_date} and is now {days_overdue} days past due.
+
+            I understand things get busy — I just need to make sure this doesn't slip
+            through the cracks on either end.
+
+            Could you confirm:
+            1. Has payment been sent? If so, when can I expect it to clear?
+            2. If there's a hold-up, can we discuss and find a solution?
+
+            Outstanding balance: ${amount:.2f}
+
+            I value our working relationship and want to keep things smooth.
+
+            {contractor_name}
+        """),
+    },
+    ChaseStage.FIRM_REQUEST: {
+        "subject": "Action required: Invoice #{invoice_id} — {days_overdue} days overdue",
+        "body": textwrap.dedent("""\
+            Hi {client_name},
+
+            This is my third notice regarding Invoice #{invoice_id} for ${amount:.2f}
+            ({description}), now {days_overdue} days past the due date of {due_date}.
+
+            The work has been completed and delivered as agreed. Payment of ${amount:.2f}
+            is owed and overdue.
+
+            I need to receive payment or a confirmed payment commitment within 5 business
+            days. Please reply to this email with your payment timeline or arrange
+            payment directly.
+
+            Outstanding: ${amount:.2f}
+            Original due: {due_date}
+            Days overdue: {days_overdue}
+
+            I'd prefer to resolve this without further escalation.
+
+            {contractor_name}
+        """),
+    },
+    ChaseStage.FINAL_NOTICE: {
+        "subject": "FINAL NOTICE: Invoice #{invoice_id} — Immediate payment required",
+        "body": textwrap.dedent("""\
+            Hi {client_name},
+
+            This is a final notice for Invoice #{invoice_id} — ${amount:.2f}
+            ({description}) — now {days_overdue} days overdue.
+
+            Despite multiple follow-ups, this invoice remains unpaid. I am now reviewing
+            my options for recovering this outstanding balance, which may include filing
+            a claim in small claims court or engaging a collections professional.
+
+            To avoid additional steps, please remit payment of ${amount:.2f} in full
+            within 3 business days, or contact me immediately to make arrangements.
+
+            Outstanding: ${amount:.2f}
+            Invoice date: {issue_date}
+            Due date: {due_date}
+
+            This is your final notice before I take further action.
+
+            {contractor_name}
+        """),
+    },
+}
+
+
+def generate_message_from_template(invoice: Invoice) -> tuple[str, str]:
+    """Returns (subject, body) using the built-in template library."""
+    template = TEMPLATE_LIBRARY[invoice.chase_stage]
+    context = {
+        "invoice_id":      invoice.invoice_id,
+        "client_name":     invoice.client.name,
+        "contractor_name": invoice.contractor_name,
+        "amount":          invoice.amount,
+        "description":     invoice.description,
+        "due_date":        invoice.due_date,
+        "issue_date":      invoice.issue_date,
+        "days_overdue":    invoice.days_overdue,
+    }
+    subject = template["subject"].format(**context)
+    body    = template["body"].format(**context)
+    body   += add_compliance_footer(invoice.client.state)
+    return subject, body
+
+
+def generate_message_with_ai(invoice: Invoice, api_key: Optional[str] = None) -> tuple[str, str]:
+    """
+    Uses Claude to generate a personalised follow-up message.
+    Falls back to template if Anthropic not available or API call fails.
+    """
+    if not ANTHROPIC_AVAILABLE or not api_key:
+        log.info("AI message generation unavailable — using template")
+        return generate_message_from_template(invoice)
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        stage_name = invoice.chase_stage.name.replace("_", " ").title()
+        prompt = f"""You are writing a professional invoice follow-up email for a trade contractor.
+
+Invoice details:
+- Invoice ID: {invoice.invoice_id}
+- Client name: {invoice.client.name}
+- Client company: {invoice.client.company or 'N/A'}
+- Contractor name: {invoice.contractor_name}
+- Amount owed: ${invoice.amount:.2f}
+- Description: {invoice.description}
+- Due date: {invoice.due_date}
+- Days overdue: {invoice.days_overdue}
+- Follow-up stage: {stage_name} (chase #{invoice.chase_count + 1})
+
+Write a {stage_name.lower()} email. Be professional, direct, and appropriate for the escalation level.
+Do NOT use any threatening legal language or debt collector framing.
+Return ONLY a JSON object with keys "subject" and "body". No other text."""
+
+        response = client.messages.create(
+            model="claude-opus-4-5",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}]
         )
-        return Invoice(
-            invoice_id=inv_id,
-            client=client,
-            contractor_name="Apex Plumbing & HVAC LLC",
-            amount=amount,
-            currency="USD",
-            issue_date=issue,
-            due_date=due,
-            description=description,
-            status=status,
+        raw = response.content[0].text.strip()
+        # Extract JSON even if Claude adds prose
+        start = raw.find("{")
+        end   = raw.rfind("}") + 1
+        data  = json.loads(raw[start:end])
+        subject = data["subject"]
+        body    = data["body"] + add_compliance_footer(invoice.client.state)
+        return subject, body
+
+    except Exception as e:
+        log.warning(f"AI message generation failed ({e}) — falling back to template")
+        return generate_message_from_template(invoice)
+
+
+def generate_sms_message(invoice: Invoice) -> str:
+    """Concise SMS reminder — max 160 chars per segment."""
+    stage = invoice.chase_stage
+    base = (
+        f"Hi {invoice.client.name.split()[0]}, "
+        f"invoice #{invoice.invoice_id} for ${invoice.amount:.2f} is "
+        f"{invoice.days_overdue}d overdue. "
+        f"Please arrange payment. — {invoice.contractor_name}. "
+        f"Reply STOP to opt out."
+    )
+    if stage == ChaseStage.FINAL_NOTICE:
+        base = (
+            f"FINAL NOTICE: Invoice #{invoice.invoice_id} ${invoice.amount:.2f} "
+            f"is {invoice.days_overdue} days overdue. "
+            f"Contact {invoice.contractor_name} immediately. Reply STOP to opt out."
+        )
+    return base[:320]  # max 2 SMS segments
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# DELIVERY CHANNELS
+# ════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class EmailConfig:
+    smtp_host: str
+    smtp_port: int
+    username: str
+    password: str
+    from_address: str
+    use_tls: bool = True
+
+
+@dataclass
+class SMSConfig:
+    account_sid: str
+    auth_token: str
+    from_number: str  # E.164
+
+
+def send_email(config: EmailConfig, to_address: str, subject: str, body: str) -> bool:
+    """Send plain-text email. Returns True on success."""
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = config.from_address
+        msg["To"]      = to_address
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=15) as server:
+            if config.use_tls:
+                server.starttls()
+            server.login(config.username, config.password)
+            server.sendmail(config.from_address, to_address, msg.as_string())
+
+        log.info(f"Email sent to {to_address} | Subject: {subject}")
+        return True
+
+    except smtplib.SMTPAuthenticationError:
+        log.error(f"SMTP auth failed for {config.username} — check credentials")
+    except smtplib.SMTPConnectError:
+        log.error(f"SMTP connection failed to {config.smtp_host}:{config.smtp_port}")
+    except Exception as e:
+        log.error(f"Email send failed to {to_address}: {e}")
+    return False
+
+
+def send_sms(config: SMSConfig, to_number: str, message: str) -> bool:
+    """Send SMS via Twilio. Returns True on success."""
+    if not TWILIO_AVAILABLE:
+        log.warning("Twilio not installed — SMS skipped. Run: pip install twilio")
+        return False
+    try:
+        client = TwilioClient(config.account_sid, config.auth_token)
+        result = client.messages.create(
+            body=message,
+            from_=config.from_number,
+            to=to_number
+        )
+        log.info(f"SMS sent to {to_number} | SID: {result.sid}")
+        return True
+    except Exception as e:
+        log.error(f"SMS send failed to {to_number}: {e}")
+        return False
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# AUDIT TRAIL
+# ════════════════════════════════════════════════════════════════════════════
+
+def write_audit_event(event_type: str, invoice: Invoice, details: dict):
+    """Append an immutable audit record to the JSONL audit log."""
+    record = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event_type,
+        "invoice_id": invoice.invoice_id,
+        "client_name": invoice.client.name,
+        "amount": invoice.amount,
+        "days_overdue": invoice.days_overdue,
+        "chase_stage": invoice.chase_stage.name,
+        "chase_count": invoice.chase_count,
+        **details,
+    }
+    with open(AUDIT_LOG, "a") as f:
+        f.write(json.dumps(record) + "\n")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CORE CHASE ENGINE
+# ════════════════════════════════════════════════════════════════════════════
+
+class InvoiceChaser:
+    def __init__(
+        self,
+        db: InvoiceDatabase,
+        email_config: Optional[EmailConfig] = None,
+        sms_config: Optional[SMSConfig] = None,
+        anthropic_api_key: Optional[str] = None,
+        dry_run: bool = False,
+    ):
+        self.db    = db
+        self.email = email_config
+        self.sms   = sms_config
+        self.ai_key = anthropic_api_key
+        self.dry_run = dry_run
+
+        if dry_run:
+            log.info("⚠ DRY RUN MODE — no messages will be sent")
+
+    def run_chase_cycle(self) -> dict:
+        """
+        Main entry point: finds all actionable invoices and chases them.
+        Returns a summary dict.
+        """
+        actionable = self.db.actionable()
+        log.info(f"Chase cycle started — {len(actionable)} invoices to chase")
+
+        results = {
+            "chased": 0,
+            "email_sent": 0,
+            "sms_sent": 0,
+            "skipped_compliance": 0,
+            "errors": 0,
+            "total_value_chased": 0.0,
+        }
+
+        for invoice in actionable:
+            try:
+                outcome = self._chase_invoice(invoice)
+                if outcome["sent"]:
+                    results["chased"] += 1
+                    results["total_value_chased"] += invoice.amount
+                    if outcome.get("email"):
+                        results["email_sent"] += 1
+                    if outcome.get("sms"):
+                        results["sms_sent"] += 1
+                elif outcome.get("compliance_block"):
+                    results["skipped_compliance"] += 1
+            except Exception as e:
+                log.error(f"Unexpected error chasing invoice {invoice.invoice_id}: {e}")
+                results["errors"] += 1
+
+        log.info(
+            f"Chase cycle complete — {results['chased']} chased, "
+            f"${results['total_value_chased']:,.2f} in motion"
+        )
+        return results
+
+    def _chase_invoice(self, invoice: Invoice) -> dict:
+        """Chase a single invoice. Returns outcome dict."""
+        log.info(
+            f"Chasing invoice {invoice.invoice_id} | "
+            f"${invoice.amount:.2f} | {invoice.days_overdue}d overdue | "
+            f"Stage: {invoice.chase_stage.name}"
         )
 
-    invoices = [
-        # Reminder tier (1-7 days)
-        make_invoice("INV-2401", "Marcus Bellamy",    "marcus@bellamyhomes.com",    "+15554010001", 4_200.00,  3,  "Bathroom rough-in & water heater install"),
-        make_invoice("INV-2402", "Sandra Kowalczyk",  "sandra@kowalczykLLC.com",    "+15554010002", 1_850.50,  5,  "Emergency pipe repair — 38 Oak St",       ContactChannel.BOTH),
-        # Follow-up tier (8-21 days)
-        make_invoice("INV-2390", "Heritage Build Co", "ap@heritagebuild.com",       "+15554010003", 12_400.00, 14, "New construction plumbing — Phase 2",     ContactChannel.BOTH),
-        make_invoice("INV-2388", "Ray Morales",       "rmorales@moralesprops.com",  None,           3_600.00,  10, "Boiler replacement & zone valves"),
-        # Final notice tier (22-45 days)
-        make_invoice("INV-2370", "Greenfield Dev",    "finance@greenfielddev.com",  "+15554010005", 28_750.00, 30, "Commercial HVAC install — Unit B",        ContactChannel.EMAIL),
-        make_invoice("INV-2365", "Tommy Vu",          "tommyvu@gmail.com",          "+15554010006", 890.00,    25, "Drain cleaning & camera inspection"),
-        # Hold tier (46+ days)
-        make_invoice("INV-2310", "Pioneer Rentals",   "billing@pioneerrentals.net", None,           7_500.00,  60, "Full plumbing re-pipe — 4 units",         ContactChannel.EMAIL),
-        # Dispute — should be held
-        make_invoice("INV-2350", "Clay Whitmore",     "clay@whitmorebuild.com",     "+15554010008", 5_200.00,  18, "Sump pump install & waterproofing",       ContactChannel.BOTH, dispute=True),
-        # Already paid — should be skipped
-        make_invoice("INV-2200", "Laura Dunne",       "laura@dunnehomes.com",       None,           2_100.00,   0, "Kitchen sink & disposal install",
-                     status=InvoiceStatus.PAID),
+        # Generate message
+        subject, body = generate_message_with_ai(invoice, self.ai_key)
+
+        # Compliance gate
+        ok, issues = compliance_check(body, invoice.client.state)
+        if not ok:
+            log.warning(f"Compliance block on {invoice.invoice_id}: {issues}")
+            write_audit_event("COMPLIANCE_BLOCK", invoice, {"issues": issues})
+            return {"sent": False, "compliance_block": True, "issues": issues}
+
+        outcome = {"sent": False, "email": False, "sms": False}
+
+        # Email
+        if invoice.client.email and self.email:
+            if self.dry_run:
+                log.info(f"[DRY RUN] Would email {invoice.client.email}:\n{subject}\n{body[:120]}...")
+                outcome["email"] = True
+                outcome["sent"]  = True
+            else:
+                sent = send_email(self.email, invoice.client.email, subject, body)
+                outcome["email"] = sent
+                if sent:
+                    outcome["sent"] = True
+
+        # SMS (only stages 3+ to avoid spamming)
+        if (invoice.client.phone and self.sms
+                and invoice.chase_stage.value >= ChaseStage.FIRM_REQUEST.value):
+            sms_text = generate_sms_message(invoice)
+            if self.dry_run:
+                log.info(f"[DRY RUN] Would SMS {invoice.client.phone}: {sms_text}")
+                outcome["sms"]  = True
+                outcome["sent"] = True
+            else:
+                sent = send_sms(self.sms, invoice.client.phone, sms_text)
+                outcome["sms"] = sent
+                if sent:
+                    outcome["sent"] = True
+
+        # Update invoice record
+        if outcome["sent"] or self.dry_run:
+            invoice.chase_count += 1
+            invoice.last_chased  = datetime.now().isoformat()
+            invoice.status = (
+                InvoiceStatus.FINAL_NOTICE
+                if invoice.chase_stage == ChaseStage.FINAL_NOTICE
+                else InvoiceStatus.OVERDUE
+                if invoice.days_overdue > 7
+                else InvoiceStatus.ESCALATED
+            )
+            self.db.save()
+            write_audit_event("CHASE_SENT", invoice, {
+                "subject": subject,
+                "email_sent": outcome["email"],
+                "sms_sent": outcome["sms"],
+                "dry_run": self.dry_run,
+            })
+
+        return outcome
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CSV IMPORT
+# ════════════════════════════════════════════════════════════════════════════
+
+def import_from_csv(filepath: str, contractor_name: str, db: InvoiceDatabase) -> int:
+    """
+    Import invoices from CSV.
+    Expected columns: invoice_id, client_name, client_email, client_phone,
+                      client_company, client_state, amount, issue_date,
+                      due_date, description, status
+    Returns number of invoices imported.
+    """
+    imported = 0
+    try:
+        with open(filepath, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    inv_id = row.get("invoice_id") or _generate_id(
+                        row.get("client_name", ""), row.get("amount", "0")
+                    )
+                    contact = Contact(
+                        name    = row.get("client_name", "Unknown"),
+                        email   = row.get("client_email") or None,
+                        phone   = row.get("client_phone") or None,
+                        company = row.get("client_company") or None,
+                        state   = row.get("client_state") or None,
+                    )
+                    invoice = Invoice(
+                        invoice_id      = inv_id,
+                        contractor_name = contractor_name,
+                        client          = contact,
+                        amount          = float(row.get("amount", 0)),
+                        issue_date      = row.get("issue_date", datetime.now().date().isoformat()),
+                        due_date        = row.get("due_date", datetime.now().date().isoformat()),
+                        description     = row.get("description", "Services rendered"),
+                        status          = InvoiceStatus(row.get("status", "sent")),
+                    )
+                    db.add(invoice)
+                    imported += 1
+                except Exception as e:
+                    log.warning(f"Skipping CSV row (parse error): {e} | Row: {row}")
+    except FileNotFoundError:
+        log.error(f"CSV file not found: {filepath}")
+    except Exception as e:
+        log.error(f"CSV import failed: {e}")
+
+    log.info(f"CSV import complete — {imported} invoices loaded from {filepath}")
+    return imported
+
+
+def _generate_id(client: str, amount: str) -> str:
+    """Deterministic fallback invoice ID from client + amount + timestamp."""
+    raw = f"{client}{amount}{time.time()}"
+    return "INV-" + hashlib.md5(raw.encode()).hexdigest()[:8].upper()
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# DASHBOARD / REPORTING
+# ════════════════════════════════════════════════════════════════════════════
+
+def print_dashboard(db: InvoiceDatabase):
+    """CLI dashboard — prints outstanding invoice summary."""
+    stats = db.stats()
+    overdue = sorted(db.overdue(), key=lambda i: i.days_overdue, reverse=True)
+
+    print("\n" + "═" * 65)
+    print("  💰  AI INVOICE CHASER — OUTSTANDING RECEIVABLES DASHBOARD")
+    print("═" * 65)
+    print(f"  Total invoices tracked : {stats['total_invoices']}")
+    print(f"  Overdue invoices       : {stats['overdue_count']}")
+    print(f"  Total outstanding      : ${stats['total_outstanding']:,.2f}")
+    print(f"  Avg days overdue       : {stats['avg_days_overdue']:.1f} days")
+    print(f"  90+ day risk           : ${stats['at_risk_90_plus']:,.2f}")
+    print(f"  Total paid (all time)  : ${stats['paid_total']:,.2f}")
+    print("─" * 65)
+
+    if not overdue:
+        print("  ✅  No overdue invoices. Great payment health!")
+    else:
+        print(f"  {'ID':<12} {'Client':<20} {'Amount':>9}  {'Days':>5}  Stage")
+        print("  " + "─" * 60)
+        for inv in overdue[:20]:  # show top 20
+            stage_icon = {
+                ChaseStage.FRIENDLY_REMINDER: "🟢",
+                ChaseStage.POLITE_FOLLOW_UP:  "🟡",
+                ChaseStage.FIRM_REQUEST:      "🟠",
+                ChaseStage.FINAL_NOTICE:      "🔴",
+            }[inv.chase_stage]
+            print(
+                f"  {inv.invoice_id:<12} {inv.client.name[:20]:<20} "
+                f"${inv.amount:>8,.2f}  {inv.days_overdue:>5}d  "
+                f"{stage_icon} {inv.chase_stage.name}"
+            )
+        if len(overdue) > 20:
+            print(f"  ... and {len(overdue) - 20} more")
+
+    print("═" * 65)
+    actionable = db.actionable()
+    print(f"  ⚡ {len(actionable)} invoices ready to chase now")
+    print(f"  📁 Audit log: {AUDIT_LOG}")
+    print("═" * 65 + "\n")
+
+
+def export_report(db: InvoiceDatabase) -> Path:
+    """Export overdue invoice report to CSV in the products folder."""
+    report_path = BASE_DIR / f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    overdue = db.overdue()
+
+    with open(report_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "invoice_id", "client_name", "client_email", "client_phone",
+            "amount", "due_date", "days_overdue", "status", "chase_count",
+            "last_chased", "stage"
+        ])
+        for inv in overdue:
+            writer.writerow([
+                inv.invoice_id,
+                inv.client.name,
+                inv.client.email or "",
+                inv.client.phone or "",
+                inv.amount,
+                inv.due_date,
+                inv.days_overdue,
+                inv.status.value,
+                inv.chase_count,
+                inv.last_chased or "",
+                inv.chase_stage.name,
+            ])
+
+    log.info(f"Report exported to {report_path}")
+    return report_path
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CLI
+# ════════════════════════════════════════════════════════════════════════════
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="invoice_chaser",
+        description="AI Invoice Chaser — automated follow-up for trade contractors"
+    )
+    sub = p.add_subparsers(dest="command")
+
+    # dashboard
+    sub.add_parser("dashboard", help="Show outstanding invoice dashboard")
+
+    # add invoice manually
+    add = sub.add_parser("add", help="Add a new invoice")
+    add.add_argument("--id",          required=True,  help="Invoice ID (e.g. INV-001)")
+    add.add_argument("--contractor",  required=True,  help="Your business name")
+    add.add_argument("--client",      required=True,  help="Client name")
+    add.add_argument("--email",       default=None,   help="Client email")
+    add.add_argument("--phone",       default=None,   help="Client phone (E.164)")
+    add.add_argument("--company",     default=None,   help="Client company")
+    add.add_argument("--state",       default=None,   help="Client state (2-letter)")
+    add.add_argument("--amount",      required=True,  type=float)
+    add.add_argument("--due",         required=True,  help="Due date YYYY-MM-DD")
+    add.add_argument("--issued",      default=None,   help="Issue date YYYY-MM-DD")
+    add.add_argument("--description", default="Services rendered")
+
+    # mark paid
+    paid = sub.add_parser("paid", help="Mark invoice as paid")
+    paid.add_argument("invoice_id")
+
+    # run chase
+    chase = sub.add_parser("chase", help="Run the chase engine")
+    chase.add_argument("--dry-run",   action="store_true", help="Preview without sending")
+    chase.add_argument("--smtp-host", default=os.getenv("SMTP_HOST", "smtp.gmail.com"))
+    chase.add_argument("--smtp-port", default=int(os.getenv("SMTP_PORT", "587")), type=int)
+    chase.add_argument("--smtp-user", default=os.getenv("SMTP_USER"))
+    chase.add_argument("--smtp-pass", default=os.getenv("SMTP_PASS"))
+    chase.add_argument("--from-email",default=os.getenv("FROM_EMAIL"))
+    chase.add_argument("--twilio-sid",default=os.getenv("TWILIO_ACCOUNT_SID"))
+    chase.add_argument("--twilio-token", default=os.getenv("TWILIO_AUTH_TOKEN"))
+    chase.add_argument("--twilio-from",  default=os.getenv("TWILIO_FROM_NUMBER"))
+    chase.add_argument("--ai-key",    default=os.getenv("ANTHROPIC_API_KEY"))
+
+    # import CSV
+    imp = sub.add_parser("import", help="Import invoices from CSV")
+    imp.add_argument("filepath")
+    imp.add_argument("--contractor", required=True, help="Your business name")
+
+    # export report
+    sub.add_parser("report", help="Export overdue report to CSV")
+
+    return p
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ════════════════════════════════════════════════════════════════════════════
+
+def _seed_demo_invoices(db: InvoiceDatabase):
+    """Populate the DB with realistic demo data for first-run showcase."""
+    if db.all():
+        return  # already seeded
+
+    today = datetime.now().date()
+    demos = [
+        Invoice(
+            invoice_id="INV-2024-001",
+            contractor_name="Peak Electrical LLC",
+            client=Contact(name="Mike Rosenberg", email="demo@example.com",
+                          company="Rosenberg Builds", state="TX"),
+            amount=4800.00,
+            issue_date=(today - timedelta(days=45)).isoformat(),
+            due_date=(today - timedelta(days=15)).isoformat(),
+            description="Electrical rough-in, 3-bed new construction",
+            status=InvoiceStatus.OVERDUE,
+            chase_count=1,
+        ),
+        Invoice(
+            invoice_id="INV-2024-002",
+            contractor_name="Peak Electrical LLC",
+            client=Contact(name="Sandra Chu", email="demo2@example.com",
+                          phone="+15550001234", company="Chu Properties", state="CA"),
+            amount=12_350.00,
+            issue_date=(today - timedelta(days=65)).isoformat(),
+            due_date=(today - timedelta(days=35)).isoformat(),
+            description="Panel upgrade + EV charger install, commercial",
+            status=InvoiceStatus.ESCALATED,
+            chase_count=3,
+        ),
+        Invoice(
+            invoice_id="INV-2024-003",
+            contractor_name="Peak Electrical LLC",
+            client=Contact(name="Tony Marchetti", email="demo3@example.com",
+                          state="NY"),
+            amount=950.00,
+            issue_date=(today - timedelta(days=12)).isoformat(),
+            due_date=(today - timedelta(days=2)).isoformat(),
+            description="Emergency lighting repair",
+            status=InvoiceStatus.SENT,
+        ),
+        Invoice(
+            invoice_id="INV-2024-004",
+            contractor_name="Peak Electrical LLC",
+            client=Contact(name="Heritage Hotel Group", email="demo4@example.com"),
+            amount=28_000.00,
+            issue_date=(today - timedelta(days=110)).isoformat(),
+            due_date=(today - timedelta(days=80)).isoformat(),
+            description="Full hotel rewire, Phase 2",
+            status=InvoiceStatus.FINAL_NOTICE,
+            chase_count=6,
+        ),
     ]
-
-    # Mark the paid one properly
-    invoices[-1].paid_date = now - timedelta(days=2)
-    invoices[-1].status    = InvoiceStatus.PAID
-
-    return invoices
+    for inv in demos:
+        db.add(inv)
+    log.info("Demo invoices seeded — run 'dashboard' to view")
 
 
-# ─────────────────────────────────────────────
-# MAIN ENTRYPOINT
-# ─────────────────────────────────────────────
+def main():
+    parser = build_arg_parser()
+    args   = parser.parse_args()
+    db     = InvoiceDatabase()
+
+    if args.command == "dashboard" or args.command is None:
+        _seed_demo_invoices(db)
+        print_dashboard(db)
+
+    elif args.command == "add":
+        contact = Contact(
+            name    = args.client,
+            email   = args.email,
+            phone   = args.phone,
+            company = args.company,
+            state   = args.state,
+        )
+        invoice = Invoice(
+            invoice_id      = args.id,
+            contractor_name = args.contractor,
+            client          = contact,
+            amount          = args.amount,
+            issue_date      = args.issued or datetime.now().date().isoformat(),
+            due_date        = args.due,
+            description     = args.description,
+        )
+        db.add(invoice)
+        print(f"✅ Invoice {invoice.invoice_id} added — ${invoice.amount:,.2f} due {invoice.due_date}")
+
+    elif args.command == "paid":
+        ok = db.mark_paid(args.invoice_id)
+        if ok:
+            print(f"✅ Invoice {args.invoice_id} marked as PAID")
+        else:
+            print(f"❌ Invoice {args.invoice_id} not found")
+
+    elif args.command == "chase":
+        email_cfg = None
+        if args.smtp_user and args.smtp_pass and args.from_email:
+            email_cfg = EmailConfig(
+                smtp_host    = args.smtp_host,
+                smtp_port    = args.smtp_port,
+                username     = args.smtp_user,
+                password     = args.smtp_pass,
+                from_address = args.from_email,
+            )
+        else:
+            log.warning("No SMTP credentials — email will be skipped. "
+                       "Set SMTP_USER, SMTP_PASS, FROM_EMAIL env vars.")
+
+        sms_cfg = None
+        if args.twilio_sid and args.twilio_token and args.twilio_from:
+            sms_cfg = SMSConfig(
+                account_sid = args.twilio_sid,
+                auth_token  = args.twilio_token,
+                from_number = args.twilio_from,
+            )
+
+        chaser = InvoiceChaser(
+            db               = db,
+            email_config     = email_cfg,
+            sms_config       = sms_cfg,
+            anthropic_api_key= args.ai_key,
+            dry_run          = args.dry_run,
+        )
+        _seed_demo_invoices(db)
+        results = chaser.run_chase_cycle()
+        print_dashboard(db)
+        print(f"  Chase results: {results}")
+
+    elif args.command == "import":
+        n = import_from_csv(args.filepath, args.contractor, db)
+        print(f"✅ Imported {n} invoices")
+        print_dashboard(db)
+
+    elif args.command == "report":
+        path = export_report(db)
+        print(f"✅ Report exported to {path}")
+
+    else:
+        parser.print_help()
+
 
 if __name__ == "__main__":
-    print("\n" + "═"*60)
-    print("  🔧  AI INVOICE CHASER — Trade Contractor Edition")
-    print("  TAD Build Agent | 2026-06-28")
-    print("  Mode: DEMO (mock delivery)")
-    print("═"*60)
-
-    chaser   = InvoiceChaser()
-    reporter = ReportEngine()
-
-    # ── Load or seed invoices ──────────────────
-    stored = chaser.store.load()
-    if stored:
-        invoices = stored
-        log.info(f"Loaded {len(invoices)} existing invoices from store")
-    else:
-        invoices = _build_demo_invoices()
-        log.info("No stored invoices found — using demo dataset")
-        chaser.store.save(invoices)
-
-    # ── Run the chaser ─────────────────────────
-    print("\n[1/3] Running invoice chaser...\n")
-    report = chaser.run(invoices)
-
-    # ── Print dashboard ────────────────────────
-    print("\n[2/3] Generating dashboard...\n")
-    reporter.print_dashboard(report)
-
-    # ── Show sent log summary ──────────────────
-    print("[3/3] Recent contact log:\n")
-    sent_log = DeliveryEngine.SENT_LOG
-    if sent_log.exists():
-        lines = sent_log.read_text(encoding="utf-8").strip().splitlines()
-        recent = lines[-10:] if len(lines) > 10 else lines
-        for line in recent:
-            try:
-                rec = json.loads(line)
-                status_icon = "✅" if rec["success"] else "❌"
-                print(
-                    f"  {status_icon} [{rec['ts'][:16]}] "
-                    f"{rec['channel'].upper():<5} → {rec['to']:<32} "
-                    f"inv={rec['invoice_id']}"
-                )
-            except json.JSONDecodeError:
-                pass
-    else:
-        print("  No sent log found (first run?)")
-
-    print("\n" + "─"*60)
-    print("  ✓ Build complete. Next steps:")
-    print("    1. Set SMTP_HOST / SMTP_USER / SMTP_PASSWORD env vars for live email")
-    print("    2. Set TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER for SMS")
-    print("    3. Connect your invoicing source (QuickBooks API, CSV import, webhook)")
-    print("    4. Schedule this script via cron or cloud scheduler (once/day at 9AM)")
-    print("    5. Wire mark_paid() to your payment processor webhook")
-    print("─"*60 + "\n")
+    main()
