@@ -753,6 +753,7 @@ def run_night_mode():
             for opp in approved_opps:
                 if _past_stop_time():
                     break
+                opp["task_type"] = "autonomous"  # Auto-Leverage: always threshold in night mode
                 result = _build_approved_opportunity(opp)
                 opp_name = opp.get("opportunity_name", "unknown")
                 if result.get("status") == "success":
@@ -801,6 +802,7 @@ def run_night_mode():
         item = items[0]
         item_attempts[item] = item_attempts.get(item, 0) + 1
         attempt_n = item_attempts[item]
+        # Auto-Leverage: night mode tasks are always autonomous — threshold mode, no clarifying questions
 
         if any(x in item.lower() for x in [
             "skills/", "skill file", ".md", "skill_file",

@@ -604,11 +604,29 @@ def get_last_visual() -> dict | None:
 
 # ── Main task router ──────────────────────────────────────────────────────────
 
-def run_task(user_input: str, status_callback=None) -> str:
+def run_task(user_input: str, status_callback=None, task=None) -> str:
     """
     Main entry point. Identifies the right agent and routes the task.
     Checks learned skill library before routing.
     """
+    from skills.auto_leverage import resolve_intent
+
+    # Get task_type — default to interactive if missing
+    task_type = task.get("task_type", "interactive") if isinstance(task, dict) else "interactive"
+
+    # Run Auto-Leverage intent resolution
+    al_result = resolve_intent(user_input, task_type)
+
+    if al_result["needs_user_input"]:
+        # Deep Clarity Mode — return question to user before proceeding
+        return f"[TAD — clarifying before I proceed]: {al_result['question']}"
+
+    # Use resolved prompt going forward if threshold mode resolved it
+    if al_result["resolved_prompt"]:
+        user_input = al_result["resolved_prompt"]
+        if al_result["mode"] == "threshold":
+            print(f"[AUTO-LEVERAGE] Interpreted as: '{user_input}' ({al_result['confidence']}% confidence)")
+
     _status(status_callback, "identifying agent...")
 
     # Check skill library first

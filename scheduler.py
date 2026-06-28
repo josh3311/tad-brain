@@ -177,9 +177,11 @@ def run_decision_chain(opportunities: list):
         verdict = make_decision(approved[0], "opportunity_score")
         _log(f"CEO verdict on '{approved[0].get('opportunity_name')}': {verdict.get('decision')}")
         if verdict.get("decision") == "GO":
+            go_task = dict(approved[0])
+            go_task["task_type"] = "autonomous"  # Auto-Leverage mode tag
             build_thread = threading.Thread(
                 target=_run_build_safely,
-                args=(approved[0],),
+                args=(go_task,),
                 daemon=True,
             )
             build_thread.start()
@@ -222,6 +224,8 @@ Return ONLY JSON:
         raw   = resp.choices[0].message.content or "{}"
         clean = re.sub(r"```json|```", "", raw).strip()
         data  = json.loads(clean)
+        for opp in data.get("opportunities", []):
+            opp["task_type"] = "autonomous"  # Auto-Leverage mode tag
         _log("Kimi fallback scan complete")
         return data
     except Exception as e:
