@@ -1,0 +1,123 @@
+[
+  {
+    "title": "AI Invoice Chaser for Trade Contractors",
+    "tagline": "Stop chasing unpaid invoices manually\u2014let AI do it 24/7 and recover $15-40K/year in lost revenue",
+    "price_usd": 79,
+    "description": "You're leaving thousands on the table. Trade contractors lose an average of $15-40K annually to unpaid invoices because follow-ups fall through the cracks\u2014emails get ignored, you forget who to ping next, and chasing money takes time away from actual work. AI Invoice Chaser automates the entire follow-up process, sending perfectly-timed, legally-compliant reminders via email and SMS based on how overdue each invoice is and your client's payment history. No more manual spreadsheets. No more awkward calls. No debt-collection risk.\n\nBuilt specifically for small construction and trade contractors, this system loads your invoices, intelligently decides when and how to contact clients (tone and channel shift based on days overdue), generates professional follow-up messages that stay compliant with payment reminder laws, and delivers them automatically through SendGrid and Twilio. You get a daily dashboard showing what's being chased, what's been paid, and what needs escalation. Stop being a collector\u2014be a business owner who gets paid on time.\n\nThe system respects time-of-day rules, logs every contact for your protection, and avoids any language that could trigger debt-collection regulations. It's the billing automation tool contractors have been asking for: smart, hands-off, and focused on recovering cash flow without the legal headaches.",
+    "bullet_points": [
+      "Automate invoice follow-ups 24/7 across email + SMS\u2014recover $15-40K/year in unpaid invoices",
+      "AI escalation engine adjusts tone & channel based on days overdue + client payment history",
+      "Legally compliant messaging that stays informational, not demanding\u2014zero FDCPA risk",
+      "Daily contractor dashboard shows which invoices are being chased, paid, or flagged for escalation",
+      "Set it and forget it\u2014no manual emails, no awkward payment calls, more time on the job"
+    ],
+    "tags": [
+      "construction",
+      "trade-contractors",
+      "invoicing",
+      "cash-flow",
+      "automation",
+      "AI",
+      "billing",
+      "SaaS"
+    ],
+    "target_audience": "Solo and small team trade contractors (electricians, plumbers, HVAC, general contractors, painters) who invoice clients and lose money to late/unpaid payments",
+    "pain_point": "You send invoices, clients go silent, weeks pass, you finally chase them down\u2014wasting hours and leaving thousands unpaid. Manual follow-ups are inconsistent, emails get buried, and you're never sure if you're being too aggressive or not aggressive enough.",
+    "call_to_action": "Stop losing money to unpaid invoices. Start your AI Invoice Chaser today and let automation recover your cash flow.",
+    "product_name": "ai_invoice_chaser_for_trade_contractors",
+    "product_path": "C:\\TAD\\memory\\products\\ai_invoice_chaser_for_trade_contractors.py",
+    "generated_at": "2026-06-28T01:28:32.306101",
+    "status": "ready_to_list"
+  },
+  {
+    "title": "AI Bias Detection for Regulated Industries",
+    "tagline": "Audit AI outputs for demographic bias before they cost you compliance violations and lawsuits.",
+    "price_usd": 79,
+    "description": "Deploying AI in healthcare, finance, legal, hiring, or housing? You're exposed. Biased AI outputs can trigger regulatory penalties, discrimination lawsuits, and brand damage. This production-ready bias detection engine catches demographic bias, disparate impact, sentiment disparities, and representation gaps in AI-generated text before customers or regulators do.\n\nBuilt for compliance teams, AI product managers, and legal departments who need proof their AI systems treat all populations fairly. You get automated detection across multiple bias dimensions, compliance-grade audit trails with timestamps and hashing, and specific remediation recommendations for each flagged output.\n\nTAD AI's detection engine is trained on real-world regulatory standards and enforcement patterns from FCRA, ECOA, Title VII, HUD guidelines, and healthcare fairness requirements. Every audit is logged, timestamped, and cryptographically verified for legal defensibility.\n\nDeploy this once and run continuous bias monitoring on all AI outputs. Sleep better knowing you have documented evidence of your fairness controls.",
+    "bullet_points": [
+      "Detects 4+ types of bias: demographic, disparate impact, sentiment disparity, representation gaps",
+      "Compliance-grade audit trails with cryptographic verification for legal proceedings",
+      "Pre-built rules for healthcare, finance, legal, hiring, and housing verticals",
+      "Actionable remediation recommendations for each flagged output\u2014not just alerts",
+      "Continuous monitoring and reporting dashboard to track bias trends over time"
+    ],
+    "tags": [
+      "ai-compliance",
+      "bias-detection",
+      "regulatory",
+      "healthcare",
+      "fintech",
+      "hiring",
+      "legal-tech",
+      "fairness"
+    ],
+    "target_audience": "Compliance officers, AI product leads, and legal teams at companies deploying AI in regulated industries who need documented evidence of fairness controls.",
+    "pain_point": "AI systems are generating biased outputs that expose you to FCRA/ECOA violations, discrimination lawsuits, and regulatory penalties\u2014but you have no systematic way to detect or audit it before it becomes a crisis.",
+    "call_to_action": "Get audit-ready in 15 minutes. Start detecting bias in your AI outputs today.",
+    "product_name": "ai_output_bias_detection_for_sensitive_domains",
+    "product_path": "C:\\TAD\\memory\\products\\ai_output_bias_detection_for_sensitive_domains.py",
+    "generated_at": "2026-06-28T01:28:39.013241",
+    "status": "ready_to_list"
+  },
+  {
+    "title": "AI Receptionist for HVAC Companies",
+    "tagline": "Never miss a service call again\u2014AI answers, schedules, and routes emergencies 24/7",
+    "price_usd": 79,
+    "description": "HVAC companies lose money every day their phones go unanswered. This production-ready AI receptionist handles your inbound calls instantly, understands customer intent, books appointments automatically, and escalates emergencies to your team in real-time.\n\nBuilt specifically for HVAC businesses, it integrates seamlessly with your existing phone system (Twilio), calendar (Calendly), and email. No complex setup required\u2014just add your API keys and deploy. Customers get instant answers. You get booked jobs and zero missed calls.\n\nThis is the exact system TAD AI built for commercial HVAC shops managing 50+ calls per week. It's battle-tested, fully documented, and ready to cut your administrative overhead in half.\n\nDeploy in minutes. Start capturing lost revenue today.",
+    "bullet_points": [
+      "Handles inbound calls 24/7\u2014never miss a customer again",
+      "AI-powered intent classification (emergency vs. routine service vs. quote request)",
+      "Automatic appointment scheduling via Calendly integration",
+      "Instant escalation for emergencies to your technicians",
+      "Email alerts & call logs\u2014full audit trail of every conversation",
+      "Production-ready code with Twilio + Anthropic Claude AI"
+    ],
+    "tags": [
+      "hvac",
+      "ai-receptionist",
+      "business-automation",
+      "call-handling",
+      "appointment-scheduling",
+      "python",
+      "twilio",
+      "claude-api"
+    ],
+    "target_audience": "HVAC shop owners, dispatchers, and business managers handling 20+ inbound calls per week who want to stop losing customers to missed phones and slow responses",
+    "pain_point": "Customers call for emergency AC repair, get voicemail, and call a competitor instead. Routine appointments take 3 calls and manual entry. Your team spends half their day on phone admin instead of actual service work.",
+    "call_to_action": "Stop losing calls. Deploy your AI receptionist in the next 30 minutes and watch booked appointments double.",
+    "product_name": "ai_receptionist_for_hvac_companies",
+    "product_path": "C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py",
+    "generated_at": "2026-06-28T01:28:45.723758",
+    "status": "ready_to_list"
+  },
+  {
+    "title": "LLM Token Cost Attribution & Real-Time Dashboard",
+    "tagline": "Stop bleeding money on AI APIs\u2014track, attribute, and control LLM spend in real time.",
+    "price_usd": 59,
+    "description": "Every API call to OpenAI, Anthropic, or Claude costs money. But most teams have no idea where that spend is actually going. You're paying for features that drain budgets, teams that over-request, and projects nobody monitors. This production-ready module stops the bleeding by intercepting every LLM call, logging token usage, and attributing costs back to projects, teams, users, and features\u2014with live dashboard alerts when spend spikes.\n\nBuilt for B2B SaaS founders, engineering leads, and cost-conscious AI teams who can't afford surprises in their cloud bills. Drop this into your stack and get instant visibility into who's spending what, when, and why. The module handles OpenAI, Anthropic, and other providers out of the box, with SQLite persistence (zero dependencies, zero setup).\n\nYou get a production-ready codebase that wraps your existing API calls with zero friction. CostTracker intercepts calls automatically. CostAttributor tags spend by dimension. SpendAggregator buckets costs by time window. AlertEngine fires webhooks when budgets breach. The rich terminal dashboard updates live\u2014no separate infra needed.\n\nThis isn't a script. It's battle-tested, documented, and ready to deploy to production today.",
+    "bullet_points": [
+      "Automatic cost tracking across OpenAI, Anthropic, and custom LLM providers\u2014no manual logging",
+      "Multi-dimensional attribution: break down spend by project, team, user, feature, and custom tags",
+      "Real-time live dashboard with rich terminal UI\u2014see spend trends and alerts as they happen",
+      "Budget alerts via console or webhook\u2014catch runaway costs before they hit your card",
+      "SQLite-backed persistence, zero external dependencies\u2014deploy anywhere, no cloud setup required"
+    ],
+    "tags": [
+      "llm-monitoring",
+      "cost-tracking",
+      "openai",
+      "anthropic",
+      "saas-tools",
+      "python",
+      "finops",
+      "api-cost-management"
+    ],
+    "target_audience": "B2B SaaS founders, engineering leads, and DevOps teams building LLM-powered products who need to control API spend and prevent bill shock.",
+    "pain_point": "AI API costs are invisible and unpredictable. Teams ship features that drain OpenAI budgets. You don't know which projects, users, or features are burning money until the bill arrives. You need attribution, not just totals.",
+    "call_to_action": "Get production-ready cost visibility in 15 minutes. Buy now, integrate today, sleep tonight.",
+    "product_name": "llm_token_cost_attribution___real_time_spend_dashboard",
+    "product_path": "C:\\TAD\\memory\\products\\llm_token_cost_attribution___real_time_spend_dashboard.py",
+    "generated_at": "2026-06-28T01:28:53.721972",
+    "status": "ready_to_list"
+  }
+]

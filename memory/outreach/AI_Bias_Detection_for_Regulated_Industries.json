@@ -1,0 +1,92 @@
+{
+  "product_name": "AI Bias Detection for Regulated Industries",
+  "generated_at": "2026-06-28T01:29:28.437689",
+  "target_audience": "Compliance officers, AI product leads, and legal teams at companies deploying AI in regulated industries who need documented evidence of fairness controls.",
+  "pain_point": "AI systems are generating biased outputs that expose you to FCRA/ECOA violations, discrimination lawsuits, and regulatory penalties\u2014but you have no systematic way to detect or audit it before it becomes a crisis.",
+  "price_usd": 79,
+  "audience_channels": {
+    "reddit_communities": [
+      "r/compliance",
+      "r/legaltech",
+      "r/MachineLearning",
+      "r/artificial",
+      "r/ArtificialIntelligence",
+      "r/datascience",
+      "r/fintech"
+    ],
+    "facebook_groups": [
+      "AI and Machine Learning Professionals",
+      "Compliance Officers Network",
+      "Financial Services Compliance",
+      "Legal Tech Professionals",
+      "AI Ethics and Governance"
+    ],
+    "linkedin_search_terms": [
+      "compliance officer AI",
+      "AI product lead regulated industries",
+      "AI governance compliance",
+      "bias audit machine learning",
+      "regulatory compliance AI",
+      "chief compliance officer",
+      "fairness engineering lead"
+    ],
+    "twitter_hashtags": [
+      "#AICompliance",
+      "#AIEthics",
+      "#RegTech",
+      "#Compliance",
+      "#AIGovernance",
+      "#FairML",
+      "#ResponsibleAI",
+      "#FinTechCompliance"
+    ],
+    "discord_servers": [
+      "AI Ethics and Society",
+      "Machine Learning Engineering",
+      "Compliance and Risk Management",
+      "FinTech Builders"
+    ],
+    "forums": [
+      "https://www.reddit.com/r/compliance",
+      "https://www.complianceexchange.com",
+      "AI Alignment Research Community (AIRC)",
+      "https://www.legaltech.community"
+    ],
+    "search_queries_to_find_leads": [
+      "AI bias FCRA violation compliance",
+      "discrimination lawsuit AI lending algorithm",
+      "fairness audit machine learning regulated",
+      "AI bias detection compliance officers",
+      "algorithmic bias regulatory penalty",
+      "ECOA AI compliance framework"
+    ],
+    "where_they_post_problems": "LinkedIn compliance/risk groups, internal Slack channels, RegTech forums, and risk committee meeting notes shared in professional networks where they discuss audit failures and regulatory close calls."
+  },
+  "email_sequence": [
+    {
+      "email_number": 1,
+      "subject": "The bias audit gap nobody talks about",
+      "body": "Hi [Name],\n\nMost teams auditing AI for fairness are checking the same things: training data quality, model performance across groups.\n\nBut here's what keeps compliance officers up at night: nobody's systematically auditing what the AI actually *outputs* in production.\n\nA lending algorithm can pass internal tests and still generate approval rates that look discriminatory by demographics. Same with hiring, credit decisioning, insurance.\n\nThat gap between \"model looks fair\" and \"outputs are defensible\" is where violations happen.\n\nThought you should know.",
+      "send_timing": "Day 1",
+      "goal": "build rapport / acknowledge pain"
+    },
+    {
+      "email_number": 2,
+      "subject": "We built something for this",
+      "body": "Hi [Name],\n\nAfter talking to compliance teams at 3 regulated banks, we built a tool that continuously audits AI outputs for demographic bias\u2014and generates the audit trails regulators actually want to see.\n\nIt's less about catching problems, more about proving you don't have them.\n\nWould a 15-min walkthrough of how it works make sense this week?\n\n[Your name]",
+      "send_timing": "Day 3",
+      "goal": "introduce the product softly"
+    },
+    {
+      "email_number": 3,
+      "subject": "Quick question about your audit process",
+      "body": "Hi [Name],\n\nI'm curious: when your AI makes a decision (approval, denial, pricing), how are you currently documenting that it wasn't biased by protected class?\n\nWe built a tool that does this automatically for $79/month. Generates audit reports, flags demographic drift, exports compliance evidence.\n\nIf that sounds useful, I can set you up with a test on your actual data this week\u2014no strings.\n\nWorth 15 minutes?",
+      "send_timing": "Day 7",
+      "goal": "direct offer with clear CTA"
+    }
+  ],
+  "outreach_status": "ready",
+  "leads_contacted": 0,
+  "replies": 0,
+  "conversions": 0
+}

@@ -75,6 +75,94 @@
       "pushed": true,
       "timestamp": "2026-06-28T01:05:30.289148",
       "mvp_scope": "Single-file service that collects model latency data, compares against configurable SLA thresholds (default 28/40ms), and emits real-time breach alerts. Includes basic HTTP endpoint to query current SLA status per model."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Receptionist for HVAC companies",
+      "file": "C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py",
+      "filename": "ai_receptionist_for_hvac_companies.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:19:03.378084",
+      "mvp_scope": "Receptionist answers inbound Twilio calls, uses Claude to extract HVAC problem details via natural conversation, routes to appointment scheduling (calendar check + confirmation) or immediate escalation if emergency. Logs all interactions and missed-call queue for callback dispatch."
+    },
+    {
+      "status": "success",
+      "opportunity": "LLM Token Cost Attribution & Real-Time Spend Dashboard",
+      "file": "C:\\TAD\\memory\\products\\llm_token_cost_attribution___real_time_spend_dashboard.py",
+      "filename": "llm_token_cost_attribution___real_time_spend_dashboard.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:22:10.068299",
+      "mvp_scope": "Ingest LLM API call logs via POST endpoint, calculate costs using OpenAI/Anthropic pricing tables, aggregate spend by user/model/day, serve JSON dashboard API showing current spend, top models, cost trends. No auth, no UI\u2014API-first."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI invoice-chaser for trade contractors",
+      "file": "C:\\TAD\\memory\\products\\ai_invoice_chaser_for_trade_contractors.py",
+      "filename": "ai_invoice_chaser_for_trade_contractors.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:24:42.509731",
+      "mvp_scope": "Accept invoice uploads (CSV/JSON), auto-send 3-email chase sequence at days 7, 14, 21 post-due. Stripe integration accepts payments directly from chase emails; subscription billing starts on first successful payment."
+    },
+    {
+      "status": "failed",
+      "reason": "unfixable_syntax_error",
+      "file": "ai_receptionist_for_hvac_companies.py",
+      "error": "File \"C:\\TAD\\memory\\products\\ai_receptionist_for_hvac_companies.py\", line 299\n    content_text = re.sub(r\"\n                          ^\nSyntaxError: unterminated string literal (detected at line 299)",
+      "timestamp": "2026-06-28T01:25:50.152531"
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Output Bias Detection for Sensitive Domains",
+      "file": "C:\\TAD\\memory\\products\\ai_output_bias_detection_for_sensitive_domains.py",
+      "filename": "ai_output_bias_detection_for_sensitive_domains.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:27:34.246592",
+      "mvp_scope": "Detect output-level bias in binary decisions (approve/deny, recommend/no-recommend) for healthcare and lending by comparing decision rates across demographic groups. Expose REST endpoint accepting JSON predictions and returning bias severity report."
+    },
+    {
+      "status": "success",
+      "opportunity": "LLM Token Cost Attribution & Real-Time Spend Dashboard",
+      "file": "C:\\TAD\\memory\\products\\llm_token_cost_attribution___real_time_spend_dashboard.py",
+      "filename": "llm_token_cost_attribution___real_time_spend_dashboard.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:28:58.691352",
+      "mvp_scope": "Accepts POST requests with LLM API usage logs, calculates USD cost per call using live pricing, returns real-time spend dashboard (total cost, cost by model, cost by hour). Single-file Python app with Flask/FastAPI."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Model Latency SLA Tracker & Breach Alert System",
+      "file": "C:\\TAD\\memory\\products\\ai_model_latency_sla_tracker___breach_alert_system.py",
+      "filename": "ai_model_latency_sla_tracker___breach_alert_system.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:30:18.916803",
+      "mvp_scope": "Poll 2\u20133 AI APIs every 60s, measure response time, trigger alerts when latency exceeds user-defined SLA threshold. Store last 100 measurements in memory and display dashboard summary to stdout."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI invoice-chaser for trade contractors",
+      "file": "C:\\TAD\\memory\\products\\ai_invoice_chaser_for_trade_contractors.py",
+      "filename": "ai_invoice_chaser_for_trade_contractors.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:31:33.143244",
+      "mvp_scope": "Contractors upload CSVs of unpaid invoices; system sends 3 automated email reminders over 14 days via SendGrid. Stripe webhook captures payment confirmations to mark invoices paid."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Output Bias Detection for Sensitive Domains",
+      "file": "C:\\TAD\\memory\\products\\ai_output_bias_detection_for_sensitive_domains.py",
+      "filename": "ai_output_bias_detection_for_sensitive_domains.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:35:14.312804",
+      "mvp_scope": "Detect output bias in one sensitive domain (healthcare or lending) by analyzing model predictions for demographic disparity. Return a single compliance risk score (0-100) with flagged groups and one recommended remediation action."
+    },
+    {
+      "status": "success",
+      "opportunity": "AI Model Latency SLA Tracker & Breach Alert System",
+      "file": "C:\\TAD\\memory\\products\\ai_model_latency_sla_tracker___breach_alert_system.py",
+      "filename": "ai_model_latency_sla_tracker___breach_alert_system.py",
+      "pushed": true,
+      "timestamp": "2026-06-28T01:37:36.195938",
+      "mvp_scope": "Monitor 3-5 major AI APIs (OpenAI GPT, Anthropic Claude, Cohere) every 60 seconds, detect latency breaches vs user-defined SLAs, and post alerts to Slack with latency + threshold data. No database, no UI\u2014pure CLI + file config."
     }
   ]
 }

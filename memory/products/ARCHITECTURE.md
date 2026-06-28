@@ -1,8 +1,8 @@
-# Score of 29 exceeds threshold (28/40) — Architecture Plan
-Generated: 2026-06-28T01:04:12.622495
+# AI Model Latency SLA Tracker & Breach Alert System — Architecture Plan
+Generated: 2026-06-28T01:35:20.126905
 
 ## MVP Scope
-Single-file service that collects model latency data, compares against configurable SLA thresholds (default 28/40ms), and emits real-time breach alerts. Includes basic HTTP endpoint to query current SLA status per model.
+Monitor 3-5 major AI APIs (OpenAI GPT, Anthropic Claude, Cohere) every 60 seconds, detect latency breaches vs user-defined SLAs, and post alerts to Slack with latency + threshold data. No database, no UI—pure CLI + file config.
 
 ## Target User
 AI developers and teams
@@ -10,10 +10,11 @@ AI developers and teams
 ## Files
 
 ### main.py
-Real-time SLA monitoring dashboard that ingests model latency metrics and alerts when thresholds are breached.
+Single-file MVP: polls AI model APIs (OpenAI, Anthropic, Cohere), tracks latency against configurable SLAs, and sends Slack alerts on breaches.
+Depends on: requests, slack_sdk, json, time, datetime
 
 ## Data Model
-Metrics store: {model_id, latency_ms, timestamp, sla_threshold_ms}. Alert log: {model_id, latency_ms, threshold_ms, breach_severity, alert_time}.
+In-memory dict tracking {model_name: {sla_ms, last_latency_ms, breach_count, last_alert_time}}. SLA config loaded from JSON file. Breach events logged to CSV for audit.
 
 ## Done Criteria
-Service runs, accepts latency metrics via POST, returns SLA status via GET, logs breaches to stdout with model_id and latency exceeded amount.
+CLI runs, successfully polls ≥2 live APIs, logs latency to CSV, sends a test Slack alert on configured breach, and sustains monitoring loop for 10+ minutes without crash.

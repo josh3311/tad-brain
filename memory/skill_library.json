@@ -151,7 +151,27 @@
       "use_count": 0,
       "last_used": null,
       "success_rate": null
+    },
+    {
+      "id": "ai_model_audit_trail_logger",
+      "name": "AI Model Audit Trail Logger",
+      "description": "Captures and logs AI model names, versions, prompts, and outputs to immutable JSON logs for compliance and audit proof.",
+      "trigger_keywords": [
+        "audit trail",
+        "compliance logging",
+        "model tracking",
+        "regulatory proof",
+        "AI governance",
+        "immutable logs"
+      ],
+      "what_it_does": "Creates immutable audit logs for AI/ML model interactions, capturing model metadata, input prompts, and outputs for regulatory compliance and governance. Use this when you need to demonstrate model behavior tracking, maintain compliance records for regulated industries, or provide audit trails for AI system audits and reviews.",
+      "code_or_prompt": "",
+      "source": "auto-learned from task: Scan emerging AI regulatory gaps in enterprise com",
+      "learned_at": "2026-06-28T01:10:17.550056",
+      "use_count": 0,
+      "last_used": null,
+      "success_rate": null
     }
   ],
-  "last_updated": "2026-06-27T00:05:21.311362"
+  "last_updated": "2026-06-28T01:10:17.551086"
 }

@@ -1,0 +1,89 @@
+{
+  "product_name": "AI Receptionist for HVAC Companies",
+  "generated_at": "2026-06-28T01:29:39.496108",
+  "target_audience": "HVAC shop owners, dispatchers, and business managers handling 20+ inbound calls per week who want to stop losing customers to missed phones and slow responses",
+  "pain_point": "Customers call for emergency AC repair, get voicemail, and call a competitor instead. Routine appointments take 3 calls and manual entry. Your team spends half their day on phone admin instead of actual service work.",
+  "price_usd": 79,
+  "audience_channels": {
+    "reddit_communities": [
+      "r/HVAC",
+      "r/Plumbing",
+      "r/ServiceBusiness",
+      "r/smallbusiness",
+      "r/BusinessOwners"
+    ],
+    "facebook_groups": [
+      "HVAC Contractors Network",
+      "HVAC Business Owners",
+      "Air Conditioning & Heating Professionals",
+      "HVAC Technicians and Contractors",
+      "Small Business Owners - Tips & Advice",
+      "Service Business Owners"
+    ],
+    "linkedin_search_terms": [
+      "HVAC business owner",
+      "HVAC dispatcher",
+      "HVAC shop manager",
+      "HVAC operations manager",
+      "heating and cooling company owner",
+      "service business dispatcher"
+    ],
+    "twitter_hashtags": [
+      "#HVAC",
+      "#HVACBusiness",
+      "#ServiceBusiness",
+      "#SmallBizOwner",
+      "#HVAC2024",
+      "#AirConditioning"
+    ],
+    "discord_servers": [
+      "HVAC Professionals",
+      "Service Business Owners",
+      "Contractors Hub"
+    ],
+    "forums": [
+      "hvac-talk.com",
+      "hvacr.org",
+      "contractortalk.com",
+      "thehvacheroes.com/community"
+    ],
+    "search_queries_to_find_leads": [
+      "HVAC business phone system losing customers",
+      "how to manage HVAC customer calls efficiently",
+      "HVAC dispatcher software",
+      "HVAC answering service alternative",
+      "emergency AC repair dispatch system",
+      "HVAC scheduling software for small business",
+      "stop missing HVAC calls",
+      "HVAC customer appointment booking automation"
+    ],
+    "where_they_post_problems": "Facebook HVAC business owner groups and Reddit r/HVAC where they complain about lost emergency calls, missed appointments, and administrative burden consuming their day."
+  },
+  "email_sequence": [
+    {
+      "email_number": 1,
+      "subject": "The #1 reason HVAC shops lose emergency calls",
+      "body": "Hey,\n\nWe've been watching HVAC shops for a while now. Here's what we keep seeing:\n\nCustomer calls with an AC emergency at 2pm. Your team's on jobs. Phone rings to voicemail. They call your competitor instead\u2014and you never know it happened.\n\nThe best techs in your area can't save you from a missed call.\n\nThat's it. Just wanted to share that insight.\n\nTalk soon,\n[Your name]",
+      "send_timing": "Day 1",
+      "goal": "build rapport / acknowledge pain"
+    },
+    {
+      "email_number": 2,
+      "subject": "We built something for this (takes 10 min to see)",
+      "body": "Hi [Name],\n\nRemember that missed-calls problem? We built an AI receptionist that answers your phone 24/7, books appointments, and routes emergencies straight to your team.\n\nNo \"press 1 for service\"\u2014just smart, human-sounding answers that actually schedule jobs.\n\nTakes 10 minutes to see how it'd work for your shop. Worth a quick look?\n\n[Your name]",
+      "send_timing": "Day 3",
+      "goal": "soft intro to product"
+    },
+    {
+      "email_number": 3,
+      "subject": "Save 5+ hours/week (and stop losing calls)",
+      "body": "One last thing:\n\nYou're paying your team to answer phones instead of fix units. An AI Receptionist handles it all\u201424/7 scheduling, emergency routing, zero voicemail tag.\n\n$79/month. No setup fees.\n\nI'm opening 3 spots this week for HVAC shops. Want one?\n\nReply \"yes\" or jump on a 10-min call here: [link]\n\nThanks,\n[Your name]",
+      "send_timing": "Day 7",
+      "goal": "direct offer with urgency and CTA"
+    }
+  ],
+  "outreach_status": "ready",
+  "leads_contacted": 0,
+  "replies": 0,
+  "conversions": 0
+}

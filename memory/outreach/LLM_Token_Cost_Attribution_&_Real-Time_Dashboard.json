@@ -1,0 +1,109 @@
+{
+  "product_name": "LLM Token Cost Attribution & Real-Time Dashboard",
+  "generated_at": "2026-06-28T01:29:51.237815",
+  "target_audience": "B2B SaaS founders, engineering leads, and DevOps teams building LLM-powered products who need to control API spend and prevent bill shock.",
+  "pain_point": "AI API costs are invisible and unpredictable. Teams ship features that drain OpenAI budgets. You don't know which projects, users, or features are burning money until the bill arrives. You need attribution, not just totals.",
+  "price_usd": 59,
+  "audience_channels": {
+    "reddit_communities": [
+      "r/OpenAI",
+      "r/ChatGPT",
+      "r/LangChain",
+      "r/LocalLLM",
+      "r/DevOps",
+      "r/startups",
+      "r/SaaS",
+      "r/webdev",
+      "r/programming",
+      "r/Python",
+      "r/node",
+      "r/aws"
+    ],
+    "facebook_groups": [
+      "AI/ML Founders & Entrepreneurs",
+      "SaaS Founders Community",
+      "Startup Engineering Leaders",
+      "AI Product Builders",
+      "Cloud Cost Optimization"
+    ],
+    "linkedin_search_terms": [
+      "engineering lead AI/ML",
+      "VP Engineering SaaS",
+      "DevOps manager",
+      "MLOps engineer",
+      "platform engineer",
+      "infrastructure lead",
+      "CTO startup",
+      "AI product manager",
+      "site reliability engineer"
+    ],
+    "twitter_hashtags": [
+      "#LLM",
+      "#OpenAI",
+      "#APIcosts",
+      "#DevOps",
+      "#SaaS",
+      "#Startups",
+      "#AIops",
+      "#CloudCosts",
+      "#EngineeringLeadership",
+      "#BuiltWithAI"
+    ],
+    "discord_servers": [
+      "OpenAI Community",
+      "LangChain Official",
+      "Anthropic Community",
+      "DevOps Engineers",
+      "Indie Hackers",
+      "LaunchYard",
+      "Startup.com Community",
+      "AI Engineer Foundation"
+    ],
+    "forums": [
+      "news.ycombinator.com (HN)",
+      "dev.to",
+      "stackoverflow.com (tag: openai, langchain, llm)",
+      "hashnode.com",
+      "medium.com (@engineering leaders)",
+      "GitHub Discussions (in LLM repos)"
+    ],
+    "search_queries_to_find_leads": [
+      "openai api costs spike unexpectedly",
+      "how to track llm api spending by feature",
+      "gpt-4 budget overrun engineering",
+      "controlling ai api costs in production",
+      "anthropic claude cost attribution",
+      "token usage monitoring dashboard",
+      "llm api cost management tools",
+      "unexpected openai bill engineering team"
+    ],
+    "where_they_post_problems": "HackerNews threads about AI cost surprises, GitHub issues in LLM framework repos asking for cost tracking, and Reddit posts in r/startups and r/DevOps about surprise API bills"
+  },
+  "email_sequence": [
+    {
+      "email_number": 1,
+      "subject": "Your OpenAI bill just went 3x. Here's why.",
+      "body": "Hey,\n\nMost teams shipping LLM features have no idea which ones are actually profitable. A single poorly optimized prompt or forgotten loop can cost you thousands\u2014and you won't see it until the invoice hits.\n\nThe problem: you're tracking total spend, not *where* it's going.\n\nWorth a conversation?\n\nCheers",
+      "send_timing": "Day 1",
+      "goal": "build rapport / get a reply"
+    },
+    {
+      "email_number": 2,
+      "subject": "We built something for this exact problem",
+      "body": "Remember that attribution problem I mentioned?\n\nWe built a dashboard that breaks down LLM costs by project, user, feature\u2014everything. Real-time. No more surprise bills.\n\nIt's called Token Attribution Dashboard. Takes 10 minutes to integrate.\n\nWant to see how it works?\n\n\u2014",
+      "send_timing": "Day 3",
+      "goal": "introduce the product"
+    },
+    {
+      "email_number": 3,
+      "subject": "One question: what would you do with that data?",
+      "body": "If you could see exactly which features drain your API budget, what would change?\n\nWe're offering the first 50 teams early access for $59/month (normally $199). Includes setup + 30-day guarantee.\n\nReply \"demo\" and I'll get you access today. Offer closes Friday.\n\nCheers",
+      "send_timing": "Day 7",
+      "goal": "close or get a response"
+    }
+  ],
+  "outreach_status": "ready",
+  "leads_contacted": 0,
+  "replies": 0,
+  "conversions": 0
+}

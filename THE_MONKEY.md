@@ -480,7 +480,84 @@ The CSEO Agent is the primary executor of CRUD authority.
 The Ops Agent logs every CRUD action to memory/crud_log.json.
 No CRUD action happens without being logged.
 
+## REVENUE PIPELINE — REAL BUILDABLE PRODUCTS
+(Added 2026-06-28 — build these overnight, list on Gumroad, ship)
+
+### PRODUCT 1 — AI Token Cost Tracker ($49 Gumroad)
+Problem: Developers using Claude/GPT have no idea which function calls eat their budget.
+Target: indie devs, startups, anyone paying monthly API bills
+Build: Python package that wraps anthropic/openai clients, tracks cost per function/session,
+       generates weekly spend report. Pure Python, no external deps beyond the SDK.
+- [x] Build: skills/ai_token_cost_tracker.py (done 2026-06-28)
+- [x] List: memory/listings/ai_token_cost_tracker.md (done 2026-06-28)
+- [ ] Outreach: memory/outreach/ai_token_cost_tracker.json
+
+### PRODUCT 2 — HVAC AI Receptionist ($299/mo SaaS starter)
+Problem: HVAC owners lose leads because nobody answers the phone after hours.
+Target: small HVAC businesses (1-10 employees), home services
+Build: Python webhook handler that takes inbound call transcript (Twilio/Bland.ai),
+       responds with appointment booking flow, emails owner a summary.
+       Starter pack: the Python server + prompt template + setup guide PDF.
+- [ ] Build: memory/products/hvac_ai_receptionist/
+- [ ] List: memory/listings/hvac_ai_receptionist.md
+- [ ] Outreach: memory/outreach/hvac_ai_receptionist.json
+
+### PRODUCT 3 — LLM Context Window Optimizer ($79 Gumroad)
+Problem: RAG pipelines waste 40-60% of context on boilerplate. Devs hit 128k limits constantly.
+Target: Python devs building RAG apps, agent frameworks
+Build: Python library with semantic deduplication, chunk ranking, adaptive truncation.
+       Drop-in wrapper: `optimize_context(messages)` returns compressed version.
+- [ ] Build: memory/products/llm_context_optimizer/
+- [ ] List: memory/listings/llm_context_optimizer.md
+- [ ] Outreach: memory/outreach/llm_context_optimizer.json
+
+### PRODUCT 4 — AI Invoice Chaser ($149 Gumroad)
+Problem: Freelancers hate chasing late payments. Manual follow-up is awkward and often skipped.
+Target: freelancers, contractors, small agencies
+Build: Python script that reads unpaid invoices from a CSV, generates personalized follow-up
+       emails at Day 3/7/14/30, sends via SMTP. One config file = done.
+- [ ] Build: memory/products/ai_invoice_chaser/
+- [ ] List: memory/listings/ai_invoice_chaser.md
+- [ ] Outreach: memory/outreach/ai_invoice_chaser.json
+
+### INTERNAL TOOLS (build to support TAD operations)
+- [x] skills/gumroad_lister.py — generate Gumroad listings from built products ✓ 2026-06-28
+- [x] skills/cold_outreach_builder.py — 3-email sequences per opportunity ✓ 2026-06-28
+- [x] morning_report.py — beautiful morning briefing in terminal ✓ 2026-06-28
+
+---
+
 ## SESSION LOG
+
+### 2026-06-28 — Overnight Build Session (01:00-01:35 AM)
+**Products built by night mode:**
+- [x] ai_receptionist_for_hvac_companies.py — AI phone receptionist for HVAC, auto-books appointments ✓
+- [x] llm_token_cost_attribution___real_time_spend_dashboard.py — tracks API cost per function ✓
+- [x] ai_invoice_chaser_for_trade_contractors.py — auto follow-up on unpaid invoices ✓
+- [x] ai_output_bias_detection_for_sensitive_domains.py — detects bias in AI outputs ✓
+
+**Revenue pipeline built tonight:**
+- [x] 4 Gumroad listings generated → memory/listings/ (copy-paste ready)
+- [x] 4 cold outreach sequences (3 emails each) → memory/outreach/
+- [x] Morning report script → run `python morning_report.py` on wake
+
+**Agent routing:**
+- [x] agent.py wired: "list on gumroad" → gumroad_lister | "cold email" → cold_outreach_builder | "morning report" → morning_report
+- [x] scheduler.py wired: 7am auto-generates listings + outreach + saves morning report
+
+**Joshua's action on wake:**
+1. Run `python morning_report.py` for full status
+2. Upload listings from memory/listings/ to Gumroad manually
+3. Use outreach sequences from memory/outreach/ to contact leads
+4. HVAC receptionist at $79 is the strongest product — post in r/hvac, r/smallbusiness
+
+### CSEO Auto-build 2026-06-28
+- [x] CSEO built: autonomous_skill_output_validation___format_enforcement ✓ 2026-06-28
+
+
+### CSEO Auto-build 2026-06-28
+- [x] CSEO built: learned_skill_syntax_repair_engine ✓ 2026-06-28
+
 
 ### CSEO Auto-build 2026-06-28
 - [x] CSEO built: skill_syntax_validator___auto_repair ✓ 2026-06-28

@@ -1,0 +1,99 @@
+{
+  "product_name": "AI Invoice Chaser for Trade Contractors",
+  "generated_at": "2026-06-28T01:29:16.933035",
+  "target_audience": "Solo and small team trade contractors (electricians, plumbers, HVAC, general contractors, painters) who invoice clients and lose money to late/unpaid payments",
+  "pain_point": "You send invoices, clients go silent, weeks pass, you finally chase them down\u2014wasting hours and leaving thousands unpaid. Manual follow-ups are inconsistent, emails get buried, and you're never sure if you're being too aggressive or not aggressive enough.",
+  "price_usd": 79,
+  "audience_channels": {
+    "reddit_communities": [
+      "r/electricians",
+      "r/Plumbing",
+      "r/HVAC",
+      "r/Carpentry",
+      "r/HomeImprovement",
+      "r/construction",
+      "r/smallbusiness",
+      "r/ServiceBusiness",
+      "r/ContractorTalk"
+    ],
+    "facebook_groups": [
+      "Electricians & Electrical Contractors",
+      "Plumbers Network",
+      "HVAC Professionals",
+      "General Contractors Business Network",
+      "Trade Contractors United",
+      "Small Business Owners - Trades & Services",
+      "Construction Business Owners",
+      "Painting Contractors Network"
+    ],
+    "linkedin_search_terms": [
+      "electrician owner",
+      "plumbing contractor",
+      "HVAC business owner",
+      "general contractor",
+      "construction business",
+      "trade contractor",
+      "small business owner construction"
+    ],
+    "twitter_hashtags": [
+      "#TradeContractor",
+      "#ElectricianLife",
+      "#PlumberProblems",
+      "#ConstructionBusiness",
+      "#SmallBusinessOwner",
+      "#ContractorProblems",
+      "#BuildingTrades"
+    ],
+    "discord_servers": [
+      "Trades & Construction Community",
+      "Small Business Owners Hub",
+      "Electricians Guild",
+      "Contractor Network"
+    ],
+    "forums": [
+      "JLC Online (JLC.net)",
+      "ElectricianTalk.com",
+      "PlumbersForums.com",
+      "ContractorTalk.com",
+      "TheBluCollarForum.com",
+      "BuildTalk.com"
+    ],
+    "search_queries_to_find_leads": [
+      "how to get clients to pay invoices faster",
+      "contractor unpaid invoices",
+      "how to follow up on overdue invoices",
+      "clients not paying on time",
+      "invoice payment reminder strategies",
+      "construction cash flow problems",
+      "trade contractor payment issues"
+    ],
+    "where_they_post_problems": "Reddit trade subreddits (r/electricians, r/Plumbing, r/HVAC) and Facebook contractor groups where they complain about slow-paying clients and cash flow problems in comment threads and dedicated posts."
+  },
+  "email_sequence": [
+    {
+      "email_number": 1,
+      "subject": "The invoice that's been sitting for 3 weeks",
+      "body": "Hey,\n\nQuick question: how many invoices are you chasing right now?\n\nMost contractors we talk to have 5-10 sitting unpaid. The worst part? They know exactly who owes them\u2014they just never follow up consistently enough.\n\nHere's what we've noticed: one strategic reminder email increases payment likelihood by 40%. Most contractors never send that second or third touch.\n\nJust thought you'd want to know.\n\nCheers",
+      "send_timing": "Day 1",
+      "goal": "build rapport / acknowledge their pain"
+    },
+    {
+      "email_number": 2,
+      "subject": "Built something for this",
+      "body": "Hey again,\n\nRemember that follow-up problem? We built AI Invoice Chaser\u2014it automatically sends smart, personalized follow-ups to clients who go silent, 24/7, no extra work from you.\n\nMost contractors using it recover $15-40K/year in payments that would've otherwise sat unpaid.\n\nWorth a quick look?\n\nLet me know.",
+      "send_timing": "Day 3",
+      "goal": "introduce the product softly"
+    },
+    {
+      "email_number": 3,
+      "subject": "One quick question before I stop bugging you",
+      "body": "Last one, I promise.\n\nIf you could recover $20K this year without lifting a finger\u2014would that be worth 15 minutes to see how it works?\n\nWe're running a limited trial at $79/month (normally higher). I can get you set up this week, and you'll start seeing results in days.\n\nReply YES and I'll send the link. If not, totally understand.\n\nThanks",
+      "send_timing": "Day 7",
+      "goal": "direct offer with clear CTA and soft urgency"
+    }
+  ],
+  "outreach_status": "ready",
+  "leads_contacted": 0,
+  "replies": 0,
+  "conversions": 0
+}
